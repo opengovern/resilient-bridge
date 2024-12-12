@@ -1,4 +1,4 @@
-# Unified SDK
+# Resilient-Bridge SDK
 
 ## Objective
 
@@ -6,25 +6,25 @@ Create a unified SDK for rapid provider integration, handling rate limits & retr
 
 ## Summary
 
-We are building a unified, Go-based SDK designed to standardize and simplify interactions with multiple third-party API providers (e.g., OpenAI, Doppler, Heroku, Chainguard, GoDaddy, Fly.io, Tailscale, GitLab, Azure DevOps, TeamCity, Semgrep, Jenkins, JIRA, ServiceNow, ElasticCloud, Mongo, etc.). The goal is to create a single, coherent framework that can handle all aspects of request execution—rate limiting, retries, and backoff—without duplicating logic for each provider.
+We are building a Go-based SDK named **Resilient-Bridge** that standardizes and simplifies interactions with multiple third-party API providers (e.g., OpenAI, Doppler, Heroku, Chainguard, GoDaddy, Fly.io, Tailscale, GitLab, Azure DevOps, TeamCity, Semgrep, Jenkins, JIRA, ServiceNow, ElasticCloud, Mongo, etc.). The goal is to create a single, coherent framework that can handle all aspects of request execution—rate limiting, retries, and backoff—without duplicating logic for each provider.
 
 ### What We Are Trying to Accomplish:
 
-- **Unified Interface**: Define a common, provider-agnostic interface for making requests so that adding a new provider only requires implementing a simple adapter rather than re-engineering the entire call stack.
+- **Unified Interface**: Provide a common, provider-agnostic interface for making requests, so that adding a new provider only requires implementing a simple adapter rather than re-engineering the entire call stack.
   
-- **Centralized Rate Limiting**: Automatically detect and manage each provider’s rate limits (retrieved from response headers or known constraints). We aim to operate at a controlled capacity—optionally below provider maximums—to reduce the risk of hitting hard limits and ensure more predictable performance.
+- **Centralized Rate Limiting**: Automatically detect and manage each provider’s rate limits (from response headers or known constraints). Operate at a controlled capacity—optionally below provider maximums—to reduce the risk of hitting hard limits and ensure predictable performance.
+
+- **Retry & Backoff Strategies**: Implement robust retry logic with configurable exponential backoff to handle transient errors and rate-limit responses gracefully. Allow per-provider configurations for maximum retries, base backoff times, and capacity targets.
   
-- **Retry & Backoff Strategies**: Implement a robust retry mechanism with configurable exponential backoff to handle transient errors and rate-limit responses gracefully. We will allow per-provider configurations for maximum retries, base backoff times, and overrideable capacity targets.
-  
-- **Scalability & Extensibility**: Once the SDK’s core is in place, adding new providers should be straightforward. The framework’s abstractions ensure that the complexity of each provider's integration (headers, endpoints, authentication, rate limit formats) remains isolated in its adapter.
+- **Scalability & Extensibility**: Once the SDK’s core is in place, adding new providers is straightforward. The framework’s abstractions ensure that provider-specific complexities remain isolated in adapters.
 
 ### Outcome:
 
-By completing this SDK, we will have a stable, testable, and easily maintainable foundation for integrating multiple APIs. This reduces repeated development effort, minimizes the risk of overstepping rate limits, and ensures consistent error handling and performance across all integrated services. The codebase will be easier to evolve as provider requirements change or as new integrations are introduced.
+By completing this SDK, we will have a stable, testable, and easily maintainable foundation for integrating multiple APIs. This reduces repeated development effort, minimizes rate limit risks, and ensures consistent error handling and performance across all integrated services. The codebase will be easier to evolve as provider requirements change or as we add new integrations.
 
 ## Acceptance Criteria
 
-- Must handle provider rate limits and apply custom user-defined caps.
+- Must handle provider rate limits and apply user-defined caps.
 - Must implement retries with exponential backoff on errors.
 - Must define a unified request/response interface across providers.
 - Must allow per-provider configs for capacity, retries, and backoff.
@@ -32,14 +32,14 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 - Must parse rate-limit headers and update internal state per request.
 - Must return normalized responses regardless of provider differences.
 - Must isolate provider-specific logic in separate adapter classes.
-- Must enable adding new providers without core code modifications.
+- Must enable adding new providers without changing the core code.
 - Must have test coverage ensuring rate-limit and retry logic correctness.
 
 ## Directory Structure
 
 ```
-/unifiedsdk
-  # Core SDK code
+/resilient-bridge
+  # Module root
 /adapters
   # Provider-specific adapters
   openai_adapter.go
@@ -53,52 +53,61 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
   rate_limiter.go   # RateLimiter logic
   request_executor.go # Retry & backoff logic
   request_response.go # NormalizedRequest/Response definitions
-  sdk.go            # UnifiedSDK struct, registration & request methods
+  sdk.go            # ResilientBridge struct, registration & request methods
 
 /examples
   /doppler
     list_users.go   # Example: listing Doppler users
     get_user.go     # Example: getting a single Doppler user by email
+  # ...other doppler examples
+  /openai
+    list_assistants.go # Example: listing OpenAI assistants
 ```
 
 ## Getting Started
 
 1. **Install & Import:**
 
+   Assuming your repository is public at `github.com/opengovern/resilient-bridge`:
+
    ```bash
-   go get opengovern/opencomply/utils/unifiedsdk
+   go get github.com/opengovern/resilient-bridge
    ```
 
    In your Go file:
 
    ```go
-   import "opengovern/opencomply/utils/unifiedsdk"
+   import "github.com/opengovern/resilient-bridge"
    ```
 
 2. **Initialize the SDK:**
 
    ```go
-   sdk := unifiedsdk.NewUnifiedSDK()
+   sdk := resilientbridge.NewResilientBridge()
    ```
 
 3. **Register Providers:**
 
-   Each provider must implement the `ProviderAdapter` interface. Register an adapter and its config:
+   Each provider must implement the `ProviderAdapter` interface. For example:
 
    ```go
-   sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: "YOUR_TOKEN"}, &unifiedsdk.ProviderConfig{
+   import (
+       "github.com/opengovern/resilient-bridge"
+       "github.com/opengovern/resilient-bridge/adapters"
+   )
+
+   sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: "YOUR_TOKEN"}, &resilientbridge.ProviderConfig{
        UseProviderLimits: false,
        MaxRequestsOverride: intPtr(50),
        MaxRetries: 3,
+       BaseBackoff: 0,
    })
    ```
 
 4. **Make Requests:**
 
-   Create a `NormalizedRequest` and call `sdk.Request`:
-
    ```go
-   req := &unifiedsdk.NormalizedRequest{
+   req := &resilientbridge.NormalizedRequest{
        Method: "GET",
        Endpoint: "/v3/workplace/users?page=1",
        Headers: map[string]string{"accept": "application/json"},
@@ -107,10 +116,10 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
    if err != nil {
        log.Fatal(err)
    }
-   // Parse resp.Data as JSON or whatever format is returned.
+   // Parse resp.Data as needed.
    ```
 
-5. **Examples**
+5. **Examples:**
 
    See the `examples/doppler` directory for sample code:
 
@@ -130,9 +139,9 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
   - `ParseRateLimitInfo()`: How to parse and return the provider’s rate-limit headers.
   - `IsRateLimitError()`: How to detect rate-limit (e.g., 429) errors.
 
-- **Register the new provider with `RegisterProvider`.**
+- **Register the new provider using `RegisterProvider`.**
 
-- **Update your configs if needed to operate at custom capacities.**
+- **Update configurations if needed to operate at custom capacities.**
 
 ## Configuration Options
 
@@ -145,10 +154,10 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 
 ## Contributing & Customization
 
-- **Time Parsing & Other Helpers:** Extend `internal/time_parser.go` or create new helpers as providers vary in their rate-limit time formats.
+- **Time Parsing & Other Helpers:** Extend `internal/time_parser.go` or create new helpers as needed.
 - **Testing:** Add tests for adapters, rate limiting, and retry logic.
-- **Logging & Telemetry:** Integrate logging frameworks or monitoring solutions as needed.
+- **Logging & Telemetry:** Integrate logging or monitoring solutions as needed.
 
 ## License
 
-MIT
+Elastic License V2
