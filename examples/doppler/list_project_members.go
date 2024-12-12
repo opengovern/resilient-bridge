@@ -1,4 +1,3 @@
-// list_project_members.go
 package main
 
 import (
@@ -8,11 +7,12 @@ import (
 	"net/url"
 	"os"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
-// Adjust the response struct based on actual API return:
+// DopplerProjectMembersResponse represents the JSON response for listing project members.
+// Adjust fields based on the actual API return.
 type DopplerProjectMembersResponse struct {
 	Members []struct {
 		Email string `json:"email"`
@@ -29,15 +29,21 @@ func main() {
 		log.Fatal("YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, nil)
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	// Optionally provide a ProviderConfig if you want retries/backoff
+	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
+		UseProviderLimits: true,
+		MaxRetries:        3,
+		BaseBackoff:       0,
+	})
 
-	projectSlug := "project" // replace with actual project slug
+	projectSlug := "project" // replace with the actual project slug
 	q := url.Values{}
 	q.Set("page", "1")
 	q.Set("per_page", "20")
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/projects/" + projectSlug + "/members?" + q.Encode(),
 		Headers:  map[string]string{"accept": "application/json"},

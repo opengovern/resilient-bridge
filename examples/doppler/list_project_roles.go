@@ -1,4 +1,3 @@
-// list_project_roles.go
 package main
 
 import (
@@ -7,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
 type DopplerProjectRolesResponse struct {
@@ -25,10 +24,12 @@ func main() {
 		log.Fatal("YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	// Register provider with no special ProviderConfig (nil is allowed)
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, nil)
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/projects/roles",
 		Headers:  map[string]string{"accept": "application/json"},

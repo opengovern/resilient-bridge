@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"os"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
 // DopplerUsersResponse represents the JSON structure returned by the Doppler API for listing users.
@@ -29,8 +29,9 @@ func main() {
 		log.Fatal("Environment variable YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &unifiedsdk.ProviderConfig{
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
 		UseProviderLimits:   false,
 		MaxRequestsOverride: nil,
 		MaxRetries:          3,
@@ -42,7 +43,7 @@ func main() {
 	q.Set("page", fmt.Sprintf("%d", page))
 	// Optional: q.Set("email", "someemail@example.com")
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/workplace/users?" + q.Encode(),
 		Headers:  map[string]string{"accept": "application/json"},

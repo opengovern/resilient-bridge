@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/url"
 	"os"
-
 	"unifiedsdk"
-	"unifiedsdk/adapters"
+
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
 // Adjust fields based on actual return

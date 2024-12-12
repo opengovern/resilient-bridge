@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
 // DopplerRolesResponse represents the JSON structure returned by the Doppler API for listing roles.
@@ -26,15 +26,16 @@ func main() {
 		log.Fatal("Environment variable YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &unifiedsdk.ProviderConfig{
-		UseProviderLimits:   false, // or true if you wish to follow actual provider limits
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
+		UseProviderLimits:   false, // or true if you want to follow actual provider limits
 		MaxRequestsOverride: nil,
 		MaxRetries:          3,
 		BaseBackoff:         0,
 	})
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/workplace/roles",
 		Headers:  map[string]string{"accept": "application/json"},

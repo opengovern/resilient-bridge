@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
-// DopplerConfigsResponse represents a possible response structure for listing configs.
-// Adjust fields after seeing real API responses.
+// DopplerConfigsResponse represents the JSON response for listing configs.
 type DopplerConfigsResponse struct {
 	Configs []struct {
 		Name string `json:"name"`
@@ -42,8 +42,9 @@ func main() {
 		log.Fatal("Environment variable YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &unifiedsdk.ProviderConfig{
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
 		MaxRetries:        3,
 		BaseBackoff:       0,
@@ -57,7 +58,7 @@ func main() {
 	q.Set("page", fmt.Sprintf("%d", *page))
 	q.Set("per_page", fmt.Sprintf("%d", *perPage))
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/configs?" + q.Encode(),
 		Headers:  map[string]string{"accept": "application/json"},
