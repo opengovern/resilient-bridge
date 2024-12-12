@@ -10,8 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	"github.com/opengovern/reslient-bridge/adapters"
 )
 
 type DopplerProjectsResponse struct {
