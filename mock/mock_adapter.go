@@ -1,5 +1,9 @@
 package mock
 
+import (
+	resilientbridge "github.com/opengovern/resilient-bridge"
+)
+
 // MockAdapter simulates provider responses for testing.
 type MockAdapter struct {
 	RequestsUntilRateLimit int // How many requests succeed before hitting 429

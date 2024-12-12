@@ -1,4 +1,4 @@
-package reslientbridge
+package resilientbridge
 
 // NormalizedRequest represents a standardized request structure the SDK uses.
 type NormalizedRequest struct {
