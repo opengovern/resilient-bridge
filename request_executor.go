@@ -2,6 +2,7 @@ package resilientbridge
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -36,7 +37,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 		resp, err := operation()
 		if err != nil {
 			if attempts < maxRetries {
-				wait := re.calculateBackoff(baseBackoff, attempts)
+				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				fmt.Printf("[DEBUG] Provider %s: Operation error: %v. Retrying in %v (attempt %d/%d)...\n", providerName, err, wait, attempts+1, maxRetries)
 				time.Sleep(wait)
 				attempts++
@@ -65,7 +66,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 		}
 
 		if resp.StatusCode >= 500 && attempts < maxRetries {
-			wait := re.calculateBackoff(baseBackoff, attempts)
+			wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 			fmt.Printf("[DEBUG] Provider %s: Server error %d. Retrying in %v (attempt %d/%d)...\n", providerName, resp.StatusCode, wait, attempts+1, maxRetries)
 			time.Sleep(wait)
 			attempts++
@@ -92,15 +93,22 @@ func (re *RequestExecutor) waitForRateLimit(providerName string, attempts, maxRe
 			return delay
 		}
 	}
-	// If no delay from RateLimiter, fallback to exponential backoff
-	return re.calculateBackoff(baseBackoff, attempts)
+	// If no delay from RateLimiter, fallback to exponential backoff with jitter
+	return re.calculateBackoffWithJitter(baseBackoff, attempts)
 }
 
-func (re *RequestExecutor) calculateBackoff(base time.Duration, attempt int) time.Duration {
+func (re *RequestExecutor) calculateBackoffWithJitter(base time.Duration, attempt int) time.Duration {
 	backoff := base * (1 << attempt) // base * 2^attempt
 	if backoff > 30*time.Second {
 		backoff = 30 * time.Second
 	}
-	fmt.Printf("[DEBUG] Calculated exponential backoff: attempt %d, backoff=%v\n", attempt+1, backoff)
-	return backoff
+
+	// Introduce jitter: ±30% random variation
+	// For example, a backoff of 2s could be between 1.4s and 2.6s
+	jitterFactor := 0.3                               // 30% jitter
+	jitter := 1.0 + jitterFactor*(rand.Float64()*2-1) // random number in [1 - jitterFactor, 1 + jitterFactor]
+	jittered := time.Duration(float64(backoff) * jitter)
+
+	fmt.Printf("[DEBUG] Calculated exponential backoff with jitter: attempt %d, base=%v, backoff=%v, jittered=%v\n", attempt+1, base, backoff, jittered)
+	return jittered
 }
