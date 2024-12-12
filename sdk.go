@@ -1,4 +1,4 @@
-package reslientbridge
+package resilientbridge
 
 import (
 	"fmt"

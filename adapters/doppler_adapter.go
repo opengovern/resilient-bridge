@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	reslientbridge "github.com/opengovern/resilient-bridge"
 )
 
 type DopplerAdapter struct {
@@ -64,7 +66,6 @@ func (d *DopplerAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedRespo
 	parseUnixTimestamp := func(key string) *int64 {
 		if val, ok := h[key]; ok {
 			if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
-				// Convert to ms
 				ms := ts * 1000
 				return &ms
 			}

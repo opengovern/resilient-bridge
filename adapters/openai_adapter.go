@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	reslientbridge "github.com/opengovern/resilient-bridge"
 )
 
 type OpenAIAdapter struct {

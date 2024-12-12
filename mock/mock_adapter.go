@@ -1,9 +1,5 @@
 package mock
 
-import (
-	"unifiedsdk"
-)
-
 // MockAdapter simulates provider responses for testing.
 type MockAdapter struct {
 	RequestsUntilRateLimit int // How many requests succeed before hitting 429
@@ -12,12 +8,12 @@ type MockAdapter struct {
 }
 
 // ExecuteRequest simulates provider responses. The first N requests succeed, subsequent requests return 429.
-func (m *MockAdapter) ExecuteRequest(req *unifiedsdk.NormalizedRequest) (*unifiedsdk.NormalizedResponse, error) {
+func (m *MockAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	m.currentRequestCount++
 
 	if m.ShouldReturn429Always || (m.RequestsUntilRateLimit > 0 && m.currentRequestCount > m.RequestsUntilRateLimit) {
 		// Simulate rate limit error
-		return &unifiedsdk.NormalizedResponse{
+		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Headers:    map[string]string{},
 			Data:       []byte(`{"error":"Rate limited"}`),
@@ -25,7 +21,7 @@ func (m *MockAdapter) ExecuteRequest(req *unifiedsdk.NormalizedRequest) (*unifie
 	}
 
 	// Simulate a success response
-	return &unifiedsdk.NormalizedResponse{
+	return &resilientbridge.NormalizedResponse{
 		StatusCode: 200,
 		Headers:    map[string]string{},
 		Data:       []byte(`{"success":true}`),
@@ -33,11 +29,11 @@ func (m *MockAdapter) ExecuteRequest(req *unifiedsdk.NormalizedRequest) (*unifie
 }
 
 // ParseRateLimitInfo can return a simulated rate limit info if needed.
-func (m *MockAdapter) ParseRateLimitInfo(resp *unifiedsdk.NormalizedResponse) (*unifiedsdk.NormalizedRateLimitInfo, error) {
-	// You can return a mock rate limit info if needed for testing.
+func (m *MockAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
+	// Return nil here, or simulate rate limit info if desired.
 	return nil, nil
 }
 
-func (m *MockAdapter) IsRateLimitError(resp *unifiedsdk.NormalizedResponse) bool {
+func (m *MockAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
 }
