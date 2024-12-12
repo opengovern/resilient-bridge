@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	reslientbridge "github.com/opengovern/resilient-bridge"
+	Resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
 type DopplerAdapter struct {
 	APIToken string
 }
 
-func (d *DopplerAdapter) ExecuteRequest(req *reslientbridge.NormalizedRequest) (*reslientbridge.NormalizedResponse, error) {
+func (d *DopplerAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (*Resilientbridge.NormalizedResponse, error) {
 	client := &http.Client{}
 	fullURL := "https://api.doppler.com" + req.Endpoint
 
@@ -45,14 +45,14 @@ func (d *DopplerAdapter) ExecuteRequest(req *reslientbridge.NormalizedRequest) (
 		}
 	}
 
-	return &reslientbridge.NormalizedResponse{
+	return &Resilientbridge.NormalizedResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Data:       data,
 	}, nil
 }
 
-func (d *DopplerAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedResponse) (*reslientbridge.NormalizedRateLimitInfo, error) {
+func (d *DopplerAdapter) ParseRateLimitInfo(resp *Resilientbridge.NormalizedResponse) (*Resilientbridge.NormalizedRateLimitInfo, error) {
 	h := resp.Headers
 	parseInt := func(key string) *int {
 		if val, ok := h[key]; ok {
@@ -73,7 +73,7 @@ func (d *DopplerAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedRespo
 		return nil
 	}
 
-	info := &reslientbridge.NormalizedRateLimitInfo{
+	info := &Resilientbridge.NormalizedRateLimitInfo{
 		MaxRequests:       parseInt("x-ratelimit-limit"),
 		RemainingRequests: parseInt("x-ratelimit-remaining"),
 		ResetRequestsAt:   parseUnixTimestamp("x-ratelimit-reset"),
@@ -93,6 +93,6 @@ func (d *DopplerAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedRespo
 	return info, nil
 }
 
-func (d *DopplerAdapter) IsRateLimitError(resp *reslientbridge.NormalizedResponse) bool {
+func (d *DopplerAdapter) IsRateLimitError(resp *Resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
 }

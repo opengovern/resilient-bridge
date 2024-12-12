@@ -7,10 +7,10 @@ import (
 
 // RequestExecutor handles retry logic, backoff, and consulting RateLimiter.
 type RequestExecutor struct {
-	sdk *ReslientBridge
+	sdk *ResilientBridge
 }
 
-func NewRequestExecutor(sdk *ReslientBridge) *RequestExecutor {
+func NewRequestExecutor(sdk *ResilientBridge) *RequestExecutor {
 	return &RequestExecutor{sdk: sdk}
 }
 

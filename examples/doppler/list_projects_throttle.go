@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	resilientbridge "github.com/opengovern/resilient-bridge"
+
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
@@ -29,7 +31,7 @@ func main() {
 		log.Fatal("Environment variable YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := resilientbridge.NewReslientBridge() // Updated constructor name and package
+	sdk := resilientbridge.NewResilientBridge() // Updated constructor name and package
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
 		MaxRetries:        3,
@@ -120,7 +122,7 @@ func main() {
 	}
 }
 
-func printRateLimitInfo(sdk *resilientbridge.ReslientBridge) {
+func printRateLimitInfo(sdk *resilientbridge.ResilientBridge) {
 	info := sdk.GetRateLimitInfo("doppler")
 	if info == nil {
 		fmt.Println("[DEBUG] No rate limit info available.")

@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	reslientbridge "github.com/opengovern/resilient-bridge"
+	Resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
 type OpenAIAdapter struct {
 	APIKey string
 }
 
-func (o *OpenAIAdapter) ExecuteRequest(req *reslientbridge.NormalizedRequest) (*reslientbridge.NormalizedResponse, error) {
+func (o *OpenAIAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (*Resilientbridge.NormalizedResponse, error) {
 	client := &http.Client{}
 
 	fullURL := "https://api.openai.com" + req.Endpoint
@@ -49,14 +49,14 @@ func (o *OpenAIAdapter) ExecuteRequest(req *reslientbridge.NormalizedRequest) (*
 		}
 	}
 
-	return &reslientbridge.NormalizedResponse{
+	return &Resilientbridge.NormalizedResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Data:       data,
 	}, nil
 }
 
-func (o *OpenAIAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedResponse) (*reslientbridge.NormalizedRateLimitInfo, error) {
+func (o *OpenAIAdapter) ParseRateLimitInfo(resp *Resilientbridge.NormalizedResponse) (*Resilientbridge.NormalizedRateLimitInfo, error) {
 	h := resp.Headers
 	parseInt := func(key string) *int {
 		if val, ok := h[key]; ok {
@@ -79,7 +79,7 @@ func (o *OpenAIAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedRespon
 		return nil
 	}
 
-	info := &reslientbridge.NormalizedRateLimitInfo{
+	info := &Resilientbridge.NormalizedRateLimitInfo{
 		MaxRequests:       parseInt("x-ratelimit-limit-requests"),
 		RemainingRequests: parseInt("x-ratelimit-remaining-requests"),
 		MaxTokens:         parseInt("x-ratelimit-limit-tokens"),
@@ -96,7 +96,7 @@ func (o *OpenAIAdapter) ParseRateLimitInfo(resp *reslientbridge.NormalizedRespon
 	return info, nil
 }
 
-func (o *OpenAIAdapter) IsRateLimitError(resp *reslientbridge.NormalizedResponse) bool {
+func (o *OpenAIAdapter) IsRateLimitError(resp *Resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
 }
 
