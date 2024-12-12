@@ -1,4 +1,4 @@
-package reslientbridge
+package resilientbridge
 
 // ProviderAdapter defines the interface all adapters must implement.
 type ProviderAdapter interface {
