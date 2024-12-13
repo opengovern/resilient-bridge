@@ -6,7 +6,7 @@ Create a unified SDK for rapid provider integration, handling rate limits & retr
 
 ## Summary
 
-We are building a Go-based SDK named **Resilient-Bridge** that standardizes and simplifies interactions with multiple third-party API providers (e.g., OpenAI, Doppler, Heroku, Chainguard, GoDaddy, Fly.io, Tailscale, GitLab, Azure DevOps, TeamCity, Semgrep, Jenkins, JIRA, ServiceNow, ElasticCloud, Mongo, etc.). The goal is to create a single, coherent framework that can handle all aspects of request execution—rate limiting, retries, and backoff—without duplicating logic for each provider.
+We are building a Go-based SDK named **Resilient-Bridge** that standardizes and simplifies interactions with multiple third-party API providers (e.g., OpenAI, Doppler, Heroku, Chainguard.dev, GoDaddy, Fly.io, Tailscale, GitLab, Azure DevOps, TeamCity, Semgrep, Jenkins, JIRA, ServiceNow, ElasticCloud, Mongo, etc.). The goal is to create a single, coherent framework that can handle all aspects of request execution—rate limiting, retries, and backoff—without duplicating logic for each provider.
 
 ### What We Are Trying to Accomplish:
 
@@ -28,7 +28,7 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 - Must implement retries with exponential backoff on errors.
 - Must define a unified request/response interface across providers.
 - Must allow per-provider configs for capacity, retries, and backoff.
-- Must support integrating multiple providers (e.g., OpenAI, Doppler).
+- Must support integrating multiple providers (e.g., OpenAI, Doppler, Semgrep).
 - Must parse rate-limit headers and update internal state per request.
 - Must return normalized responses regardless of provider differences.
 - Must isolate provider-specific logic in separate adapter classes.
@@ -44,24 +44,28 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
   # Provider-specific adapters
   openai_adapter.go
   doppler_adapter.go
+  semgrep_adapter.go
   # ...other providers
 /internal
-  # Internal helpers (e.g., time parsing)
+  # Internal helpers (e.g., time parsing, config)
   time_parser.go
-  config.go         # ProviderConfig definition
-  interfaces.go     # ProviderAdapter interface
-  rate_limiter.go   # RateLimiter logic
-  request_executor.go # Retry & backoff logic
-  request_response.go # NormalizedRequest/Response definitions
-  sdk.go            # ResilientBridge struct, registration & request methods
+  config.go
+  interfaces.go
+  rate_limiter.go
+  request_executor.go
+  request_response.go
+  sdk.go
 
 /examples
   /doppler
-    list_users.go   # Example: listing Doppler users
-    get_user.go     # Example: getting a single Doppler user by email
-  # ...other doppler examples
+    list_users.go
+    get_user.go
   /openai
-    list_assistants.go # Example: listing OpenAI assistants
+    list_assistants.go
+  /semgrep
+    list_deployments.go
+    list_projects.go
+    get_project.go
 ```
 
 ## Getting Started
@@ -88,7 +92,7 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 
 3. **Register Providers:**
 
-   Each provider must implement the `ProviderAdapter` interface. For example:
+   Each provider must implement the `ProviderAdapter` interface. For example (Doppler):
 
    ```go
    import (
@@ -121,12 +125,13 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 
 5. **Examples:**
 
-   See the `examples/doppler` directory for sample code:
+   See the examples directory for sample code:
 
-   - `list_users.go`: Lists all Doppler users.
-   - `get_user.go`: Retrieves a Doppler user by email.
+   - `examples/doppler/list_users.go`: Lists all Doppler users.
+   - `examples/openai/list_assistants.go`: Lists OpenAI assistants.
+   - `examples/semgrep/list_deployments.go`, `list_projects.go`, and `get_project.go`: Demonstrate Semgrep API usage.
 
-   To run:
+   To run an example:
 
    ```bash
    go run ./examples/doppler/list_users.go
@@ -139,7 +144,7 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
   - `ParseRateLimitInfo()`: How to parse and return the provider’s rate-limit headers.
   - `IsRateLimitError()`: How to detect rate-limit (e.g., 429) errors.
 
-- **Register the new provider using `RegisterProvider`.**
+- **Register the new provider using `sdk.RegisterProvider`.**
 
 - **Update configurations if needed to operate at custom capacities.**
 
@@ -148,7 +153,7 @@ By completing this SDK, we will have a stable, testable, and easily maintainable
 `ProviderConfig` allows you to:
 
 - `UseProviderLimits`: Use the provider’s actual limits or override them.
-- `MaxRequestsOverride/MaxTokensOverride`: Control the upper limit of requests/tokens.
+- `MaxRequestsOverride / MaxTokensOverride`: Control the upper limit of requests/tokens.
 - `MaxRetries`: Set how many times to retry requests.
 - `BaseBackoff`: Set initial backoff duration for exponential retry delays.
 
