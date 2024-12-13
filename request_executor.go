@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// RequestExecutor handles retry logic, backoff, and consulting RateLimiter.
 type RequestExecutor struct {
 	sdk *ResilientBridge
 }
@@ -55,14 +54,14 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 		if adapter.IsRateLimitError(resp) {
 			// 429 encountered
 			if attempts < maxRetries {
-				wait := re.waitForRateLimit(providerName, attempts, maxRetries, baseBackoff)
+				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				fmt.Printf("[DEBUG] Provider %s: 429 rate limit error. Backing off for %v before retry...\n", providerName, wait)
 				time.Sleep(wait)
 				attempts++
 				continue
 			}
 			fmt.Printf("[DEBUG] Provider %s: Rate limit (429) encountered and max retries reached. Giving up.\n", providerName)
-			return nil, fmt.Errorf("rate limit exceeded and max retries reached")
+			return resp, fmt.Errorf("rate limit exceeded and max retries reached")
 		}
 
 		if resp.StatusCode >= 500 && attempts < maxRetries {
@@ -85,30 +84,13 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 	}
 }
 
-func (re *RequestExecutor) waitForRateLimit(providerName string, attempts, maxRetries int, baseBackoff time.Duration) time.Duration {
-	if !re.sdk.rateLimiter.canProceed(providerName) {
-		delay := re.sdk.rateLimiter.delayBeforeNextRequest(providerName)
-		if delay > 0 {
-			fmt.Printf("[DEBUG] Provider %s: Hit rate limit on attempt %d/%d. Waiting %v (from rate limit info) before retry...\n", providerName, attempts+1, maxRetries, delay)
-			return delay
-		}
-	}
-	// If no delay from RateLimiter, fallback to exponential backoff with jitter
-	return re.calculateBackoffWithJitter(baseBackoff, attempts)
-}
-
 func (re *RequestExecutor) calculateBackoffWithJitter(base time.Duration, attempt int) time.Duration {
 	backoff := base * (1 << attempt) // base * 2^attempt
 	if backoff > 30*time.Second {
 		backoff = 30 * time.Second
 	}
-
-	// Introduce jitter: ±30% random variation
-	// For example, a backoff of 2s could be between 1.4s and 2.6s
-	jitterFactor := 0.3                               // 30% jitter
-	jitter := 1.0 + jitterFactor*(rand.Float64()*2-1) // random number in [1 - jitterFactor, 1 + jitterFactor]
-	jittered := time.Duration(float64(backoff) * jitter)
-
-	fmt.Printf("[DEBUG] Calculated exponential backoff with jitter: attempt %d, base=%v, backoff=%v, jittered=%v\n", attempt+1, base, backoff, jittered)
-	return jittered
+	// Add random jitter: up to 50% of backoff
+	jitterFactor := 0.5
+	jitter := time.Duration(rand.Float64() * float64(backoff) * jitterFactor)
+	return backoff + jitter
 }

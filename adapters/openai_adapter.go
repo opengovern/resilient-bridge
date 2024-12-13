@@ -2,23 +2,51 @@ package adapters
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	Resilientbridge "github.com/opengovern/resilient-bridge"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+)
+
+const (
+	OpenAIDefaultMaxRequests = 60
+	OpenAIDefaultWindowSecs  = 60 // 60 requests per 60 seconds
 )
 
 type OpenAIAdapter struct {
 	APIKey string
+
+	mu                sync.Mutex
+	requestTimestamps []int64
+	MaxRequests       int
+	WindowSecs        int64
 }
 
-func (o *OpenAIAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (*Resilientbridge.NormalizedResponse, error) {
-	client := &http.Client{}
+func (o *OpenAIAdapter) SetRateLimitDefaults(maxRequests int, windowSecs int64) {
+	if maxRequests == 0 {
+		maxRequests = OpenAIDefaultMaxRequests
+	}
+	if windowSecs == 0 {
+		windowSecs = OpenAIDefaultWindowSecs
+	}
+	o.mu.Lock()
+	o.MaxRequests = maxRequests
+	o.WindowSecs = windowSecs
+	o.mu.Unlock()
+}
 
+func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
+	if o.isRateLimited() {
+		return &resilientbridge.NormalizedResponse{
+			StatusCode: 429,
+			Data:       []byte(`{"error":"OpenAI rate limit reached"}`),
+		}, nil
+	}
+
+	client := &http.Client{}
 	fullURL := "https://api.openai.com" + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
@@ -26,7 +54,6 @@ func (o *OpenAIAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (
 		return nil, err
 	}
 
-	// Set request headers
 	for k, v := range req.Headers {
 		httpReq.Header.Set(k, v)
 	}
@@ -41,6 +68,8 @@ func (o *OpenAIAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (
 	}
 	defer resp.Body.Close()
 
+	o.recordRequest()
+
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
 	for k, vals := range resp.Header {
@@ -49,78 +78,70 @@ func (o *OpenAIAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (
 		}
 	}
 
-	return &Resilientbridge.NormalizedResponse{
+	return &resilientbridge.NormalizedResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Data:       data,
 	}, nil
 }
 
-func (o *OpenAIAdapter) ParseRateLimitInfo(resp *Resilientbridge.NormalizedResponse) (*Resilientbridge.NormalizedRateLimitInfo, error) {
-	h := resp.Headers
-	parseInt := func(key string) *int {
-		if val, ok := h[key]; ok {
-			if i, err := strconv.Atoi(val); err == nil {
-				return &i
-			}
+func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	now := time.Now().Unix()
+	windowStart := now - o.WindowSecs
+
+	var newTimestamps []int64
+	for _, ts := range o.requestTimestamps {
+		if ts >= windowStart {
+			newTimestamps = append(newTimestamps, ts)
 		}
-		return nil
+	}
+	o.requestTimestamps = newTimestamps
+
+	remaining := o.MaxRequests - len(o.requestTimestamps)
+	var resetAt *int64
+	if remaining <= 0 {
+		resetTime := (windowStart + o.WindowSecs) * 1000
+		resetAt = &resetTime
 	}
 
-	parseDuration := func(d string) *int64 {
-		if d == "" {
-			return nil
-		}
-		ms := parseTimeStr(d)
-		if ms > 0 {
-			t := time.Now().UnixMilli() + ms
-			return &t
-		}
-		return nil
+	info := &resilientbridge.NormalizedRateLimitInfo{
+		MaxRequests:       intPtr(o.MaxRequests),
+		RemainingRequests: intPtr(remaining),
+		ResetRequestsAt:   resetAt,
 	}
-
-	info := &Resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       parseInt("x-ratelimit-limit-requests"),
-		RemainingRequests: parseInt("x-ratelimit-remaining-requests"),
-		MaxTokens:         parseInt("x-ratelimit-limit-tokens"),
-		RemainingTokens:   parseInt("x-ratelimit-remaining-tokens"),
-	}
-
-	if val, ok := h["x-ratelimit-reset-requests"]; ok {
-		info.ResetRequestsAt = parseDuration(val)
-	}
-	if val, ok := h["x-ratelimit-reset-tokens"]; ok {
-		info.ResetTokensAt = parseDuration(val)
-	}
-
 	return info, nil
 }
 
-func (o *OpenAIAdapter) IsRateLimitError(resp *Resilientbridge.NormalizedResponse) bool {
+func (o *OpenAIAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
 }
 
-// parseTimeStr converts strings like "1s", "6m0s", "30s" into milliseconds.
-func parseTimeStr(s string) int64 {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return 0
-	}
+func (o *OpenAIAdapter) isRateLimited() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
 
-	// Try "XmYs" format
-	var minutes, seconds int
-	n, err := fmt.Sscanf(s, "%dm%ds", &minutes, &seconds)
-	if err == nil && n == 2 {
-		return int64(minutes)*60_000 + int64(seconds)*1_000
-	}
-
-	// If no 'm', maybe just seconds like "30s"
-	if strings.HasSuffix(s, "s") && !strings.Contains(s, "m") {
-		val := strings.TrimSuffix(s, "s")
-		if sec, err := strconv.Atoi(val); err == nil {
-			return int64(sec) * 1000
+	now := time.Now().Unix()
+	windowStart := now - o.WindowSecs
+	var newTimestamps []int64
+	for _, ts := range o.requestTimestamps {
+		if ts >= windowStart {
+			newTimestamps = append(newTimestamps, ts)
 		}
 	}
+	o.requestTimestamps = newTimestamps
 
-	return 0
+	return len(o.requestTimestamps) >= o.MaxRequests
+}
+
+func (o *OpenAIAdapter) recordRequest() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	o.requestTimestamps = append(o.requestTimestamps, time.Now().Unix())
+}
+
+func intPtr(i int) *int {
+	return &i
 }

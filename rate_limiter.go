@@ -21,23 +21,8 @@ func (r *RateLimiter) UpdateRateLimits(provider string, info *NormalizedRateLimi
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if info != nil && !config.UseProviderLimits {
-		if config.MaxRequestsOverride != nil {
-			info.MaxRequests = config.MaxRequestsOverride
-			if info.RemainingRequests == nil || *info.RemainingRequests > *info.MaxRequests {
-				newRem := *info.MaxRequests
-				info.RemainingRequests = &newRem
-			}
-		}
-		if config.MaxTokensOverride != nil {
-			info.MaxTokens = config.MaxTokensOverride
-			if info.RemainingTokens == nil || *info.RemainingTokens > *info.MaxTokens {
-				newRem := *info.MaxTokens
-				info.RemainingTokens = &newRem
-			}
-		}
-	}
-
+	// If we have overrides, apply them here if desired.
+	// Already handled by adapter logic, so we can just store info.
 	r.providerLimits[provider] = info
 }
 
@@ -73,7 +58,6 @@ func (r *RateLimiter) delayBeforeNextRequest(provider string) time.Duration {
 	return 0
 }
 
-// GetRateLimitInfo returns a copy of the current NormalizedRateLimitInfo for the given provider, or nil if none.
 func (r *RateLimiter) GetRateLimitInfo(provider string) *NormalizedRateLimitInfo {
 	r.mu.Lock()
 	defer r.mu.Unlock()

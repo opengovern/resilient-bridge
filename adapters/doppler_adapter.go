@@ -4,18 +4,49 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	Resilientbridge "github.com/opengovern/resilient-bridge"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+)
+
+const (
+	DopplerDefaultMaxRequests = 480
+	DopplerDefaultWindowSecs  = 60
 )
 
 type DopplerAdapter struct {
 	APIToken string
+
+	mu                sync.Mutex
+	requestTimestamps []int64
+	MaxRequests       int
+	WindowSecs        int64
 }
 
-func (d *DopplerAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) (*Resilientbridge.NormalizedResponse, error) {
+func (d *DopplerAdapter) SetRateLimitDefaults(maxRequests int, windowSecs int64) {
+	if maxRequests == 0 {
+		maxRequests = DopplerDefaultMaxRequests
+	}
+	if windowSecs == 0 {
+		windowSecs = DopplerDefaultWindowSecs
+	}
+	d.mu.Lock()
+	d.MaxRequests = maxRequests
+	d.WindowSecs = windowSecs
+	d.mu.Unlock()
+}
+
+func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
+	if d.isRateLimited() {
+		return &resilientbridge.NormalizedResponse{
+			StatusCode: 429,
+			Headers:    map[string]string{},
+			Data:       []byte(`{"error":"Doppler rate limit reached"}`),
+		}, nil
+	}
+
 	client := &http.Client{}
 	fullURL := "https://api.doppler.com" + req.Endpoint
 
@@ -37,6 +68,8 @@ func (d *DopplerAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) 
 	}
 	defer resp.Body.Close()
 
+	d.recordRequest()
+
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
 	for k, vals := range resp.Header {
@@ -45,54 +78,70 @@ func (d *DopplerAdapter) ExecuteRequest(req *Resilientbridge.NormalizedRequest) 
 		}
 	}
 
-	return &Resilientbridge.NormalizedResponse{
+	return &resilientbridge.NormalizedResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Data:       data,
 	}, nil
 }
 
-func (d *DopplerAdapter) ParseRateLimitInfo(resp *Resilientbridge.NormalizedResponse) (*Resilientbridge.NormalizedRateLimitInfo, error) {
-	h := resp.Headers
-	parseInt := func(key string) *int {
-		if val, ok := h[key]; ok {
-			if i, err := strconv.Atoi(val); err == nil {
-				return &i
-			}
-		}
-		return nil
-	}
+func (d *DopplerAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	parseUnixTimestamp := func(key string) *int64 {
-		if val, ok := h[key]; ok {
-			if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
-				ms := ts * 1000
-				return &ms
-			}
-		}
-		return nil
-	}
+	now := time.Now().Unix()
+	windowStart := now - d.WindowSecs
 
-	info := &Resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       parseInt("x-ratelimit-limit"),
-		RemainingRequests: parseInt("x-ratelimit-remaining"),
-		ResetRequestsAt:   parseUnixTimestamp("x-ratelimit-reset"),
-	}
-
-	// retry-after is in seconds and only present if rate-limited (429).
-	if val, ok := h["retry-after"]; ok {
-		if sec, err := strconv.Atoi(val); err == nil {
-			future := time.Now().UnixMilli() + int64(sec)*1000
-			// If ResetRequestsAt is not set or this future is later, update it.
-			if info.ResetRequestsAt == nil || future > *info.ResetRequestsAt {
-				info.ResetRequestsAt = &future
-			}
+	var newTimestamps []int64
+	for _, ts := range d.requestTimestamps {
+		if ts >= windowStart {
+			newTimestamps = append(newTimestamps, ts)
 		}
 	}
+	d.requestTimestamps = newTimestamps
 
+	remaining := d.MaxRequests - len(d.requestTimestamps)
+	var resetAt *int64
+	if remaining <= 0 {
+		resetTime := (windowStart + d.WindowSecs) * 1000
+		resetAt = &resetTime
+	}
+
+	info := &resilientbridge.NormalizedRateLimitInfo{
+		MaxRequests:       intPtr(d.MaxRequests),
+		RemainingRequests: intPtr(remaining),
+		ResetRequestsAt:   resetAt,
+	}
 	return info, nil
 }
 
-func (d *DopplerAdapter) IsRateLimitError(resp *Resilientbridge.NormalizedResponse) bool {
+func (d *DopplerAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
+}
+
+func (d *DopplerAdapter) isRateLimited() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	now := time.Now().Unix()
+	windowStart := now - d.WindowSecs
+	var newTimestamps []int64
+	for _, ts := range d.requestTimestamps {
+		if ts >= windowStart {
+			newTimestamps = append(newTimestamps, ts)
+		}
+	}
+	d.requestTimestamps = newTimestamps
+
+	return len(d.requestTimestamps) >= d.MaxRequests
+}
+
+func (d *DopplerAdapter) recordRequest() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.requestTimestamps = append(d.requestTimestamps, time.Now().Unix())
+}
+
+func intPtr(i int) *int {
+	return &i
 }

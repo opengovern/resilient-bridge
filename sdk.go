@@ -5,7 +5,6 @@ import (
 	"sync"
 )
 
-// ResilientBridge is the main entry point for using the SDK.
 type ResilientBridge struct {
 	mu          sync.Mutex
 	providers   map[string]ProviderAdapter
@@ -14,7 +13,6 @@ type ResilientBridge struct {
 	executor    *RequestExecutor
 }
 
-// NewResilientBridge creates a new instance of the SDK.
 func NewResilientBridge() *ResilientBridge {
 	sdk := &ResilientBridge{
 		providers:   make(map[string]ProviderAdapter),
@@ -25,15 +23,26 @@ func NewResilientBridge() *ResilientBridge {
 	return sdk
 }
 
-// RegisterProvider attaches a provider adapter and its config to the SDK.
 func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapter, config *ProviderConfig) {
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
 	sdk.providers[name] = adapter
 	sdk.configs[name] = config
+
+	// If we have overrides, call SetRateLimitDefaults on the adapter
+	var maxRequests int
+	var windowSecs int64
+	if config.MaxRequestsOverride != nil {
+		maxRequests = *config.MaxRequestsOverride
+	}
+	if config.WindowSecsOverride != nil {
+		windowSecs = *config.WindowSecsOverride
+	}
+
+	// Even if zero, adapter should fallback to its internal defaults.
+	adapter.SetRateLimitDefaults(maxRequests, windowSecs)
 }
 
-// Request sends a request to a registered provider.
 func (sdk *ResilientBridge) Request(providerName string, req *NormalizedRequest) (*NormalizedResponse, error) {
 	sdk.mu.Lock()
 	adapter, ok := sdk.providers[providerName]
@@ -47,7 +56,6 @@ func (sdk *ResilientBridge) Request(providerName string, req *NormalizedRequest)
 	}, adapter)
 }
 
-// getProviderConfig retrieves the config for a provider, returning a default if nil or not found.
 func (sdk *ResilientBridge) getProviderConfig(providerName string) *ProviderConfig {
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
@@ -65,8 +73,6 @@ func (sdk *ResilientBridge) getProviderConfig(providerName string) *ProviderConf
 	return config
 }
 
-// GetRateLimitInfo returns the current NormalizedRateLimitInfo for the given provider.
-// Returns nil if no info is available.
 func (sdk *ResilientBridge) GetRateLimitInfo(providerName string) *NormalizedRateLimitInfo {
 	return sdk.rateLimiter.GetRateLimitInfo(providerName)
 }
