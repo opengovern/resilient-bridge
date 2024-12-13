@@ -6,7 +6,10 @@ type ProviderAdapter interface {
 	ParseRateLimitInfo(resp *NormalizedResponse) (*NormalizedRateLimitInfo, error)
 	IsRateLimitError(resp *NormalizedResponse) bool
 
-	// SetRateLimitDefaultsForType sets the max requests and window for a given request type (e.g., "rest", "graphql").
-	// If maxRequests or windowSecs are zero, the adapter uses its internal defaults.
+	// SetRateLimitDefaultsForType allows setting default rate limits for a specific call type.
 	SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64)
+
+	// IdentifyRequestType inspects the request and returns a call type string
+	// This could be "rest", "graphql", or any other type the adapter supports.
+	IdentifyRequestType(req *NormalizedRequest) string
 }

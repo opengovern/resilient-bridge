@@ -5,7 +5,6 @@ import (
 	"sync"
 )
 
-// ResilientBridge is the main entry point for using the SDK.
 type ResilientBridge struct {
 	mu          sync.Mutex
 	providers   map[string]ProviderAdapter
@@ -16,7 +15,6 @@ type ResilientBridge struct {
 	Debug bool // If true, print debug info
 }
 
-// NewResilientBridge creates a new instance of the SDK.
 func NewResilientBridge() *ResilientBridge {
 	sdk := &ResilientBridge{
 		providers:   make(map[string]ProviderAdapter),
@@ -28,7 +26,6 @@ func NewResilientBridge() *ResilientBridge {
 	return sdk
 }
 
-// RegisterProvider attaches a provider adapter and its config to the SDK.
 func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapter, config *ProviderConfig) {
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
@@ -60,7 +57,6 @@ func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapte
 	sdk.debugf("Registered provider %q with config: %+v\n", name, config)
 }
 
-// Request sends a request to a registered provider.
 func (sdk *ResilientBridge) Request(providerName string, req *NormalizedRequest) (*NormalizedResponse, error) {
 	sdk.mu.Lock()
 	adapter, ok := sdk.providers[providerName]
@@ -69,13 +65,13 @@ func (sdk *ResilientBridge) Request(providerName string, req *NormalizedRequest)
 		return nil, fmt.Errorf("provider %q not registered", providerName)
 	}
 
-	sdk.debugf("Requesting provider %s at endpoint %s\n", providerName, req.Endpoint)
-	return sdk.executor.ExecuteWithRetry(providerName, func() (*NormalizedResponse, error) {
+	callType := adapter.IdentifyRequestType(req)
+	sdk.debugf("Requesting provider %s (callType=%s) at endpoint %s\n", providerName, callType, req.Endpoint)
+	return sdk.executor.ExecuteWithRetry(providerName, callType, func() (*NormalizedResponse, error) {
 		return adapter.ExecuteRequest(req)
 	}, adapter)
 }
 
-// getProviderConfig retrieves the config for a provider, returning a default if nil or not found.
 func (sdk *ResilientBridge) getProviderConfig(providerName string) *ProviderConfig {
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
@@ -93,8 +89,6 @@ func (sdk *ResilientBridge) getProviderConfig(providerName string) *ProviderConf
 	return config
 }
 
-// GetRateLimitInfo returns the current NormalizedRateLimitInfo for the given provider.
-// Returns nil if no info is available.
 func (sdk *ResilientBridge) GetRateLimitInfo(providerName string) *NormalizedRateLimitInfo {
 	return sdk.rateLimiter.GetRateLimitInfo(providerName)
 }
