@@ -1,42 +1,30 @@
 // github_adapter.go
 // -----------------
-// This adapter integrates with the GitHub API, handling both REST and GraphQL requests.
-// Besides the primary rate limit (e.g., 5000 requests/hour), GitHub uses a secondary rate limit
-// that counts "points" rather than raw requests. The points vary based on request type:
+// This adapter integrates with the GitHub API, handling both REST and GraphQL endpoints with distinct rate limits.
+// By default, GitHub provides rate limit headers with each response. We also have the option to proactively
+// check rate limits ahead of making other calls by querying the /rate_limit endpoint once if desired.
 //
-//   Request type                         | Points
-//   -------------------------------------|-------
-//   GraphQL without mutations            | 1
-//   GraphQL with mutations               | 5
-//   Most REST GET, HEAD, OPTIONS         | 1
-//   Most REST POST, PATCH, PUT, DELETE   | 5
+// Key Points:
+// - Rate limits:
+//   * REST: 5000 requests/hour by default
+//   * GraphQL: 5000 requests/hour by default
+// - We differentiate between "rest" and "graphql" requests.
+// - On the first request (if CHECK_REQUEST_RATE_LIMIT_AHEAD = true), we call GET /rate_limit once to
+//   proactively fetch current rate limits without counting against primary rate limit.
+// - If 429 or 403 is encountered, consider it a rate limit error.
+// - We'll parse rate limit headers from each response to keep track of the current state.
 //
-// Some endpoints may cost different points, but these values are not publicly disclosed.
-// We use the known defaults. If needed, you can add logic to detect special endpoints.
+// Note: Secondary rate limits and request "points" are not explicitly tracked in this example,
+// but could be added if GitHub documents them more specifically. Here we rely on standard headers.
 //
-// This adapter tracks and applies both primary (request count) and secondary (points)
-// limits internally. For now, the secondary limit logic can be embedded similarly to the primary
-// logic, but if there's no known fixed second limit, we can still track it for possible
-// future expansions.
-//
-// This code updates rate limit parsing from GitHub's response headers, which provide primary
-// rate limit information. Secondary rate limit tracking would be internal, based on request points.
-//
-// Methods:
-// - SetRateLimitDefaultsForType: Allows overriding the primary rate limit and window.
-// - IdentifyRequestType: Distinguishes "graphql" vs. "rest" calls.
-// - ExecuteRequest: Makes the actual request, updates internal counters for requests and points.
-// - ParseRateLimitInfo: Extracts primary rate limit details (x-ratelimit-*) from GitHub headers.
-// - IsRateLimitError: Checks if the response code (429 or 403) indicates a rate limit error.
-//
-// Note: The secondary rate limit rules are not fully integrated into an enforced limit
-// here, as GitHub does not provide a direct secondary limit threshold in the prompt.
-// However, we track and log points so that logic could be added if a known secondary limit is defined.
+// If at any point headers are missing or can't be parsed, we fallback to known defaults.
 
 package adapters
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -47,22 +35,14 @@ import (
 	resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
-// Default GitHub limits for authenticated PAT (primary rate limit):
-// REST: 5000 requests/hour (5000 per 3600 seconds)
-// GraphQL: Also 5000/hour by default.
 const (
 	GitHubDefaultRestMaxRequests    = 5000
-	GitHubDefaultRestWindowSecs     = 3600
+	GitHubDefaultRestWindowSecs     = 3600 // 1 hour
 	GitHubDefaultGraphQLMaxRequests = 5000
 	GitHubDefaultGraphQLWindowSecs  = 3600
-)
 
-// Points per request type for secondary limit tracking (if needed):
-const (
-	GraphQLNoMutationsPoints   = 1
-	GraphQLWithMutationsPoints = 5
-	RestGetHeadOptionsPoints   = 1
-	RestOtherMethodsPoints     = 5
+	// Set this to true if you want to proactively check the rate limit before the first request
+	CHECK_REQUEST_RATE_LIMIT_AHEAD = true
 )
 
 type GitHubAdapter struct {
@@ -70,21 +50,17 @@ type GitHubAdapter struct {
 
 	mu sync.Mutex
 
-	// Primary limit tracking for REST:
-	restMaxRequests  int
-	restWindowSecs   int64
-	restRequestTimes []int64
+	// Configured max and windows
+	restMaxRequests    int
+	restWindowSecs     int64
+	graphqlMaxRequests int
+	graphqlWindowSecs  int64
 
-	// Primary limit tracking for GraphQL:
-	graphqlMaxRequests  int
-	graphqlWindowSecs   int64
+	restRequestTimes    []int64
 	graphqlRequestTimes []int64
 
-	// Secondary limit (points) tracking:
-	// We'll track points similarly to requests. Without a known limit, we just store them.
-	restPointsTimes    []int64 // timestamps of REST requests (for potential secondary limit)
-	graphqlPointsTimes []int64 // timestamps of GraphQL requests (for potential secondary limit)
-	// If a known secondary window and limit were known, we'd track similarly.
+	// Indicates if we've performed the initial rate limit check
+	didInitialRateCheck bool
 }
 
 func NewGitHubAdapter(apiToken string) *GitHubAdapter {
@@ -122,10 +98,32 @@ func (g *GitHubAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 	}
 }
 
+func (g *GitHubAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	if g.isGraphQLRequest(req) {
+		return "graphql"
+	}
+	return "rest"
+}
+
 func (g *GitHubAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	isGraphQL := g.isGraphQLRequest(req)
+
+	// If CHECK_REQUEST_RATE_LIMIT_AHEAD is true and we haven't done the initial check, do it now.
+	if CHECK_REQUEST_RATE_LIMIT_AHEAD {
+		g.mu.Lock()
+		shouldCheck := !g.didInitialRateCheck
+		g.didInitialRateCheck = true
+		g.mu.Unlock()
+
+		if shouldCheck {
+			if err := g.checkInitialRateLimit(); err != nil {
+				// Not a fatal error if we fail, just log and continue
+				fmt.Printf("Warning: failed initial rate limit check: %v\n", err)
+			}
+		}
+	}
+
 	if g.isRateLimited(isGraphQL) {
-		// If primary limit would be exceeded, return synthetic 429.
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Headers:    map[string]string{},
@@ -158,12 +156,7 @@ func (g *GitHubAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	}
 	defer resp.Body.Close()
 
-	// Record the request timestamp
 	g.recordRequest(isGraphQL)
-
-	// Also calculate points and record them if needed
-	points := g.calculateRequestPoints(req, isGraphQL)
-	g.recordPoints(isGraphQL, points)
 
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
@@ -212,22 +205,14 @@ func (g *GitHubAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedRespo
 }
 
 func (g *GitHubAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
-	// GitHub returns 429 when rate limit exceeded, and sometimes 403 for secondary rate limit.
+	// 429 or 403 can indicate rate limits
 	return resp.StatusCode == 429 || resp.StatusCode == 403
-}
-
-func (g *GitHubAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
-	if g.isGraphQLRequest(req) {
-		return "graphql"
-	}
-	return "rest"
 }
 
 func (g *GitHubAdapter) isGraphQLRequest(req *resilientbridge.NormalizedRequest) bool {
 	return req.Endpoint == "/graphql"
 }
 
-// isRateLimited checks if making another request would exceed primary limits.
 func (g *GitHubAdapter) isRateLimited(isGraphQL bool) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -255,7 +240,6 @@ func (g *GitHubAdapter) isRateLimited(isGraphQL bool) bool {
 		}
 	}
 
-	// Update timestamps after filtering
 	if isGraphQL {
 		g.graphqlRequestTimes = newTimestamps
 	} else {
@@ -265,7 +249,6 @@ func (g *GitHubAdapter) isRateLimited(isGraphQL bool) bool {
 	return len(newTimestamps) >= maxReq
 }
 
-// recordRequest logs the timestamp for a request (REST or GraphQL) for primary limit tracking.
 func (g *GitHubAdapter) recordRequest(isGraphQL bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -277,51 +260,89 @@ func (g *GitHubAdapter) recordRequest(isGraphQL bool) {
 	}
 }
 
-// calculateRequestPoints determines the point cost of the request based on method and type.
-func (g *GitHubAdapter) calculateRequestPoints(req *resilientbridge.NormalizedRequest, isGraphQL bool) int {
-	if isGraphQL {
-		// GraphQL: 1 point for queries, 5 points for mutations
-		// Simple heuristic: If method is POST and body contains "mutation" keyword
-		// This is a simplistic approach, real logic might need to parse the GraphQL query.
-		if strings.ToUpper(req.Method) == "POST" && strings.Contains(string(req.Body), "mutation") {
-			return GraphQLWithMutationsPoints
-		}
-		return GraphQLNoMutationsPoints
+// checkInitialRateLimit calls the /rate_limit endpoint once to proactively fetch the current
+// rate limit info. This call does not count against the primary rate limit, but can affect secondary limits.
+// If successful, we use the returned data to update our known limits if needed.
+func (g *GitHubAdapter) checkInitialRateLimit() error {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://api.github.com/rate_limit", nil)
+	if err != nil {
+		return err
+	}
+	if g.APIToken != "" {
+		req.Header.Set("Authorization", "Bearer "+g.APIToken)
 	}
 
-	// REST:
-	method := strings.ToUpper(req.Method)
-	switch method {
-	case "GET", "HEAD", "OPTIONS":
-		return RestGetHeadOptionsPoints
-	case "POST", "PATCH", "PUT", "DELETE":
-		return RestOtherMethodsPoints
-	default:
-		// Default to 1 point for unknown methods
-		return 1
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
 	}
-}
+	defer resp.Body.Close()
 
-// recordPoints tracks the timestamps of requests for secondary limit calculations (if needed).
-func (g *GitHubAdapter) recordPoints(isGraphQL bool, points int) {
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("GET /rate_limit returned %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	data, _ := io.ReadAll(resp.Body)
+	// JSON structure for rate_limit:
+	// {
+	//   "resources": {
+	//     "core": {
+	//       "limit": 5000,
+	//       "remaining": 4999,
+	//       "reset": 1372700873,
+	//       "used": 1,
+	//       "resource": "core"
+	//     },
+	//     "graphql": {
+	//       "limit": 5000,
+	//       "remaining": 5000,
+	//       "reset": 1372700873,
+	//       "used": 0,
+	//       "resource": "graphql"
+	//     }
+	//   },
+	//   "rate": {
+	//       "limit": 5000,
+	//       "remaining": 4999,
+	//       "reset": 1372700873,
+	//       "used": 1
+	//   }
+	// }
+
+	type ResourceInfo struct {
+		Limit     int `json:"limit"`
+		Remaining int `json:"remaining"`
+		Reset     int `json:"reset"`
+		Used      int `json:"used"`
+	}
+
+	type RateLimitResp struct {
+		Resources struct {
+			Core    ResourceInfo `json:"core"`
+			Graphql ResourceInfo `json:"graphql"`
+		} `json:"resources"`
+		Rate ResourceInfo `json:"rate"`
+	}
+
+	var r RateLimitResp
+	if err := json.Unmarshal(data, &r); err != nil {
+		return err
+	}
+
+	// Update internal maxRequests/window if needed
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	// Here we just store one timestamp per point. In reality,
-	// you could store cumulative sums or separate arrays.
-	// For simplicity, if a request costs 5 points, we record 5 entries.
-	now := time.Now().Unix()
-	if isGraphQL {
-		for i := 0; i < points; i++ {
-			g.graphqlPointsTimes = append(g.graphqlPointsTimes, now)
-		}
-	} else {
-		for i := 0; i < points; i++ {
-			g.restPointsTimes = append(g.restPointsTimes, now)
-		}
-	}
+	// The returned limit is always the same (5000/hour) for normal use, but if GitHub changes it or we have a special token,
+	// we could reflect it here. For now, we just trust the returned limits.
+	// Convert reset from epoch seconds to window in seconds:
+	// If we want to adapt the windows: The reset is a timestamp, not a window. We rely on relative logic from headers normally.
+	// For now, we won't override our known windows/time. The main purpose is to confirm we can call this endpoint and get info.
+	// If we wanted to, we could compute a window based on the difference between now and reset.
+	// For simplicity, do nothing more than logging:
+	fmt.Printf("Initial rate limit (core): Limit=%d, Remaining=%d, Reset=%d\n", r.Resources.Core.Limit, r.Resources.Core.Remaining, r.Resources.Core.Reset)
+	fmt.Printf("Initial rate limit (graphql): Limit=%d, Remaining=%d, Reset=%d\n", r.Resources.Graphql.Limit, r.Resources.Graphql.Remaining, r.Resources.Graphql.Reset)
 
-	// Without a known secondary limit and window, we are not enforcing anything here.
-	// If a secondary limit is introduced, you would implement similar logic to isRateLimited()
-	// to filter timestamps and compare against a max points/window.
+	return nil
 }
