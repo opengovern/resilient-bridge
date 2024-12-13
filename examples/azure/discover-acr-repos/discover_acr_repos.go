@@ -1,13 +1,20 @@
+// main.go
+//
+// This example retrieves Azure Container Registry (ACR) tokens using a Service Principal (SPN)
+// and then lists repositories from that ACR using utilities from the utils package.
+
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
+	"os"
+
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"os"
-	"strings"
+
+	"github.com/opengovern/resilient-bridge/utils" // Adjust the path if needed
 )
 
 func main() {
@@ -21,25 +28,34 @@ func main() {
 		return
 	}
 
-	aadToken, err := getAADToken(tenantID, clientID, clientSecret)
+	// Create SPN config
+	spnCfg := &utils.AzureSPNConfig{
+		TenantID:     tenantID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	}
+
+	// Initialize Azure SPN object
+	spn, err := utils.NewAzureSPN(spnCfg)
 	if err != nil {
-		fmt.Printf("Error obtaining AAD token: %v\n", err)
+		fmt.Printf("Error creating AzureSPN: %v\n", err)
 		return
 	}
 
-	refreshToken, err := getACRRefreshToken(registry, aadToken)
+	ctx := context.Background()
+
+	// Create SPNToACR with "registry:catalog:*" scope to list repositories
+	spnToACR := utils.NewSPNToACR(spn, registry, "registry:catalog:*")
+
+	// Acquire ACR Docker credentials (token)
+	dockerCreds, err := spnToACR.GetACRDockerCredentials(ctx)
 	if err != nil {
-		fmt.Printf("Error obtaining ACR refresh token: %v\n", err)
+		fmt.Printf("Error getting ACR Docker credentials: %v\n", err)
 		return
 	}
 
-	acrToken, err := getACRAccessToken(registry, refreshToken, "registry:catalog:*")
-	if err != nil {
-		fmt.Printf("Error obtaining ACR access token: %v\n", err)
-		return
-	}
-
-	repos, err := listRepositories(registry, acrToken)
+	// Now list repositories using the acquired token
+	repos, err := listRepositories(registry, dockerCreds.Password) // dockerCreds.Password should be the ACR access token
 	if err != nil {
 		fmt.Printf("Error listing repositories: %v\n", err)
 		return
@@ -51,102 +67,7 @@ func main() {
 	}
 }
 
-func getAADToken(tenantID, clientID, clientSecret string) (string, error) {
-	tokenURL := "https://login.microsoftonline.com/" + tenantID + "/oauth2/v2.0/token"
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("scope", "https://management.azure.com/.default")
-
-	resp, err := http.PostForm(tokenURL, data)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get AAD token: status %d, body: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.AccessToken, nil
-}
-
-func getACRRefreshToken(registry, aadToken string) (string, error) {
-	exchangeURL := fmt.Sprintf("https://%s/oauth2/exchange", registry)
-	data := url.Values{}
-	data.Set("grant_type", "access_token")
-	data.Set("service", registry)
-	data.Set("access_token", aadToken)
-
-	req, err := http.NewRequest("POST", exchangeURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get ACR refresh token: status %d, body: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp struct {
-		RefreshToken string `json:"refresh_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.RefreshToken, nil
-}
-
-func getACRAccessToken(registry, refreshToken, scope string) (string, error) {
-	tokenURL := fmt.Sprintf("https://%s/oauth2/token", registry)
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("service", registry)
-	data.Set("scope", scope)
-	data.Set("refresh_token", refreshToken)
-
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get ACR access token: status %d, body: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.AccessToken, nil
-}
-
+// listRepositories lists repositories from ACR using the provided ACR token.
 func listRepositories(registry, acrToken string) ([]string, error) {
 	url := fmt.Sprintf("https://%s/acr/v1/_catalog", registry)
 	req, err := http.NewRequest("GET", url, nil)
