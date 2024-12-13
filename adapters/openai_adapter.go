@@ -19,17 +19,26 @@ const (
 type OpenAIAdapter struct {
 	APIKey string
 
-	mu               sync.Mutex
-	restMaxRequests  int
-	restWindowSecs   int64
-	restRequestTimes []int64
+	mu                sync.Mutex
+	requestTimestamps []int64
+
+	restMaxRequests int
+	restWindowSecs  int64
+}
+
+func NewOpenAIAdapter(apiKey string) *OpenAIAdapter {
+	return &OpenAIAdapter{
+		APIKey:          apiKey,
+		restMaxRequests: OpenAIDefaultMaxRequests,
+		restWindowSecs:  OpenAIDefaultWindowSecs,
+	}
 }
 
 func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	// Since OpenAI doesn't support GraphQL, we only implement "rest"
+	// OpenAI only has REST (no GraphQL)
 	if requestType == "rest" {
 		if maxRequests == 0 {
 			maxRequests = OpenAIDefaultMaxRequests
@@ -39,10 +48,8 @@ func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 		}
 		o.restMaxRequests = maxRequests
 		o.restWindowSecs = windowSecs
-	} else if requestType == "graphql" {
-		// OpenAI does not support GraphQL. Ignore or set same defaults without usage.
-		// We'll just silently ignore this since no GraphQL requests should be made to OpenAI.
 	}
+	// If requestType == "graphql", we do nothing, as OpenAI does not support it.
 }
 
 func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
@@ -65,7 +72,10 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	for k, v := range req.Headers {
 		httpReq.Header.Set(k, v)
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+o.APIKey)
+
+	if httpReq.Header.Get("Authorization") == "" && o.APIKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+o.APIKey)
+	}
 	if httpReq.Header.Get("Content-Type") == "" {
 		httpReq.Header.Set("Content-Type", "application/json")
 	}
@@ -100,14 +110,14 @@ func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedRespo
 	now := time.Now().Unix()
 	windowStart := now - o.restWindowSecs
 	var newTimestamps []int64
-	for _, ts := range o.restRequestTimes {
+	for _, ts := range o.requestTimestamps {
 		if ts >= windowStart {
 			newTimestamps = append(newTimestamps, ts)
 		}
 	}
-	o.restRequestTimes = newTimestamps
+	o.requestTimestamps = newTimestamps
 
-	remaining := o.restMaxRequests - len(o.restRequestTimes)
+	remaining := o.restMaxRequests - len(o.requestTimestamps)
 	var resetAt *int64
 	if remaining <= 0 {
 		resetTime := (windowStart + o.restWindowSecs) * 1000
@@ -115,8 +125,8 @@ func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedRespo
 	}
 
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       intPtr(o.restMaxRequests),
-		RemainingRequests: intPtr(remaining),
+		MaxRequests:       resilientbridge.IntPtr(o.restMaxRequests),
+		RemainingRequests: resilientbridge.IntPtr(remaining),
 		ResetRequestsAt:   resetAt,
 	}
 	return info, nil
@@ -133,18 +143,18 @@ func (o *OpenAIAdapter) isRateLimited() bool {
 	now := time.Now().Unix()
 	windowStart := now - o.restWindowSecs
 	var newTimestamps []int64
-	for _, ts := range o.restRequestTimes {
+	for _, ts := range o.requestTimestamps {
 		if ts >= windowStart {
 			newTimestamps = append(newTimestamps, ts)
 		}
 	}
-	o.restRequestTimes = newTimestamps
+	o.requestTimestamps = newTimestamps
 
-	return len(o.restRequestTimes) >= o.restMaxRequests
+	return len(o.requestTimestamps) >= o.restMaxRequests
 }
 
 func (o *OpenAIAdapter) recordRequest() {
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	o.restRequestTimes = append(o.restRequestTimes, time.Now().Unix())
+	o.requestTimestamps = append(o.requestTimestamps, time.Now().Unix())
 }
