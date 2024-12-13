@@ -43,19 +43,25 @@ Each provider must implement the `ProviderAdapter` interface. For example, to re
 
 ```go
 import (
+    "log"
     "time"
+
     "github.com/opengovern/resilient-bridge"
     "github.com/opengovern/resilient-bridge/adapters"
 )
 
 func intPtr(i int) *int { return &i }
 
-sdk.RegisterProvider("doppler", adapters.NewDopplerAdapter("YOUR_DOPPLER_API_TOKEN"), &resilientbridge.ProviderConfig{
-    UseProviderLimits:    true,
-    MaxRetries:           3,
-    BaseBackoff:          time.Second,
-    MaxRequestsOverride:  intPtr(50), // Optional: Override default limits
-})
+func main() {
+    sdk := resilientbridge.NewResilientBridge()
+    sdk.RegisterProvider("doppler", adapters.NewDopplerAdapter("YOUR_DOPPLER_API_TOKEN"), &resilientbridge.ProviderConfig{
+        UseProviderLimits:   true,
+        MaxRetries:          3,
+        BaseBackoff:         time.Second,
+        MaxRequestsOverride: intPtr(50), // Optional: Override default limits
+    })
+    // ...
+}
 ```
 
 ### 4. Make Requests
@@ -64,19 +70,22 @@ Construct a `NormalizedRequest` and call `sdk.Request`:
 
 ```go
 req := &resilientbridge.NormalizedRequest{
-    Method:  "GET",
+    Method:   "GET",
     Endpoint: "/v3/workplace/users",
     Headers: map[string]string{
         "accept": "application/json",
     },
 }
+
 resp, err := sdk.Request("doppler", req)
 if err != nil {
     log.Fatalf("Error: %v", err)
 }
+
 if resp.StatusCode >= 400 {
     log.Fatalf("HTTP Error %d: %s", resp.StatusCode, string(resp.Data))
 }
+
 fmt.Println("Data:", string(resp.Data))
 ```
 
@@ -90,10 +99,11 @@ sdk.SetDebug(true)
 
 ### 6. Concurrent Requests and Limits
 
-When making concurrent requests (e.g., using goroutines), Resilient-Bridge ensures that hitting provider rate limits is minimized. Each request checks the rate limiter first; if the SDK detects that you’re close to a limit, it backs off before sending requests, reducing the chance of `429` responses.
+When making concurrent requests (e.g., using goroutines), Resilient-Bridge ensures that hitting provider rate limits is minimized. Each request checks the rate limiter first; if the SDK detects that you’re close to a limit, it backs off before sending requests, reducing the chance of 429 responses.
 
 ```go
 var wg sync.WaitGroup
+
 endpoints := []string{"/endpoint1", "/endpoint2", "/endpoint3"} // Example endpoints
 
 for _, endpoint := range endpoints {
@@ -101,7 +111,7 @@ for _, endpoint := range endpoints {
     go func(ep string) {
         defer wg.Done()
         req := &resilientbridge.NormalizedRequest{
-            Method:  "GET",
+            Method:   "GET",
             Endpoint: ep,
             Headers: map[string]string{
                 "accept": "application/json",
@@ -133,8 +143,7 @@ For example, to integrate "SuperAPI," create `superapi_adapter.go` in the `/adap
 
 ```go
 type SuperAPIAdapter struct {
-    APIToken string
-    // internal fields, like timestamps or limits
+    APIToken string // internal fields
 }
 
 func NewSuperAPIAdapter(apiToken string) *SuperAPIAdapter {
@@ -145,14 +154,11 @@ func NewSuperAPIAdapter(apiToken string) *SuperAPIAdapter {
 #### 3. Implement `ProviderAdapter` Interface
 
 ```go
-// SetRateLimitDefaultsForType sets default rate limits for different request types
 func (s *SuperAPIAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
-    // Initialize your adapter’s internal counters and defaults.
+    // Setup defaults per request type
 }
 
-// IdentifyRequestType categorizes the request type
 func (s *SuperAPIAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
-    // Example logic to categorize request types
     if req.Endpoint == "/graphql" {
         return "graphql"
     }
@@ -162,19 +168,14 @@ func (s *SuperAPIAdapter) IdentifyRequestType(req *resilientbridge.NormalizedReq
     return "write"
 }
 
-// ExecuteRequest performs the actual HTTP call to the provider
 func (s *SuperAPIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-    // Construct and send the HTTP request, apply headers, etc.
-    // Return NormalizedResponse and error.
+    // Construct and send the HTTP request.
 }
 
-// ParseRateLimitInfo extracts rate limit information from the response
 func (s *SuperAPIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-    // Parse provider rate limit headers if available
     return nil, nil
 }
 
-// IsRateLimitError checks if the response indicates a rate limit error
 func (s *SuperAPIAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
     return resp.StatusCode == 429
 }
@@ -184,10 +185,10 @@ func (s *SuperAPIAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespo
 
 ```go
 sdk.RegisterProvider("superapi", adapters.NewSuperAPIAdapter("YOUR_SUPERAPI_TOKEN"), &resilientbridge.ProviderConfig{
-    UseProviderLimits:    true,
-    MaxRetries:           3,
-    BaseBackoff:          0,
-    MaxRequestsOverride:  intPtr(100), // Optional
+    UseProviderLimits:   true,
+    MaxRetries:          3,
+    BaseBackoff:         0,
+    MaxRequestsOverride: intPtr(100),
 })
 ```
 
@@ -195,142 +196,78 @@ sdk.RegisterProvider("superapi", adapters.NewSuperAPIAdapter("YOUR_SUPERAPI_TOKE
 
 ```go
 req := &resilientbridge.NormalizedRequest{
-    Method:  "GET",
+    Method:   "GET",
     Endpoint: "/v1/superapi/data",
     Headers: map[string]string{
         "accept": "application/json",
     },
 }
+
 resp, err := sdk.Request("superapi", req)
 if err != nil {
     log.Fatal(err)
 }
+
 fmt.Println("SuperAPI Response:", string(resp.Data))
 ```
 
 ### Grouping Requests by Type
 
-Developers can categorize or "group" requests into different types (e.g., "rest", "graphql", "read", "write") to apply distinct rate limits and retry behavior for each group.
+Developers can categorize or "group" requests into different types to apply distinct rate limits and retry behavior.
 
-#### How to Group and Apply Custom Limits by Type
-
-1. **Identify Different Request Types**: Decide your categorization logic (e.g., "rest", "graphql", "read", "write").
-
-2. **Implement `IdentifyRequestType` in the Adapter**:
-
-    ```go
-    func (a *MyProviderAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
-        if req.Endpoint == "/graphql" {
-            return "graphql"
-        }
-        if strings.ToUpper(req.Method) == "GET" {
-            return "read"
-        }
-        return "write"
+```go
+func (a *MyProviderAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+    if req.Endpoint == "/graphql" {
+        return "graphql"
     }
-    ```
+    if strings.ToUpper(req.Method) == "GET" {
+        return "read"
+    }
+    return "write"
+}
+```
 
-3. **Set Rate Limit Defaults for Each Type**:
+Set rate limits per type:
 
-    ```go
-    sdk := resilientbridge.NewResilientBridge()
-    adapter := adapters.NewMyProviderAdapter("API_TOKEN")
-    
-    // Register the provider
-    sdk.RegisterProvider("myprovider", adapter, &resilientbridge.ProviderConfig{
-        UseProviderLimits:    true,
-        MaxRetries:           3,
-        BaseBackoff:          0,
-    })
-    
-    // Set custom limits
-    adapter.SetRateLimitDefaultsForType("read", 1000, 60)      // 1000 requests/min for read
-    adapter.SetRateLimitDefaultsForType("write", 200, 60)      // 200 requests/min for write
-    adapter.SetRateLimitDefaultsForType("graphql", 300, 300)  // 300 queries/5 min
-    ```
-
-4. **Enforcement in `ExecuteRequest`**:  
-   The SDK's `RateLimiter` checks the appropriate rate limits based on the request type before proceeding.
-
-#### Benefits of Grouping by Type
-
-- **Granular Control**: Adjust limits for different API endpoints or request patterns.
-- **Flexible Scaling**: Handle different rate limit policies for various use-cases.
-- **Maintainability**: Update logic easily without changing core SDK code.
+```go
+adapter.SetRateLimitDefaultsForType("read", 1000, 60)      // 1000 requests/min for read
+adapter.SetRateLimitDefaultsForType("write", 200, 60)      // 200 requests/min for write
+adapter.SetRateLimitDefaultsForType("graphql", 300, 300)  // 300 queries/5 min
+```
 
 ## Configuration Options
 
-`ProviderConfig` allows you to customize the behavior of each provider:
+`ProviderConfig` can be customized for each provider:
 
-- `UseProviderLimits`: Use the provider’s reported limits or override them.
-- `MaxRequestsOverride` / `MaxTokensOverride`: Set custom limits.
-- `MaxRetries`: Number of retry attempts on errors.
-- `BaseBackoff`: Initial backoff time for exponential retries.
-- `WindowSecsOverride`: Change the window size if desired.
+- **UseProviderLimits**: Use the provider’s reported rate limits.
+- **MaxRequestsOverride**: Override default max requests.
+- **MaxRetries**: Set how many times to retry after errors.
+- **BaseBackoff**: Initial wait time for exponential backoff.
+- **WindowSecsOverride**: Override the default rate limit window.
 
 ### Example
 
 ```go
 sdk.RegisterProvider("doppler", adapters.NewDopplerAdapter("API_TOKEN"), &resilientbridge.ProviderConfig{
-    UseProviderLimits:    true,
-    MaxRetries:           5,
-    BaseBackoff:          2 * time.Second,
-    MaxRequestsOverride:  intPtr(100),
+    UseProviderLimits:   true,
+    MaxRetries:          5,
+    BaseBackoff:         2 * time.Second,
+    MaxRequestsOverride: intPtr(100),
 })
-```
-
-## Concurrent Requests and Limits
-
-When making concurrent requests (e.g., with goroutines), Resilient-Bridge ensures that hitting provider rate limits is minimized. Each request checks the rate limiter first; if the SDK detects that you’re close to a limit, it backs off before sending requests, reducing the chance of `429` responses.
-
-### Example
-
-```go
-var wg sync.WaitGroup
-endpoints := []string{"/endpoint1", "/endpoint2", "/endpoint3"} // Example endpoints
-
-for _, endpoint := range endpoints {
-    wg.Add(1)
-    go func(ep string) {
-        defer wg.Done()
-        req := &resilientbridge.NormalizedRequest{
-            Method:  "GET",
-            Endpoint: ep,
-            Headers: map[string]string{
-                "accept": "application/json",
-            },
-        }
-        resp, err := sdk.Request("doppler", req)
-        if err != nil {
-            log.Println("Error:", err)
-            return
-        }
-        fmt.Printf("Fetched data from %s: %s\n", ep, string(resp.Data))
-    }(endpoint)
-}
-
-wg.Wait()
 ```
 
 ## Examples
 
-Check the `examples` directory for sample code demonstrating how to use Resilient-Bridge with different providers:
+Check the `examples` directory for sample code:
 
 - **Doppler**:
-  - `examples/doppler/list_users.go`: Lists all Doppler users.
-  - `examples/doppler/get_user.go`: Retrieves a Doppler user by email.
-
+  - `examples/doppler/list_users.go`: Lists Doppler users.
 - **OpenAI**:
   - `examples/openai/list_assistants.go`: Lists OpenAI assistants.
-
 - **Semgrep**:
-  - `examples/semgrep/list_deployments.go`: Lists Semgrep deployments.
-  - `examples/semgrep/list_projects.go`: Lists Semgrep projects.
-  - `examples/semgrep/get_project.go`: Retrieves a Semgrep project by ID.
+  - `examples/semgrep/list_deployments_and_projects.go`: Lists deployments and projects in Semgrep.
 
-### Running an Example
-
-To run a Doppler example:
+### Run a Doppler Example
 
 ```bash
 go run ./examples/doppler/list_users.go
@@ -338,10 +275,14 @@ go run ./examples/doppler/list_users.go
 
 ## Contributing & Customization
 
-- **Time Parsing & Other Helpers**: Extend `internal/time_parser.go` or add new helpers as needed.
-- **Testing**: Add tests for new adapters, rate limiting, and retry logic.
-- **Logging & Telemetry**: Integrate logging or monitoring solutions as needed.
+- Extend `internal/time_parser.go` or create new helpers as needed.
+- Add tests for adapters, rate limiting, and retry logic.
+- Integrate logging or monitoring as needed.
 
 ## License
 
 Elastic License V2
+
+---
+
+With Resilient-Bridge, integrate once and confidently handle API limits, retries, and scaling across multiple providers.
