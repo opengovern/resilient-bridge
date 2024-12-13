@@ -29,7 +29,12 @@ func NewGitGuardianAdapter(apiToken string, apiKeyType string, isPaidPlan bool) 
 }
 
 func (g *GitGuardianAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
-	// GitGuardian has fixed global limits per key type and plan, ignoring overrides.
+	// GitGuardian has fixed global limits, ignoring overrides.
+}
+
+// IdentifyRequestType: GitGuardian API does not mention GraphQL, assume all are REST.
+func (g *GitGuardianAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	return "rest"
 }
 
 func (g *GitGuardianAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
@@ -67,7 +72,6 @@ func (g *GitGuardianAdapter) ExecuteRequest(req *resilientbridge.NormalizedReque
 	}
 	defer resp.Body.Close()
 
-	// Record the request after it's done
 	g.recordRequest()
 
 	data, _ := io.ReadAll(resp.Body)
@@ -86,8 +90,7 @@ func (g *GitGuardianAdapter) ExecuteRequest(req *resilientbridge.NormalizedReque
 }
 
 func (g *GitGuardianAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// GitGuardian docs don't mention rate limit headers besides error code 429.
-	// If they exist, parse them here. For now, return nil.
+	// No documented rate limit headers to parse.
 	return nil, nil
 }
 
@@ -95,28 +98,23 @@ func (g *GitGuardianAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRe
 	return resp.StatusCode == 429
 }
 
-// Determine the rate limit based on API key type and plan
 func (g *GitGuardianAdapter) getRateLimit() int {
-	// If self-hosted or no limit applies, return 0 or implement a toggle
-	// For now, we assume SaaS as per instructions
 	if g.APIKeyType == "service" {
 		// Service account key
 		if !g.IsPaidPlan {
-			// Service accounts are not available under Free plan
-			// If somehow used, fallback or just assume paid plan
+			// Not available under free plan, assume no limit or handle error differently
 			return 0
 		}
-		return 1000 // requests/min
+		return 1000 // requests/min for service account on paid plan
 	} else {
 		// Personal access token
 		if g.IsPaidPlan {
-			return 200
+			return 200 // paid plan PAT
 		}
-		return 50
+		return 50 // free plan PAT
 	}
 }
 
-// Checks if the next request would exceed the rate limit within the given window
 func (g *GitGuardianAdapter) isRateLimited(limit int, windowSecs int64) bool {
 	if limit <= 0 {
 		return false
@@ -134,13 +132,10 @@ func (g *GitGuardianAdapter) isRateLimited(limit int, windowSecs int64) bool {
 			newTimestamps = append(newTimestamps, ts)
 		}
 	}
-	// At this point, newTimestamps are the requests in the last window
 	if len(newTimestamps) >= limit {
-		// Already at the limit
 		return true
 	}
 
-	// Otherwise not rate-limited
 	g.requestHistory = newTimestamps
 	return false
 }

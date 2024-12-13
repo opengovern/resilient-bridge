@@ -38,7 +38,6 @@ func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	// OpenAI only has REST (no GraphQL)
 	if requestType == "rest" {
 		if maxRequests == 0 {
 			maxRequests = OpenAIDefaultMaxRequests
@@ -49,7 +48,12 @@ func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 		o.restMaxRequests = maxRequests
 		o.restWindowSecs = windowSecs
 	}
-	// If requestType == "graphql", we do nothing, as OpenAI does not support it.
+	// If "graphql", ignore since OpenAI doesn't support it.
+}
+
+// IdentifyRequestType: OpenAI = rest only
+func (o *OpenAIAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	return "rest"
 }
 
 func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
