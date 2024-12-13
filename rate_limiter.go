@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// RateLimiter stores and updates rate limit info per provider.
 type RateLimiter struct {
 	mu             sync.Mutex
 	providerLimits map[string]*NormalizedRateLimitInfo
@@ -20,9 +19,6 @@ func NewRateLimiter() *RateLimiter {
 func (r *RateLimiter) UpdateRateLimits(provider string, info *NormalizedRateLimitInfo, config *ProviderConfig) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
-	// If we have overrides, apply them here if desired.
-	// Already handled by adapter logic, so we can just store info.
 	r.providerLimits[provider] = info
 }
 
@@ -33,7 +29,6 @@ func (r *RateLimiter) canProceed(provider string) bool {
 	if !ok || info == nil {
 		return true
 	}
-
 	if info.RemainingRequests != nil && *info.RemainingRequests <= 0 {
 		if info.ResetRequestsAt != nil && time.Now().UnixMilli() < *info.ResetRequestsAt {
 			return false
@@ -50,11 +45,9 @@ func (r *RateLimiter) delayBeforeNextRequest(provider string) time.Duration {
 	if !ok || info == nil {
 		return 0
 	}
-
 	if info.ResetRequestsAt != nil && time.Now().UnixMilli() < *info.ResetRequestsAt {
 		return time.Duration(*info.ResetRequestsAt-time.Now().UnixMilli()) * time.Millisecond
 	}
-
 	return 0
 }
 

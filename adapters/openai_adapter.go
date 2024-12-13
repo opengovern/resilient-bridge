@@ -2,44 +2,65 @@ package adapters
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge"
 )
 
 const (
 	OpenAIDefaultMaxRequests = 60
-	OpenAIDefaultWindowSecs  = 60 // 60 requests per 60 seconds
+	OpenAIDefaultWindowSecs  = 60
 )
 
 type OpenAIAdapter struct {
 	APIKey string
 
 	mu                sync.Mutex
-	requestTimestamps []int64
-	MaxRequests       int
-	WindowSecs        int64
+	restMaxRequests   int
+	restWindowSecs    int64
+	restRequestTimes  []int64
+
+	graphqlMaxRequests int
+	graphqlWindowSecs  int64
+	graphqlRequestTimes []int64
 }
 
-func (o *OpenAIAdapter) SetRateLimitDefaults(maxRequests int, windowSecs int64) {
-	if maxRequests == 0 {
-		maxRequests = OpenAIDefaultMaxRequests
-	}
-	if windowSecs == 0 {
-		windowSecs = OpenAIDefaultWindowSecs
-	}
+func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	o.mu.Lock()
-	o.MaxRequests = maxRequests
-	o.WindowSecs = windowSecs
-	o.mu.Unlock()
+	defer o.mu.Unlock()
+
+	if requestType == "rest" {
+		if maxRequests == 0 {
+			maxRequests = OpenAIDefaultMaxRequests
+		}
+		if windowSecs == 0 {
+			windowSecs = OpenAIDefaultWindowSecs
+		}
+		o.restMaxRequests = maxRequests
+		o.restWindowSecs = windowSecs
+	} else if requestType == "graphql" {
+		// If OpenAI had GraphQL endpoint, handle similarly.
+		// For now, assume no GraphQL, just set same defaults or ignore.
+		if maxRequests == 0 {
+			maxRequests = OpenAIDefaultMaxRequests
+		}
+		if windowSecs == 0 {
+			windowSecs = OpenAIDefaultWindowSecs
+		}
+		o.graphqlMaxRequests = maxRequests
+		o.graphqlWindowSecs = windowSecs
+	}
 }
 
 func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	if o.isRateLimited() {
+	isGraphQL := false // Assume no GraphQL endpoint for OpenAI here
+	if o.isRateLimited(isGraphQL) {
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Data:       []byte(`{"error":"OpenAI rate limit reached"}`),
@@ -68,7 +89,7 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	}
 	defer resp.Body.Close()
 
-	o.recordRequest()
+	o.recordRequest(isGraphQL)
 
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
@@ -86,29 +107,29 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 }
 
 func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
+	// For simplicity, similar logic to Doppler
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
 	now := time.Now().Unix()
-	windowStart := now - o.WindowSecs
-
+	windowStart := now - o.restWindowSecs
 	var newTimestamps []int64
-	for _, ts := range o.requestTimestamps {
+	for _, ts := range o.restRequestTimes {
 		if ts >= windowStart {
 			newTimestamps = append(newTimestamps, ts)
 		}
 	}
-	o.requestTimestamps = newTimestamps
+	o.restRequestTimes = newTimestamps
 
-	remaining := o.MaxRequests - len(o.requestTimestamps)
+	remaining := o.restMaxRequests - len(o.restRequestTimes)
 	var resetAt *int64
 	if remaining <= 0 {
-		resetTime := (windowStart + o.WindowSecs) * 1000
+		resetTime := (windowStart + o.restWindowSecs) * 1000
 		resetAt = &resetTime
 	}
 
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       intPtr(o.MaxRequests),
+		MaxRequests:       intPtr(o.restMaxRequests),
 		RemainingRequests: intPtr(remaining),
 		ResetRequestsAt:   resetAt,
 	}
@@ -119,29 +140,15 @@ func (o *OpenAIAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespons
 	return resp.StatusCode == 429
 }
 
-func (o *OpenAIAdapter) isRateLimited() bool {
+func (o *OpenAIAdapter) isRateLimited(isGraphQL bool) bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()
+
+	maxReq := o.restMaxRequests
+	windowSecs := o.restWindowSecs
+	timestamps := o.restRequestTimes
 
 	now := time.Now().Unix()
-	windowStart := now - o.WindowSecs
+	windowStart := now - windowSecs
 	var newTimestamps []int64
-	for _, ts := range o.requestTimestamps {
-		if ts >= windowStart {
-			newTimestamps = append(newTimestamps, ts)
-		}
-	}
-	o.requestTimestamps = newTimestamps
-
-	return len(o.requestTimestamps) >= o.MaxRequests
-}
-
-func (o *OpenAIAdapter) recordRequest() {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	o.requestTimestamps = append(o.requestTimestamps, time.Now().Unix())
-}
-
-func intPtr(i int) *int {
-	return &i
-}
+	for _, ts :

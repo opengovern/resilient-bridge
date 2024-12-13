@@ -7,15 +7,13 @@ import (
 	"time"
 )
 
-// ParseTimeStr converts strings like "1s", "6m0s" into milliseconds.
-// Returns 0 if parsing fails or the format is unsupported.
+// ParseTimeStr converts strings like "1s", "6m0s" into ms.
 func ParseTimeStr(s string) int64 {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return 0
 	}
 
-	// Simple just-seconds format like "10s"
 	if strings.HasSuffix(s, "s") && !strings.Contains(s, "m") {
 		val := strings.TrimSuffix(s, "s")
 		sec, err := strconv.Atoi(val)
@@ -24,7 +22,6 @@ func ParseTimeStr(s string) int64 {
 		}
 	}
 
-	// "XmYs" format
 	var minutes, seconds int
 	n, err := fmt.Sscanf(s, "%dm%ds", &minutes, &seconds)
 	if n == 2 && err == nil {
@@ -35,12 +32,12 @@ func ParseTimeStr(s string) int64 {
 	return 0
 }
 
-// UnixToMs converts a UNIX timestamp (seconds) to ms.
+// Convert UNIX timestamp (seconds) to ms
 func UnixToMs(timestamp int64) int64 {
 	return timestamp * 1000
 }
 
-// IsInFuture checks if ms timestamp is in the future.
+// Check if a timestamp (ms) is in the future
 func IsInFuture(ms int64) bool {
 	return ms > time.Now().UnixMilli()
 }

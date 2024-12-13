@@ -46,13 +46,11 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 			return nil, err
 		}
 
-		// Update rate limits if info available
 		if rateInfo, parseErr := adapter.ParseRateLimitInfo(resp); parseErr == nil && rateInfo != nil {
 			re.sdk.rateLimiter.UpdateRateLimits(providerName, rateInfo, config)
 		}
 
 		if adapter.IsRateLimitError(resp) {
-			// 429 encountered
 			if attempts < maxRetries {
 				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				fmt.Printf("[DEBUG] Provider %s: 429 rate limit error. Backing off for %v before retry...\n", providerName, wait)
@@ -85,11 +83,10 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, operation func(
 }
 
 func (re *RequestExecutor) calculateBackoffWithJitter(base time.Duration, attempt int) time.Duration {
-	backoff := base * (1 << attempt) // base * 2^attempt
+	backoff := base * (1 << attempt)
 	if backoff > 30*time.Second {
 		backoff = 30 * time.Second
 	}
-	// Add random jitter: up to 50% of backoff
 	jitterFactor := 0.5
 	jitter := time.Duration(rand.Float64() * float64(backoff) * jitterFactor)
 	return backoff + jitter

@@ -15,32 +15,47 @@ type MockAdapter struct {
 	RequestsUntilRateLimit int  // How many requests until we hit a limit
 	ShouldReturn429Always  bool // If true, always return 429
 
-	MaxRequests         int
-	WindowSecs          int64
-	currentRequestCount int
+	MaxRequestsRest         int
+	WindowSecsRest          int64
+	currentRequestCountRest int
+
+	MaxRequestsGraphQL         int
+	WindowSecsGraphQL          int64
+	currentRequestCountGraphQL int
 }
 
-func (m *MockAdapter) SetRateLimitDefaults(maxRequests int, windowSecs int64) {
+func (m *MockAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	if maxRequests == 0 {
 		maxRequests = MockDefaultMaxRequests
 	}
 	if windowSecs == 0 {
 		windowSecs = MockDefaultWindowSecs
 	}
-	m.MaxRequests = maxRequests
-	m.WindowSecs = windowSecs
+
+	if requestType == "rest" {
+		m.MaxRequestsRest = maxRequests
+		m.WindowSecsRest = windowSecs
+	} else if requestType == "graphql" {
+		m.MaxRequestsGraphQL = maxRequests
+		m.WindowSecsGraphQL = windowSecs
+	}
 }
 
 func (m *MockAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	// If always returning 429, or if request count exceeds a certain threshold:
-	m.currentRequestCount++
-
-	if m.ShouldReturn429Always || (m.RequestsUntilRateLimit > 0 && m.currentRequestCount > m.RequestsUntilRateLimit) {
+	isGraphQL := req.Endpoint == "/graphql"
+	if m.ShouldReturn429Always || (m.RequestsUntilRateLimit > 0 && ((isGraphQL && m.currentRequestCountGraphQL > m.RequestsUntilRateLimit) || (!isGraphQL && m.currentRequestCountRest > m.RequestsUntilRateLimit))) {
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Headers:    map[string]string{},
 			Data:       []byte(`{"error":"Rate limited"}`),
 		}, nil
+	}
+
+	// Simulate a success response
+	if isGraphQL {
+		m.currentRequestCountGraphQL++
+	} else {
+		m.currentRequestCountRest++
 	}
 
 	return &resilientbridge.NormalizedResponse{
@@ -51,18 +66,19 @@ func (m *MockAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*r
 }
 
 func (m *MockAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// For the mock, just return a static info or something simple
-	remaining := m.MaxRequests - m.currentRequestCount
+	// Just return some info based on currentRequestCountRest as if it's REST calls
+	// This mock is simplistic.
+	remaining := m.MaxRequestsRest - m.currentRequestCountRest
 	if remaining < 0 {
 		remaining = 0
 	}
 	var resetAt *int64
 	if remaining == 0 {
-		future := (time.Now().Unix() + m.WindowSecs) * 1000
+		future := (time.Now().Unix() + m.WindowSecsRest) * 1000
 		resetAt = &future
 	}
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       intPtr(m.MaxRequests),
+		MaxRequests:       intPtr(m.MaxRequestsRest),
 		RemainingRequests: intPtr(remaining),
 		ResetRequestsAt:   resetAt,
 	}
