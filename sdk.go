@@ -1,3 +1,4 @@
+// sdk.go
 package resilientbridge
 
 import (
@@ -24,6 +25,13 @@ func NewResilientBridge() *ResilientBridge {
 	}
 	sdk.executor = NewRequestExecutor(sdk)
 	return sdk
+}
+
+// SetDebug allows the caller to enable or disable debug logging.
+func (sdk *ResilientBridge) SetDebug(enabled bool) {
+	sdk.mu.Lock()
+	defer sdk.mu.Unlock()
+	sdk.Debug = enabled
 }
 
 func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapter, config *ProviderConfig) {
