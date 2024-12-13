@@ -123,11 +123,74 @@ func (l *LinodeAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) 
 	method := strings.ToUpper(req.Method)
 	path := req.Endpoint
 
-	// The logic from original code retained:
-	// ... same classify logic ...
-	// unchanged from what was given, assuming it's correct.
+	// Special actions:
+	// Create Linode: POST /linode/instances
+	if method == "POST" && strings.HasPrefix(path, "/linode/instances") && !strings.Contains(path, "/") {
+		// Actually, /linode/instances might also be followed by ID. If no ID, it's create.
+		// Check if path exactly "/linode/instances" or "/linode/instances?"
+		parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+		if len(parts) == 2 && parts[0] == "linode" && parts[1] == "instances" {
+			return "create_linode", 5, 15 // 5 req/15s
+		}
+	}
 
-	// If no condition matched at the end:
+	// Create volume: POST /volumes
+	if method == "POST" && strings.HasPrefix(path, "/volumes") && (path == "/volumes" || path == "/volumes?") {
+		return "create_volume", 25, 60 // 25/min
+	}
+
+	// List images: GET /images
+	if method == "GET" && strings.HasPrefix(path, "/images") && (path == "/images" || strings.Contains(path, "/images?")) {
+		return "list_images", 20, 60 // 20/min
+	}
+
+	// Stats endpoints contain /stats:
+	// For example: GET /linode/instances/{id}/stats
+	// We'll just check if '/stats' appears:
+	if method == "GET" && strings.Contains(path, "/stats") {
+		return "stats_operation", 50, 60 // 50/min
+	}
+
+	// Object Storage operations:
+	// Any endpoint containing /object-storage:
+	if strings.Contains(path, "/object-storage") {
+		return "object_storage", 750, 1 // 750/s
+	}
+
+	// Open support ticket: POST /support/tickets
+	if method == "POST" && strings.HasPrefix(path, "/support/tickets") {
+		return "open_ticket", 2, 60 // 2/min
+	}
+
+	// Accept a service transfer:
+	// POST /account/service-transfers/{transferId}/accept
+	if method == "POST" && strings.Contains(path, "/account/service-transfers/") && strings.HasSuffix(path, "/accept") {
+		return "accept_service_transfer", 2, 60 // 2/min
+	}
+
+	// Now fallback:
+	// If GET and likely returns a collection (paginated):
+	// We guess if the endpoint is plural and no id at the end, treat as get_paginated
+	// A simplistic approach: If method=GET and does not contain a numeric ID or additional segment after resource name:
+	if method == "GET" {
+		// Check if path likely ends at a collection endpoint:
+		// We'll assume if the path ends right after a resource name or has query params but no trailing id
+		// If there's a numeric ID at the end or a known pattern (like "/linode/instances/123"), skip.
+		// For simplicity: If no second level ID segment at the end:
+		parts := strings.Split(path, "/")
+		if len(parts) > 2 {
+			// Check last part if numeric
+			last := parts[len(parts)-1]
+			if isNumeric(last) {
+				// probably a single resource GET => default to 800/min
+				return "get_single_resource", 800, 60
+			}
+		}
+		// assume paginated collection
+		return "get_paginated", 200, 60
+	}
+
+	// Default (non-GET operations): 800 req/min
 	return "default_action", 800, 60
 }
 

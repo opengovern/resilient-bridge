@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
@@ -35,23 +36,32 @@ func main() {
 		log.Fatal("LINODE_API_TOKEN environment variable not set")
 	}
 
-	// Set up the SDK and register Linode provider with LinodeAdapter
+	// Check if debug mode is enabled
+	debugMode := false
+	if val := os.Getenv("DEBUG"); val == "true" {
+		debugMode = true
+	}
+
+	// Set up the SDK and register Linode provider
 	sdk := resilientbridge.NewResilientBridge()
+	sdk.SetDebug(debugMode) // Assume we have a SetDebug method to control debug output
+
 	sdk.RegisterProvider("linode", adapters.NewLinodeAdapter(apiToken), &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
 		MaxRetries:        3,
 		BaseBackoff:       0,
 	})
 
+	// Pagination parameters
 	page := 1
-	pageSize := 100 // You can adjust this between 25 and 500
+	pageSize := 100 // adjust between 25 and 500 if needed
 
 	var allLinodes []Linode
 
 	for {
 		q := url.Values{}
-		q.Set("page", fmt.Sprintf("%d", page))
-		q.Set("page_size", fmt.Sprintf("%d", pageSize))
+		q.Set("page", strconv.Itoa(page))
+		q.Set("page_size", strconv.Itoa(pageSize))
 
 		req := &resilientbridge.NormalizedRequest{
 			Method:   "GET",
