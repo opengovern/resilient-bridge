@@ -45,7 +45,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	numWorkers := 10
+	numWorkers := 20
 	var wg sync.WaitGroup
 	wg.Add(numWorkers)
 
