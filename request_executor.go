@@ -23,7 +23,6 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 	}
 
 	attempts := 0
-	saw429 := false // track if we ever saw a real 429 response
 	for {
 		if !re.sdk.rateLimiter.canProceed(providerName, callType) {
 			delay := re.sdk.rateLimiter.delayBeforeNextRequest(providerName, callType)
@@ -36,7 +35,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		re.sdk.debugf("Provider %s (callType=%s): Sending request (attempt %d)...\n", providerName, callType, attempts+1)
 		resp, err := operation()
 		if err != nil {
-			// Non-HTTP error (network error, etc.)
+			// Non-HTTP error (network, DNS, etc.)
 			if attempts < maxRetries {
 				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				re.sdk.debugf("Provider %s (callType=%s): Operation error: %v. Retrying in %v (attempt %d/%d)...\n", providerName, callType, err, wait, attempts+1, maxRetries)
@@ -45,7 +44,6 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 				continue
 			}
 			re.sdk.debugf("Provider %s (callType=%s): Max retries reached after error: %v\n", providerName, callType, err)
-			// No actual 429 seen, so this is just a generic failure
 			return nil, fmt.Errorf("after retries, request failed: %w", err)
 		}
 
@@ -55,7 +53,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		}
 
 		if adapter.IsRateLimitError(resp) {
-			saw429 = true
+			// Actual 429 from the provider
 			if attempts < maxRetries {
 				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				re.sdk.debugf("Provider %s (callType=%s): 429 rate limit error. Backing off for %v before retry...\n", providerName, callType, wait)
@@ -68,18 +66,19 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		}
 
 		if resp.StatusCode >= 500 && attempts < maxRetries {
-			// Server error, retry
+			// 5xx server error, retry
 			wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 			re.sdk.debugf("Provider %s (callType=%s): Server error %d. Retrying in %v (attempt %d/%d)...\n", providerName, callType, resp.StatusCode, wait, attempts+1, maxRetries)
 			time.Sleep(wait)
 			attempts++
 			continue
 		} else if resp.StatusCode >= 400 {
-			// Client error, no retry
+			// 4xx client error, no retry
 			re.sdk.debugf("Provider %s (callType=%s): Client error %d encountered. Not retrying.\n", providerName, callType, resp.StatusCode)
 			return resp, fmt.Errorf("client error: %d", resp.StatusCode)
 		}
 
+		// Success
 		if attempts > 0 && re.sdk.Debug {
 			fmt.Printf("[DEBUG] Provider %s (callType=%s): Request succeeded after %d attempts.\n", providerName, callType, attempts+1)
 		} else if re.sdk.Debug {
