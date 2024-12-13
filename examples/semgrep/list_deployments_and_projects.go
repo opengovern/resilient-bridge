@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"sync"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
@@ -64,99 +65,164 @@ func main() {
 		BaseBackoff:       0,
 	})
 
-	// 1. Get Deployments
-	depReq := &resilientbridge.NormalizedRequest{
+	// 1. List Deployments
+	deployment, err := listDeployments(sdk)
+	if err != nil {
+		log.Fatalf("Error listing deployments: %v", err)
+	}
+	fmt.Printf("Accessing deployment: Slug=%s, Name=%s, ID=%d\n", deployment.Slug, deployment.Name, deployment.ID)
+
+	// 2. List Projects in this deployment
+	projects, err := listProjects(sdk, deployment.Slug, 0, 100)
+	if err != nil {
+		log.Fatalf("Error listing projects: %v", err)
+	}
+	if len(projects) == 0 {
+		log.Println("No projects found in this deployment.")
+		return
+	}
+	fmt.Printf("Found %d projects in deployment %s.\n", len(projects), deployment.Slug)
+
+	// 3. Concurrently get project details
+	// We will limit concurrency to, say, 5 workers.
+	details := getProjectDetailsConcurrently(sdk, deployment.Slug, projects, 5)
+
+	fmt.Println("Project details retrieved:")
+	for _, d := range details {
+		fmt.Printf("Name: %s, URL: %s, CreatedAt: %s, LatestScanAt: %s\n",
+			d.Name, d.URL, d.CreatedAt, d.LatestScanAt)
+	}
+}
+
+// listDeployments requests the Semgrep deployments your token can access and returns the first one.
+func listDeployments(sdk *resilientbridge.ResilientBridge) (*Deployment, error) {
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/deployments",
 		Headers:  map[string]string{"Accept": "application/json"},
 	}
 
-	depResp, err := sdk.Request("semgrep", depReq)
+	resp, err := sdk.Request("semgrep", req)
 	if err != nil {
-		log.Fatalf("Error requesting deployments: %v", err)
+		return nil, err
 	}
-
-	if depResp.StatusCode >= 400 {
-		log.Fatalf("Error %d: %s", depResp.StatusCode, string(depResp.Data))
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
 	var depResult DeploymentsResponse
-	if err := json.Unmarshal(depResp.Data, &depResult); err != nil {
-		log.Fatalf("Error parsing deployments response: %v", err)
+	if err := json.Unmarshal(resp.Data, &depResult); err != nil {
+		return nil, fmt.Errorf("error parsing deployments response: %v", err)
 	}
 
 	if len(depResult.Deployments) == 0 {
-		log.Println("No deployments accessible.")
-		return
+		return nil, fmt.Errorf("no deployments accessible")
 	}
 
-	deployment := depResult.Deployments[0]
-	fmt.Printf("Accessing deployment: Slug=%s, Name=%s, ID=%d\n", deployment.Slug, deployment.Name, deployment.ID)
+	return &depResult.Deployments[0], nil
+}
 
-	// 2. List Projects in the deployment
-	page := 0
-	pageSize := 100
+// listProjects lists the projects for the specified deployment.
+// page and pageSize determine pagination. Semgrep defaults to page=0 and page_size=100.
+func listProjects(sdk *resilientbridge.ResilientBridge, deploymentSlug string, page, pageSize int) ([]Project, error) {
 	q := url.Values{}
 	q.Set("page", fmt.Sprintf("%d", page))
 	q.Set("page_size", fmt.Sprintf("%d", pageSize))
 
-	projReq := &resilientbridge.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
-		Endpoint: fmt.Sprintf("/deployments/%s/projects?%s", deployment.Slug, q.Encode()),
+		Endpoint: fmt.Sprintf("/deployments/%s/projects?%s", deploymentSlug, q.Encode()),
 		Headers:  map[string]string{"Accept": "application/json"},
 	}
 
-	projResp, err := sdk.Request("semgrep", projReq)
+	resp, err := sdk.Request("semgrep", req)
 	if err != nil {
-		log.Fatalf("Error listing projects: %v", err)
+		return nil, err
 	}
-
-	if projResp.StatusCode >= 400 {
-		log.Fatalf("Error %d: %s", projResp.StatusCode, string(projResp.Data))
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
 	var projResult ProjectsResponse
-	if err := json.Unmarshal(projResp.Data, &projResult); err != nil {
-		log.Fatalf("Error parsing projects response: %v", err)
+	if err := json.Unmarshal(resp.Data, &projResult); err != nil {
+		return nil, fmt.Errorf("error parsing projects response: %v", err)
 	}
 
-	if len(projResult.Projects) == 0 {
-		log.Println("No projects found in this deployment.")
-		return
-	}
+	return projResult.Projects, nil
+}
 
-	fmt.Printf("Found %d projects in deployment %s:\n", len(projResult.Projects), deployment.Slug)
-	for _, p := range projResult.Projects {
-		fmt.Printf("- ID: %d, Name: %s, URL: %s, Tags: %v, Created: %s\n", p.ID, p.Name, p.URL, p.Tags, p.CreatedAt)
-	}
-
-	// 3. Get details for a specific project
-	// Let's take the first project
-	targetProject := projResult.Projects[0].Name
-	fmt.Printf("Retrieving details for project: %s\n", targetProject)
-
-	detailReq := &resilientbridge.NormalizedRequest{
+// getProjectDetails retrieves details for a single project by name.
+func getProjectDetails(sdk *resilientbridge.ResilientBridge, deploymentSlug, projectName string) (*Project, error) {
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
-		Endpoint: fmt.Sprintf("/deployments/%s/projects/%s", deployment.Slug, url.PathEscape(targetProject)),
+		Endpoint: fmt.Sprintf("/deployments/%s/projects/%s", deploymentSlug, url.PathEscape(projectName)),
 		Headers:  map[string]string{"Accept": "application/json"},
 	}
 
-	detailResp, err := sdk.Request("semgrep", detailReq)
+	resp, err := sdk.Request("semgrep", req)
 	if err != nil {
-		log.Fatalf("Error getting project details: %v", err)
+		return nil, err
 	}
-
-	if detailResp.StatusCode >= 400 {
-		log.Fatalf("Error %d: %s", detailResp.StatusCode, string(detailResp.Data))
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
 	var singleProj SingleProjectResponse
-	if err := json.Unmarshal(detailResp.Data, &singleProj); err != nil {
-		log.Fatalf("Error parsing single project detail response: %v", err)
+	if err := json.Unmarshal(resp.Data, &singleProj); err != nil {
+		return nil, fmt.Errorf("error parsing single project detail response: %v", err)
 	}
 
-	p := singleProj.Project
-	fmt.Printf("Project details:\n")
-	fmt.Printf("ID: %d, Name: %s, URL: %s, Tags: %v, Created: %s, Latest Scan: %s, Primary Branch: %s, Default Branch: %s\n",
-		p.ID, p.Name, p.URL, p.Tags, p.CreatedAt, p.LatestScanAt, p.PrimaryBranch, p.DefaultBranch)
+	return &singleProj.Project, nil
+}
+
+// getProjectDetailsConcurrently fetches details for a slice of projects concurrently.
+// concurrency sets how many goroutines run at once to fetch details.
+func getProjectDetailsConcurrently(sdk *resilientbridge.ResilientBridge, deploymentSlug string, projects []Project, concurrency int) []Project {
+	details := make([]Project, len(projects))
+	jobs := make(chan int, len(projects))
+	results := make(chan struct {
+		index  int
+		detail *Project
+		err    error
+	}, len(projects))
+
+	// Start worker pool
+	var wg sync.WaitGroup
+	wg.Add(concurrency)
+
+	for w := 0; w < concurrency; w++ {
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				p := projects[i]
+				detail, err := getProjectDetails(sdk, deploymentSlug, p.Name)
+				results <- struct {
+					index  int
+					detail *Project
+					err    error
+				}{i, detail, err}
+			}
+		}()
+	}
+
+	for i := range projects {
+		jobs <- i
+	}
+	close(jobs)
+
+	// Wait for all results
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for r := range results {
+		if r.err != nil {
+			log.Printf("Error getting details for project %s: %v", projects[r.index].Name, r.err)
+			continue
+		}
+		details[r.index] = *r.detail
+	}
+
+	return details
 }

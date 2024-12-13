@@ -1,0 +1,353 @@
+{
+    "package": "resilientbridge",
+    "description": "The resilient-bridge SDK provides a unified interface and framework for integrating with multiple external providers. It handles rate limiting, retries, and backoff strategies while allowing provider-specific adapters to be implemented.",
+    "files": [
+      {
+        "name": "sdk.go",
+        "description": "Defines the core ResilientBridge struct and its primary methods for registering providers, sending requests, and managing debug output."
+      },
+      {
+        "name": "interfaces.go",
+        "description": "Declares interfaces like ProviderAdapter, which must be implemented by all provider-specific adapters."
+      },
+      {
+        "name": "config.go",
+        "description": "Defines ProviderConfig, which allows customization of rate limits, retries, and backoff for each provider."
+      },
+      {
+        "name": "request_response.go",
+        "description": "Contains NormalizedRequest and NormalizedResponse types used to standardize requests and responses across providers."
+      },
+      {
+        "name": "rate_limiter.go",
+        "description": "Implements a RateLimiter that tracks and updates rate limit information per provider, enforcing limits and calculating delays."
+      },
+      {
+        "name": "request_executor.go",
+        "description": "Implements the RequestExecutor responsible for executing operations with retries, exponential backoff, and consulting the RateLimiter before requests."
+      },
+      {
+        "name": "internal/time_parser.go",
+        "description": "Contains internal helper functions for parsing time-related strings or durations if needed by adapters or the core SDK."
+      },
+      {
+        "name": "adapters/openai_adapter.go",
+        "description": "A sample provider adapter for OpenAI's API. Shows how to implement the ProviderAdapter interface, handle OpenAI-specific rate limits, and execute requests."
+      },
+      {
+        "name": "adapters/doppler_adapter.go",
+        "description": "A Doppler adapter implementing ProviderAdapter. Demonstrates provider-specific logic for Doppler's API rate limits, request execution, and response parsing."
+      },
+      {
+        "name": "adapters/github_adapter.go",
+        "description": "The GitHub adapter that implements ProviderAdapter for GitHub's API. Handles distinguishing REST vs. GraphQL requests, parsing GitHub-specific rate limit headers, and executing requests."
+      },
+      {
+        "name": "adapters/cloudflare_adapter.go",
+        "description": "Implements the Cloudflare adapter with logic for global and GraphQL-specific rate limits, classifying requests and enforcing limits accordingly."
+      },
+      {
+        "name": "adapters/flyio_adapter.go",
+        "description": "The Fly.io Machines API adapter. It categorizes actions by endpoint and method, enforcing per-action and per-machine rate limits."
+      },
+      {
+        "name": "adapters/semgrep_adapter.go",
+        "description": "Implements the Semgrep adapter. Currently uses a REST-based approach, no specific rate limit logic described by Semgrep. Demonstrates a simple adapter without complex rate limiting."
+      },
+      {
+        "name": "adapters/gitguardian_adapter.go",
+        "description": "Adapter for GitGuardian. Determines rate limits based on key type and plan (personal vs. service, free vs. paid) and enforces a global requests-per-minute limit."
+      },
+      {
+        "name": "adapters/linode_adapter.go",
+        "description": "Linode adapter that classifies requests by endpoint and method, applying known rate limits for certain endpoints (like creating Linodes, listing images, etc.) and defaults for others."
+      },
+      {
+        "name": "adapters/render_adapter.go",
+        "description": "Render adapter implementing multiple request categories (services create/update, deploy, deploy hooks, jobs, other writes, and get) with distinct rate limits. Categorizes requests based on endpoint patterns."
+      },
+      {
+        "name": "adapters/railway_adapter.go",
+        "description": "Railway adapter that distinguishes between 'graphql' and 'rest' calls, enforcing a default global rate limit. Useful demonstration of handling two categories of requests."
+      },
+      {
+        "name": "examples/doppler",
+        "description": "Example usage of the Doppler adapter. Demonstrates listing and retrieving users from Doppler, showing how to integrate the SDK into a standalone program."
+      },
+      {
+        "name": "examples/openai",
+        "description": "Example usage of the OpenAI adapter. Shows how to list assistants or perform other API calls while relying on the SDK for rate limiting and retries."
+      },
+      {
+        "name": "examples/semgrep",
+        "description": "Example usage of the Semgrep adapter. Demonstrates listing deployments and projects, retrieving project details, and performing concurrent requests while relying on the SDK's rate limiting and retry logic."
+      }
+    ],
+    "types": [
+      {
+        "name": "ResilientBridge",
+        "type": "struct",
+        "fields": [
+          {
+            "name": "mu",
+            "type": "sync.Mutex",
+            "description": "Ensures thread-safe operations on the SDK's internal maps."
+          },
+          {
+            "name": "providers",
+            "type": "map[string]ProviderAdapter",
+            "description": "Registered providers keyed by their names."
+          },
+          {
+            "name": "configs",
+            "type": "map[string]*ProviderConfig",
+            "description": "Provider-specific configurations."
+          },
+          {
+            "name": "rateLimiter",
+            "type": "*RateLimiter",
+            "description": "Global rate limiter managing provider rate limits."
+          },
+          {
+            "name": "executor",
+            "type": "*RequestExecutor",
+            "description": "Handles executing requests with retries and backoff."
+          },
+          {
+            "name": "Debug",
+            "type": "bool",
+            "description": "If true, debug messages are printed."
+          }
+        ],
+        "methods": [
+          {
+            "name": "NewResilientBridge",
+            "receiver": "",
+            "params": [],
+            "return": ["*ResilientBridge"],
+            "description": "Creates a new ResilientBridge instance."
+          },
+          {
+            "name": "SetDebug",
+            "receiver": "*ResilientBridge",
+            "params": [
+              {
+                "name": "enabled",
+                "type": "bool"
+              }
+            ],
+            "return": [],
+            "description": "Enables or disables debug logging."
+          },
+          {
+            "name": "RegisterProvider",
+            "receiver": "*ResilientBridge",
+            "params": [
+              { "name": "name", "type": "string" },
+              { "name": "adapter", "type": "ProviderAdapter" },
+              { "name": "config", "type": "*ProviderConfig" }
+            ],
+            "return": [],
+            "description": "Registers a provider and its configuration. Applies rate limit defaults."
+          },
+          {
+            "name": "Request",
+            "receiver": "*ResilientBridge",
+            "params": [
+              { "name": "providerName", "type": "string" },
+              { "name": "req", "type": "*NormalizedRequest" }
+            ],
+            "return": ["(*NormalizedResponse, error)"],
+            "description": "Sends a request to the specified provider, handling retries and backoff."
+          },
+          {
+            "name": "GetRateLimitInfo",
+            "receiver": "*ResilientBridge",
+            "params": [
+              { "name": "providerName", "type": "string" }
+            ],
+            "return": ["*NormalizedRateLimitInfo"],
+            "description": "Returns current rate limit information for a provider."
+          },
+          {
+            "name": "debugf",
+            "receiver": "*ResilientBridge",
+            "params": [
+              { "name": "format", "type": "string" },
+              { "name": "args", "type": "...interface{}" }
+            ],
+            "return": [],
+            "description": "Prints debug messages if debug mode is enabled."
+          }
+        ]
+      },
+      {
+        "name": "ProviderAdapter",
+        "type": "interface",
+        "description": "Defines the methods a provider-specific adapter must implement.",
+        "methods": [
+          {
+            "name": "SetRateLimitDefaultsForType",
+            "params": [
+              { "name": "requestType", "type": "string" },
+              { "name": "maxRequests", "type": "int" },
+              { "name": "windowSecs", "type": "int64" }
+            ],
+            "return": []
+          },
+          {
+            "name": "IdentifyRequestType",
+            "params": [
+              { "name": "req", "type": "*NormalizedRequest" }
+            ],
+            "return": ["string"]
+          },
+          {
+            "name": "ExecuteRequest",
+            "params": [
+              { "name": "req", "type": "*NormalizedRequest" }
+            ],
+            "return": ["(*NormalizedResponse, error)"]
+          },
+          {
+            "name": "ParseRateLimitInfo",
+            "params": [
+              { "name": "resp", "type": "*NormalizedResponse" }
+            ],
+            "return": ["(*NormalizedRateLimitInfo, error)"]
+          },
+          {
+            "name": "IsRateLimitError",
+            "params": [
+              { "name": "resp", "type": "*NormalizedResponse" }
+            ],
+            "return": ["bool"]
+          }
+        ]
+      },
+      {
+        "name": "NormalizedRequest",
+        "type": "struct",
+        "fields": [
+          { "name": "Method", "type": "string" },
+          { "name": "Endpoint", "type": "string" },
+          { "name": "Headers", "type": "map[string]string" },
+          { "name": "Body", "type": "[]byte" }
+        ]
+      },
+      {
+        "name": "NormalizedResponse",
+        "type": "struct",
+        "fields": [
+          { "name": "StatusCode", "type": "int" },
+          { "name": "Headers", "type": "map[string]string" },
+          { "name": "Data", "type": "[]byte" }
+        ]
+      },
+      {
+        "name": "NormalizedRateLimitInfo",
+        "type": "struct",
+        "fields": [
+          { "name": "MaxRequests", "type": "*int" },
+          { "name": "RemainingRequests", "type": "*int" },
+          { "name": "ResetRequestsAt", "type": "*int64" },
+          { "name": "MaxTokens", "type": "*int" },
+          { "name": "RemainingTokens", "type": "*int" },
+          { "name": "ResetTokensAt", "type": "*int64" }
+        ]
+      },
+      {
+        "name": "ProviderConfig",
+        "type": "struct",
+        "fields": [
+          { "name": "UseProviderLimits", "type": "bool" },
+          { "name": "MaxRequestsOverride", "type": "*int" },
+          { "name": "MaxTokensOverride", "type": "*int" },
+          { "name": "MaxRetries", "type": "int" },
+          { "name": "BaseBackoff", "type": "time.Duration" },
+          { "name": "WindowSecsOverride", "type": "*int64" },
+          { "name": "GraphQLMaxRequestsOverride", "type": "*int" },
+          { "name": "GraphQLWindowSecsOverride", "type": "*int64" }
+        ]
+      },
+      {
+        "name": "RateLimiter",
+        "type": "struct",
+        "fields": [
+          { "name": "mu", "type": "sync.Mutex" },
+          { "name": "providerLimits", "type": "map[string]*NormalizedRateLimitInfo" }
+        ],
+        "methods": [
+          {
+            "name": "UpdateRateLimits",
+            "receiver": "*RateLimiter",
+            "params": [
+              { "name": "provider", "type": "string" },
+              { "name": "info", "type": "*NormalizedRateLimitInfo" },
+              { "name": "config", "type": "*ProviderConfig" }
+            ],
+            "return": [],
+            "description": "Updates internal rate limit info for a provider."
+          },
+          {
+            "name": "GetRateLimitInfo",
+            "receiver": "*RateLimiter",
+            "params": [
+              { "name": "provider", "type": "string" }
+            ],
+            "return": ["*NormalizedRateLimitInfo"],
+            "description": "Returns a copy of the provider's rate limit info."
+          },
+          {
+            "name": "canProceed",
+            "receiver": "*RateLimiter",
+            "params": [
+              { "name": "provider", "type": "string" }
+            ],
+            "return": ["bool"],
+            "description": "Determines if a request to the provider can be made now."
+          },
+          {
+            "name": "delayBeforeNextRequest",
+            "receiver": "*RateLimiter",
+            "params": [
+              { "name": "provider", "type": "string" }
+            ],
+            "return": ["time.Duration"],
+            "description": "Calculates how long to wait before the next request if rate-limited."
+          }
+        ]
+      },
+      {
+        "name": "RequestExecutor",
+        "type": "struct",
+        "fields": [
+          { "name": "sdk", "type": "*ResilientBridge" }
+        ],
+        "methods": [
+          {
+            "name": "NewRequestExecutor",
+            "receiver": "",
+            "params": [
+              { "name": "sdk", "type": "*ResilientBridge" }
+            ],
+            "return": ["*RequestExecutor"],
+            "description": "Creates a new RequestExecutor."
+          },
+          {
+            "name": "ExecuteWithRetry",
+            "receiver": "*RequestExecutor",
+            "params": [
+              { "name": "providerName", "type": "string" },
+              { "name": "callType", "type": "string" },
+              { "name": "operation", "type": "func() (*NormalizedResponse, error)" },
+              { "name": "adapter", "type": "ProviderAdapter" }
+            ],
+            "return": ["(*NormalizedResponse, error)"],
+            "description": "Executes the given operation with retries, backoff, and rate limit checks."
+          }
+        ]
+      }
+    ]
+  }
+  
