@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -48,21 +49,18 @@ func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 		o.restMaxRequests = maxRequests
 		o.restWindowSecs = windowSecs
 	}
-	// If "graphql", ignore since OpenAI doesn't support it.
+	// Ignore "graphql" since OpenAI doesn't use it.
 }
 
-// IdentifyRequestType: OpenAI = rest only
 func (o *OpenAIAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	// OpenAI is REST-only.
 	return "rest"
 }
 
 func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	if o.isRateLimited() {
-		return &resilientbridge.NormalizedResponse{
-			StatusCode: 429,
-			Headers:    map[string]string{},
-			Data:       []byte(`{"error":"OpenAI rate limit reached"}`),
-		}, nil
+		// We can return a synthetic 429 if desired, but let's not do that.
+		// Just proceed and let the actual request fail if it does.
 	}
 
 	client := &http.Client{}
@@ -100,11 +98,19 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 		}
 	}
 
-	return &resilientbridge.NormalizedResponse{
+	response := &resilientbridge.NormalizedResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    headers,
 		Data:       data,
-	}, nil
+	}
+
+	// If the actual response from the provider is 429, return an error
+	// The SDK's request executor will handle retries.
+	if resp.StatusCode == 429 {
+		return response, errors.New("openai: rate limit exceeded (429)")
+	}
+
+	return response, nil
 }
 
 func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
