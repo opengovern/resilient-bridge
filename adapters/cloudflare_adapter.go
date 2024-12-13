@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge"
 )
 
 // Cloudflare limits
