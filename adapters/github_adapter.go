@@ -124,9 +124,6 @@ func (g *GitHubAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 }
 
 func (g *GitHubAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// GitHub provides x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset headers
-	// We'll trust these headers directly. If user wants overrides, they must match these known limits.
-
 	h := resp.Headers
 	parseInt := func(key string) *int {
 		if val, ok := h[key]; ok {
@@ -161,11 +158,16 @@ func (g *GitHubAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespons
 	return resp.StatusCode == 429 || resp.StatusCode == 403
 }
 
-// Additional helper methods
+// IdentifyRequestType inspects the request and returns "graphql" if endpoint is "/graphql" else "rest"
+func (g *GitHubAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	if g.isGraphQLRequest(req) {
+		return "graphql"
+	}
+	return "rest"
+}
 
 func (g *GitHubAdapter) isGraphQLRequest(req *resilientbridge.NormalizedRequest) bool {
 	// GitHub GraphQL endpoint is typically POST /graphql
-	// If Endpoint == "/graphql", consider it GraphQL
 	return req.Endpoint == "/graphql"
 }
 
