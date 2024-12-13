@@ -1,5 +1,9 @@
 // list_artifacts.go
-// This example uses the utils package for SPN authentication and ACR token retrieval.
+//
+// This example retrieves Azure Container Registry (ACR) tokens using a Service Principal (SPN)
+// and then uses those tokens to list repositories and artifacts (tags) from an ACR.
+// It uses utilities from the "github.com/opengovern/resilient-bridge/utils" package for SPN authentication
+// and token exchanges.
 
 package main
 
@@ -11,7 +15,7 @@ import (
 	"net/http"
 	"os"
 
-	"myapp/utils" // Update the import path to your actual utils package location
+	"github.com/opengovern/resilient-bridge/utils" // Updated import path
 )
 
 func main() {
@@ -22,7 +26,7 @@ func main() {
 	repository := os.Getenv("ACR_REPOSITORY_NAME")  // e.g. "myrepo"
 
 	if tenantID == "" || clientID == "" || clientSecret == "" || registry == "" || repository == "" {
-		fmt.Println("Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ACR_REGISTRY_LOGIN_URI, and ACR_REPOSITORY_NAME.")
+		fmt.Println("Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ACR_REGISTRY_LOGIN_URI, and ACR_REPOSITORY_NAME environment variables.")
 		return
 	}
 
@@ -70,7 +74,7 @@ func main() {
 		return
 	}
 
-	// List artifacts (tags) in the given repository
+	// 4. List artifacts (tags) in the given repository
 	artifacts, err := listArtifacts(registry, repository, repoCreds.Password)
 	if err != nil {
 		fmt.Printf("Error listing artifacts: %v\n", err)
@@ -82,6 +86,7 @@ func main() {
 	}
 }
 
+// listRepositories lists repositories from ACR
 func listRepositories(registry, acrToken string) ([]string, error) {
 	url := fmt.Sprintf("https://%s/acr/v1/_catalog", registry)
 	req, err := http.NewRequest("GET", url, nil)
@@ -110,6 +115,7 @@ func listRepositories(registry, acrToken string) ([]string, error) {
 	return reposResp.Repositories, nil
 }
 
+// listArtifacts lists tags in a repository (artifacts) using the _tags endpoint
 func listArtifacts(registry, repository, acrToken string) ([]string, error) {
 	url := fmt.Sprintf("https://%s/acr/v1/%s/_tags", registry, repository)
 	req, err := http.NewRequest("GET", url, nil)
