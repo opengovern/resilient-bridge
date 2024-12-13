@@ -40,7 +40,7 @@ func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapte
 	sdk.providers[name] = adapter
 	sdk.configs[name] = config
 
-	// Apply REST limits
+	// Apply REST (primary) limits
 	var restMaxRequests int
 	var restWindowSecs int64
 	if config.MaxRequestsOverride != nil {
@@ -50,17 +50,6 @@ func (sdk *ResilientBridge) RegisterProvider(name string, adapter ProviderAdapte
 		restWindowSecs = *config.WindowSecsOverride
 	}
 	adapter.SetRateLimitDefaultsForType("rest", restMaxRequests, restWindowSecs)
-
-	// Apply GraphQL limits if set
-	var gqlMaxRequests int
-	var gqlWindowSecs int64
-	if config.GraphQLMaxRequestsOverride != nil {
-		gqlMaxRequests = *config.GraphQLMaxRequestsOverride
-	}
-	if config.GraphQLWindowSecsOverride != nil {
-		gqlWindowSecs = *config.GraphQLWindowSecsOverride
-	}
-	adapter.SetRateLimitDefaultsForType("graphql", gqlMaxRequests, gqlWindowSecs)
 
 	sdk.debugf("Registered provider %q with config: %+v\n", name, config)
 }
