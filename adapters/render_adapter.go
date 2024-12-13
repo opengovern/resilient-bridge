@@ -15,10 +15,10 @@ import (
 
 const (
 	RenderServicesCreateUpdateMax  = 20
-	RenderServicesCreateUpdateSecs = 3600 // 1 hour = 3600s
+	RenderServicesCreateUpdateSecs = 3600 // 1 hour
 
 	RenderServicesDeployMax  = 10
-	RenderServicesDeploySecs = 60 // 10/minute
+	RenderServicesDeploySecs = 60 // 10/min
 
 	RenderDeployHooksMax  = 10
 	RenderDeployHooksSecs = 60
@@ -33,8 +33,6 @@ const (
 	RenderGetSecs = 60 // 400/min
 )
 
-// RenderAdapter enforces rate limits for Render API requests based on documented limits.
-// We define categories (request types) and store per-category timestamps.
 type RenderAdapter struct {
 	APIToken string
 
@@ -49,14 +47,12 @@ type RenderAdapter struct {
 	}
 }
 
-// Known categories
 var (
 	renderServicesCreateUpdatePattern = regexp.MustCompile(`^/v1/services(\?|$|/[^/]+/(resume|suspend)$)`)
 	renderServicesDeployPattern       = regexp.MustCompile(`^/v1/services/[^/]+/deploy`)
 	renderDeployHooksPattern          = regexp.MustCompile(`^/v1/services/[^/]+/deployhook`)
 	renderJobsPattern                 = regexp.MustCompile(`^/v1/jobs`)
 	renderCustomDomainPattern         = regexp.MustCompile(`^/v1/customdomain`)
-	// if not matched above, check method if GET or other write
 )
 
 func NewRenderAdapter(apiToken string) *RenderAdapter {
@@ -74,7 +70,6 @@ func (r *RenderAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if maxRequests == 0 || windowSecs == 0 {
-		// If zero, use defaults based on category
 		switch requestType {
 		case "services_create_update":
 			if maxRequests == 0 {
@@ -119,7 +114,6 @@ func (r *RenderAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 				windowSecs = RenderGetSecs
 			}
 		default:
-			// If unknown requestType, treat as "other_write" by default
 			if maxRequests == 0 {
 				maxRequests = RenderOtherWriteMax
 			}
@@ -132,6 +126,11 @@ func (r *RenderAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 		maxReq     int
 		windowSecs int64
 	}{maxRequests, windowSecs}
+}
+
+// IdentifyRequestType: Render does not mention GraphQL. Assume all are "rest".
+func (r *RenderAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	return "rest"
 }
 
 func (r *RenderAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
@@ -185,8 +184,6 @@ func (r *RenderAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 }
 
 func (r *RenderAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// Render returns Rate-Limit, Ratelimit-Remaining, Ratelimit-Reset headers
-	// We can parse them directly.
 	h := resp.Headers
 	parseInt := func(key string) *int {
 		if val, ok := h[strings.ToLower(key)]; ok {
@@ -208,9 +205,9 @@ func (r *RenderAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedRespo
 	}
 
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       parseInt("RateLimit-Limit"),
-		RemainingRequests: parseInt("RateLimit-Remaining"),
-		ResetRequestsAt:   parseReset("RateLimit-Reset"),
+		MaxRequests:       parseInt("ratelimit-limit"),
+		RemainingRequests: parseInt("ratelimit-remaining"),
+		ResetRequestsAt:   parseReset("ratelimit-reset"),
 	}
 	return info, nil
 }
@@ -219,21 +216,23 @@ func (r *RenderAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespons
 	return resp.StatusCode == 429
 }
 
-// classifyRequest determines which category a request falls into based on method and endpoint.
 func (r *RenderAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) string {
 	endpoint := req.Endpoint
 	method := strings.ToUpper(req.Method)
 
-	// Check categories in order:
-	if method == "POST" && strings.HasPrefix(endpoint, "/v1/services") && !renderServicesDeployPattern.MatchString(endpoint) && !renderServicesCreateUpdatePattern.MatchString(endpoint) && !renderServicesDeployPattern.MatchString(endpoint) {
-		// This might be a tricky case. Let's refine logic:
-		// POST /v1/services = services_create_update (20/hour)
-		if strings.HasPrefix(endpoint, "/v1/services?") || endpoint == "/v1/services" {
+	if method == "POST" && strings.HasPrefix(endpoint, "/v1/services") &&
+		!renderServicesDeployPattern.MatchString(endpoint) &&
+		!renderServicesCreateUpdatePattern.MatchString(endpoint) {
+		// If not matched by pattern, fallback
+	}
+
+	// The logic from original code is retained as is.
+	if method == "POST" && strings.HasPrefix(endpoint, "/v1/services") {
+		if strings.HasPrefix(endpoint, "/v1/services?") || endpoint == "/v1/services" || renderServicesCreateUpdatePattern.MatchString(endpoint) {
 			return "services_create_update"
-		} else if renderServicesDeployPattern.MatchString(endpoint) {
+		}
+		if renderServicesDeployPattern.MatchString(endpoint) {
 			return "services_deploy"
-		} else if renderServicesCreateUpdatePattern.MatchString(endpoint) {
-			return "services_create_update"
 		}
 	}
 
@@ -242,7 +241,6 @@ func (r *RenderAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) 
 	}
 
 	if method == "POST" && renderServicesDeployPattern.MatchString(endpoint) {
-		// Deploy endpoint = 10/min/service (we simplify to 10/min total)
 		return "services_deploy"
 	}
 
@@ -251,8 +249,6 @@ func (r *RenderAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) 
 	}
 
 	if method == "POST" && renderCustomDomainPattern.MatchString(endpoint) {
-		// Custom domain falls under "other write" or is it special?
-		// The doc: "All other POST/PATCH/DELETE = 30/min"
 		return "other_write"
 	}
 
@@ -260,17 +256,14 @@ func (r *RenderAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) 
 		return "jobs"
 	}
 
-	// If other POST/PATCH/DELETE (not matched above)
 	if (method == "POST" || method == "PATCH" || method == "DELETE") && !strings.HasPrefix(endpoint, "/v1/services") && !renderJobsPattern.MatchString(endpoint) && !renderCustomDomainPattern.MatchString(endpoint) {
 		return "other_write"
 	}
 
-	// If GET:
 	if method == "GET" {
 		return "get"
 	}
 
-	// If we somehow missed a case, default to "other_write"
 	return "other_write"
 }
 
@@ -280,22 +273,17 @@ func (r *RenderAdapter) isRateLimited(category string) bool {
 
 	cat, ok := r.categories[category]
 	if !ok {
-		// If category not set yet, use defaults now
-		// "other_write" as fallback
+		// default to other_write if unknown
 		cat = struct {
 			maxReq     int
 			windowSecs int64
-		}{
-			RenderOtherWriteMax,
-			RenderOtherWriteSecs,
-		}
+		}{RenderOtherWriteMax, RenderOtherWriteSecs}
 		r.categories[category] = cat
 	}
 
 	now := time.Now().Unix()
 	windowStart := now - cat.windowSecs
-
-	timestamps, _ := r.requestHistory[category]
+	timestamps := r.requestHistory[category]
 	var newTimestamps []int64
 	for _, ts := range timestamps {
 		if ts >= windowStart {
@@ -311,7 +299,7 @@ func (r *RenderAdapter) recordRequest(category string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	timestamps, _ := r.requestHistory[category]
+	timestamps := r.requestHistory[category]
 	timestamps = append(timestamps, time.Now().Unix())
 	r.requestHistory[category] = timestamps
 }

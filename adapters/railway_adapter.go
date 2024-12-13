@@ -14,12 +14,9 @@ import (
 
 const (
 	RailwayDefaultMaxRequests = 1000
-	RailwayDefaultWindowSecs  = 3600 // 1 hour = 3600 seconds
+	RailwayDefaultWindowSecs  = 3600 // 1 hour
 )
 
-// RailwayAdapter enforces rate limits for the Railway API.
-// We assume a single global limit of 1000/hr for all requests.
-// We'll distinguish "graphql" and "rest" categories if needed.
 type RailwayAdapter struct {
 	APIToken string
 
@@ -61,8 +58,16 @@ func (r *RailwayAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 	}{maxRequests, windowSecs}
 }
 
+func (r *RailwayAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	// Railway: POST /graphql/v2 = graphql, else rest
+	if req.Method == "POST" && strings.HasPrefix(req.Endpoint, "/graphql/v2") {
+		return "graphql"
+	}
+	return "rest"
+}
+
 func (r *RailwayAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	category := r.classifyRequest(req)
+	category := r.IdentifyRequestType(req)
 	if r.isRateLimited(category) {
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
@@ -127,7 +132,6 @@ func (r *RailwayAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResp
 	parseReset := func(key string) *int64 {
 		if val, ok := h[key]; ok {
 			if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
-				// Convert to ms
 				ms := ts * 1000
 				return &ms
 			}
@@ -135,10 +139,6 @@ func (r *RailwayAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResp
 		return nil
 	}
 
-	// According to docs:
-	// X-RateLimit-Limit: max requests allowed
-	// X-RateLimit-Remaining: requests left
-	// X-RateLimit-Reset: epoch seconds until reset
 	info := &resilientbridge.NormalizedRateLimitInfo{
 		MaxRequests:       parseInt("x-ratelimit-limit"),
 		RemainingRequests: parseInt("x-ratelimit-remaining"),
@@ -152,23 +152,12 @@ func (r *RailwayAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespon
 	return resp.StatusCode == 429
 }
 
-func (r *RailwayAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) string {
-	// Railway API is primarily GraphQL at /graphql/v2 with POST
-	// If method == POST and endpoint == /graphql/v2 and request body looks like GraphQL,
-	// we classify as "graphql". Otherwise "rest".
-	if req.Method == "POST" && strings.HasPrefix(req.Endpoint, "/graphql/v2") {
-		return "graphql"
-	}
-	return "rest"
-}
-
 func (r *RailwayAdapter) isRateLimited(category string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	cat, ok := r.categories[category]
 	if !ok {
-		// If no config set yet, use defaults
 		cat = struct {
 			maxReq     int
 			windowSecs int64
@@ -195,7 +184,7 @@ func (r *RailwayAdapter) recordRequest(category string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	timestamps, _ := r.requestHistory[category]
+	timestamps := r.requestHistory[category]
 	timestamps = append(timestamps, time.Now().Unix())
 	r.requestHistory[category] = timestamps
 }

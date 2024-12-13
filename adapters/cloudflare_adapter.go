@@ -8,16 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opengovern/resilient-bridge"
+	resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
 // Cloudflare limits
-// General API: 1200 requests/5 min/user
-// GraphQL API: 300 GraphQL queries/5 min/user
-//
-// For simplicity, we implement two rate limit checks:
-// 1. General limit (applies to all requests): 1200 requests per 5 minutes (300 seconds)
-// 2. GraphQL limit (applies only to requests hitting GraphQL endpoint): 300 queries per 5 minutes (300 seconds)
+// General API: 1200 requests/5 min/user (rest)
+// GraphQL API: 300 GraphQL queries/5 min/user (graphql)
 //
 // If a request is GraphQL: must not exceed either the general limit or the GraphQL limit.
 // If a request is non-GraphQL: must not exceed the general limit only.
@@ -46,6 +42,13 @@ func (c *CloudflareAdapter) SetRateLimitDefaultsForType(requestType string, maxR
 	// Cloudflare has fixed rules. Ignore overrides for now.
 }
 
+func (c *CloudflareAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	if c.isGraphQLRequest(req) {
+		return "graphql"
+	}
+	return "rest"
+}
+
 func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	isGraphQL := c.isGraphQLRequest(req)
 	if c.isRateLimited(isGraphQL) {
@@ -58,8 +61,8 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 
 	client := &http.Client{}
 	baseURL := "https://api.cloudflare.com/client/v4"
-	// GraphQL endpoint might differ: "https://api.cloudflare.com/client/v4/graphql"
-	// Assume requests define their endpoint fully (if needed).
+	// For GraphQL requests, endpoint might be "/graphql" from the user.
+	// If users specify full endpoint starting with "/graphql" it will append to base.
 	fullURL := baseURL + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
@@ -83,7 +86,7 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 	}
 	defer resp.Body.Close()
 
-	// Record successful request
+	// Record request after successful execution
 	c.recordRequest(isGraphQL)
 
 	data, _ := io.ReadAll(resp.Body)
@@ -103,6 +106,7 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 
 func (c *CloudflareAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
 	// Cloudflare docs on general rate limiting: no special headers mentioned.
+	// Return nil, as we can't parse any explicit rate limit from headers.
 	return nil, nil
 }
 
@@ -111,9 +115,8 @@ func (c *CloudflareAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRes
 }
 
 func (c *CloudflareAdapter) isGraphQLRequest(req *resilientbridge.NormalizedRequest) bool {
-	// GraphQL endpoint: "/graphql" at Cloudflare typically
-	// If the endpoint contains "/graphql" at the end?
-	// Cloudflare GraphQL endpoint: "https://api.cloudflare.com/client/v4/graphql"
+	// Cloudflare GraphQL endpoint typically: /graphql
+	// If endpoint contains "/graphql", consider it GraphQL.
 	return strings.Contains(req.Endpoint, "/graphql")
 }
 

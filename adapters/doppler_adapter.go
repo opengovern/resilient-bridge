@@ -24,15 +24,13 @@ type DopplerAdapter struct {
 
 	restMaxRequests int
 	restWindowSecs  int64
-
-	graphqlMaxRequests int
-	graphqlWindowSecs  int64
 }
 
 func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	// Doppler only supports REST calls, no GraphQL logic needed.
 	if requestType == "rest" {
 		if maxRequests == 0 {
 			maxRequests = DopplerDefaultMaxRequests
@@ -42,17 +40,13 @@ func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 		}
 		d.restMaxRequests = maxRequests
 		d.restWindowSecs = windowSecs
-	} else if requestType == "graphql" {
-		// Doppler does not have GraphQL, but we set defaults anyway
-		if maxRequests == 0 {
-			maxRequests = DopplerDefaultMaxRequests
-		}
-		if windowSecs == 0 {
-			windowSecs = DopplerDefaultWindowSecs
-		}
-		d.graphqlMaxRequests = maxRequests
-		d.graphqlWindowSecs = windowSecs
 	}
+	// If requestType == "graphql", ignore since Doppler does not support GraphQL.
+}
+
+func (d *DopplerAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	// Doppler does not have GraphQL. All requests are REST.
+	return "rest"
 }
 
 func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
