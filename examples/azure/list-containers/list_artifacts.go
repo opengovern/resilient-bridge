@@ -1,3 +1,6 @@
+// list_artifacts.go
+// This example uses the utils package for SPN authentication and ACR token retrieval.
+
 package main
 
 import (
@@ -6,11 +9,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 
-	"myapp/utils" // Adjust import path as needed to point to your utils package
+	"myapp/utils" // Update the import path to your actual utils package location
 )
 
 func main() {
@@ -21,47 +22,37 @@ func main() {
 	repository := os.Getenv("ACR_REPOSITORY_NAME")  // e.g. "myrepo"
 
 	if tenantID == "" || clientID == "" || clientSecret == "" || registry == "" || repository == "" {
-		fmt.Println("Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ACR_REGISTRY_LOGIN_URI, and ACR_REPOSITORY_NAME environment variables.")
+		fmt.Println("Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ACR_REGISTRY_LOGIN_URI, and ACR_REPOSITORY_NAME.")
 		return
 	}
 
-	// 1. Use AzureSPN to get AAD token
-	cfg := &utils.AzureSPNConfig{
+	// 1. Create an AzureSPN instance for getting AAD tokens
+	spnCfg := &utils.AzureSPNConfig{
 		TenantID:     tenantID,
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		// AuthorityHost and Resource can be left as default if your utils sets them by default.
 	}
-	spn, err := utils.NewAzureSPN(cfg)
+	spn, err := utils.NewAzureSPN(spnCfg)
 	if err != nil {
 		fmt.Printf("Error creating AzureSPN: %v\n", err)
 		return
 	}
 
 	ctx := context.Background()
-	token, err := spn.AcquireToken(ctx)
-	if err != nil {
-		fmt.Printf("Error acquiring AAD token from SPN: %v\n", err)
-		return
-	}
-	aadToken := token.AccessToken
 
-	// 2. Exchange AAD token for ACR refresh token
-	refreshToken, err := getACRRefreshToken(registry, aadToken)
-	if err != nil {
-		fmt.Printf("Error getting ACR refresh token: %v\n", err)
-		return
-	}
+	// 2. Create an SPNToACR instance to convert SPN credentials to ACR tokens
+	// For listing repos: scope = "registry:catalog:*"
+	spnToACRForCatalog := utils.NewSPNToACR(spn, registry, "registry:catalog:*")
 
-	// 3. Exchange ACR refresh token for ACR access token for catalog
-	acrTokenForCatalog, err := getACRAccessToken(registry, refreshToken, "registry:catalog:*")
+	// Get Docker credentials (ACR access token) for catalog operations
+	catalogCreds, err := spnToACRForCatalog.GetACRDockerCredentials(ctx)
 	if err != nil {
-		fmt.Printf("Error getting ACR access token for catalog: %v\n", err)
+		fmt.Printf("Error getting ACR docker credentials for catalog: %v\n", err)
 		return
 	}
 
 	// List repositories
-	repos, err := listRepositories(registry, acrTokenForCatalog)
+	repos, err := listRepositories(registry, catalogCreds.Password)
 	if err != nil {
 		fmt.Printf("Error listing repositories: %v\n", err)
 		return
@@ -71,16 +62,16 @@ func main() {
 		fmt.Println(" -", r)
 	}
 
-	// Now get an access token for the specific repository to list artifacts
-	scope := fmt.Sprintf("repository:%s:*", repository)
-	acrTokenForRepo, err := getACRAccessToken(registry, refreshToken, scope)
+	// For listing artifacts in a given repository: scope = "repository:<repository>:*"
+	spnToACRForRepo := utils.NewSPNToACR(spn, registry, fmt.Sprintf("repository:%s:*", repository))
+	repoCreds, err := spnToACRForRepo.GetACRDockerCredentials(ctx)
 	if err != nil {
-		fmt.Printf("Error getting ACR access token for repository: %v\n", err)
+		fmt.Printf("Error getting ACR docker credentials for repository: %v\n", err)
 		return
 	}
 
-	// 4. List artifacts (tags) in the given repository
-	artifacts, err := listArtifacts(registry, repository, acrTokenForRepo)
+	// List artifacts (tags) in the given repository
+	artifacts, err := listArtifacts(registry, repository, repoCreds.Password)
 	if err != nil {
 		fmt.Printf("Error listing artifacts: %v\n", err)
 		return
@@ -91,77 +82,6 @@ func main() {
 	}
 }
 
-// getACRRefreshToken exchanges AAD token for ACR refresh token
-func getACRRefreshToken(registry, aadToken string) (string, error) {
-	exchangeURL := fmt.Sprintf("https://%s/oauth2/exchange", registry)
-	data := url.Values{}
-	data.Set("grant_type", "access_token")
-	data.Set("service", registry)
-	data.Set("access_token", aadToken)
-
-	req, err := http.NewRequest("POST", exchangeURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get ACR refresh token: status %d, body: %s", resp.StatusCode, body)
-	}
-
-	var tokenResp struct {
-		RefreshToken string `json:"refresh_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.RefreshToken, nil
-}
-
-// getACRAccessToken exchanges ACR refresh token for ACR access token with a specific scope
-func getACRAccessToken(registry, refreshToken, scope string) (string, error) {
-	tokenURL := fmt.Sprintf("https://%s/oauth2/token", registry)
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("service", registry)
-	data.Set("scope", scope)
-	data.Set("refresh_token", refreshToken)
-
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get ACR access token: status %d, body: %s", resp.StatusCode, body)
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.AccessToken, nil
-}
-
-// listRepositories lists repositories from ACR
 func listRepositories(registry, acrToken string) ([]string, error) {
 	url := fmt.Sprintf("https://%s/acr/v1/_catalog", registry)
 	req, err := http.NewRequest("GET", url, nil)
@@ -190,10 +110,8 @@ func listRepositories(registry, acrToken string) ([]string, error) {
 	return reposResp.Repositories, nil
 }
 
-// listArtifacts lists tags in a repository (artifacts) using the _tags endpoint
 func listArtifacts(registry, repository, acrToken string) ([]string, error) {
 	url := fmt.Sprintf("https://%s/acr/v1/%s/_tags", registry, repository)
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
