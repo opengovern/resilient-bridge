@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"time"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
@@ -44,10 +45,23 @@ func main() {
 
 	// Create a new instance of the SDK
 	sdk := resilientbridge.NewResilientBridge()
+
+	// Optional overrides: for demonstration, we specify REST and GraphQL overrides.
+	// In this case, Doppler doesn't use GraphQL, but let's say we just set them anyway.
+	restMaxRequests := 500      // override REST max requests if desired
+	restWindowSecs := int64(60) // override REST window in seconds
+	// GraphQL not really used by Doppler, but we set them hypothetically
+	gqlMaxRequests := 200
+	gqlWindowSecs := int64(120)
+
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
-		UseProviderLimits: true,
-		MaxRetries:        3,
-		BaseBackoff:       0,
+		UseProviderLimits:          true,
+		MaxRequestsOverride:        &restMaxRequests,
+		WindowSecsOverride:         &restWindowSecs,
+		GraphQLMaxRequestsOverride: &gqlMaxRequests,
+		GraphQLWindowSecsOverride:  &gqlWindowSecs,
+		MaxRetries:                 3,
+		BaseBackoff:                200 * time.Millisecond,
 	})
 
 	q := url.Values{}
