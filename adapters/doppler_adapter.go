@@ -22,11 +22,9 @@ type DopplerAdapter struct {
 	mu                sync.Mutex
 	requestTimestamps []int64
 
-	// We'll store separate values for rest and graphql if needed.
 	restMaxRequests int
 	restWindowSecs  int64
 
-	// If doppler doesn't have graphql, just set defaults or treat same as REST
 	graphqlMaxRequests int
 	graphqlWindowSecs  int64
 }
@@ -45,7 +43,7 @@ func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 		d.restMaxRequests = maxRequests
 		d.restWindowSecs = windowSecs
 	} else if requestType == "graphql" {
-		// Doppler may not have GraphQL. Just set defaults or treat same as REST.
+		// Doppler does not have GraphQL, but we set defaults anyway
 		if maxRequests == 0 {
 			maxRequests = DopplerDefaultMaxRequests
 		}
@@ -58,10 +56,11 @@ func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 }
 
 func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	isGraphQL := false // Doppler doesn't have GraphQL endpoint?
-	if d.isRateLimited(isGraphQL) {
+	// Doppler = REST only
+	if d.isRateLimited() {
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
+			Headers:    map[string]string{},
 			Data:       []byte(`{"error":"Doppler rate limit reached"}`),
 		}, nil
 	}
@@ -87,7 +86,7 @@ func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) 
 	}
 	defer resp.Body.Close()
 
-	d.recordRequest(isGraphQL)
+	d.recordRequest()
 
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
@@ -127,10 +126,11 @@ func (d *DopplerAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResp
 	}
 
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       intPtr(d.restMaxRequests),
-		RemainingRequests: intPtr(remaining),
+		MaxRequests:       resilientbridge.IntPtr(d.restMaxRequests),
+		RemainingRequests: resilientbridge.IntPtr(remaining),
 		ResetRequestsAt:   resetAt,
 	}
+
 	return info, nil
 }
 
@@ -138,15 +138,12 @@ func (d *DopplerAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespon
 	return resp.StatusCode == 429
 }
 
-func (d *DopplerAdapter) isRateLimited(isGraphQL bool) bool {
+func (d *DopplerAdapter) isRateLimited() bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	maxReq := d.restMaxRequests
-	windowSecs := d.restWindowSecs
-
 	now := time.Now().Unix()
-	windowStart := now - windowSecs
+	windowStart := now - d.restWindowSecs
 	var newTimestamps []int64
 	for _, ts := range d.requestTimestamps {
 		if ts >= windowStart {
@@ -155,15 +152,11 @@ func (d *DopplerAdapter) isRateLimited(isGraphQL bool) bool {
 	}
 	d.requestTimestamps = newTimestamps
 
-	return len(d.requestTimestamps) >= maxReq
+	return len(d.requestTimestamps) >= d.restMaxRequests
 }
 
-func (d *DopplerAdapter) recordRequest(isGraphQL bool) {
+func (d *DopplerAdapter) recordRequest() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.requestTimestamps = append(d.requestTimestamps, time.Now().Unix())
-}
-
-func intPtr(i int) *int {
-	return &i
 }

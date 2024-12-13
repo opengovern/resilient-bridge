@@ -148,7 +148,3 @@ func (o *OpenAIAdapter) recordRequest() {
 	defer o.mu.Unlock()
 	o.restRequestTimes = append(o.restRequestTimes, time.Now().Unix())
 }
-
-func intPtr(i int) *int {
-	return &i
-}
