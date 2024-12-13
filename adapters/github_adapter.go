@@ -42,7 +42,7 @@ const (
 	GitHubDefaultGraphQLWindowSecs  = 3600
 
 	// Set this to true if you want to proactively check the rate limit before the first request
-	CHECK_REQUEST_RATE_LIMIT_AHEAD = true
+	CHECK_REQUEST_RATE_LIMIT_AHEAD = false
 )
 
 type GitHubAdapter struct {
