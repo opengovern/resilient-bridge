@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"unifiedsdk"
-	"unifiedsdk/adapters"
+	resilientbridge "github.com/opengovern/resilient-bridge"
+	"github.com/opengovern/resilient-bridge/adapters"
 )
 
 // AssistantsListResponse represents the JSON response from listing assistants.
@@ -26,7 +27,7 @@ type AssistantsListResponse struct {
 		Metadata       map[string]any `json:"metadata"`
 		TopP           float64        `json:"top_p"`
 		Temperature    float64        `json:"temperature"`
-		ResponseFormat interface{}    `json:"response_format"` // Changed from string to interface{}
+		ResponseFormat interface{}    `json:"response_format"`
 	} `json:"data"`
 	FirstID string `json:"first_id"`
 	LastID  string `json:"last_id"`
@@ -40,14 +41,16 @@ func main() {
 	}
 
 	// Initialize the SDK
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("openai", &adapters.OpenAIAdapter{APIKey: apiKey}, &unifiedsdk.ProviderConfig{
+	sdk := resilientbridge.NewResilientBridge()
+	// Register OpenAI provider, optionally overriding limits if needed
+	// For demonstration, let's just use defaults (no overrides)
+	sdk.RegisterProvider("openai", &adapters.OpenAIAdapter{APIKey: apiKey}, &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
 		MaxRetries:        3,
-		BaseBackoff:       0,
+		BaseBackoff:       200 * time.Millisecond, // Adding a small base backoff for retries
 	})
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v1/assistants?order=desc&limit=20",
 		Headers: map[string]string{

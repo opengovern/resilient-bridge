@@ -1,4 +1,3 @@
-// list_environments.go
 package main
 
 import (
@@ -7,12 +6,12 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"unifiedsdk"
 
+	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
-// Adjust fields based on actual return
+// DopplerEnvironmentsResponse represents the JSON response for listing environments.
 type DopplerEnvironmentsResponse struct {
 	Environments []struct {
 		Name string `json:"name"`
@@ -27,14 +26,20 @@ func main() {
 		log.Fatal("YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := unifiedsdk.NewUnifiedSDK()
-	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, nil)
+	// Create a new instance of the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	// Register Doppler provider without special overrides
+	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
+		UseProviderLimits: true,
+		MaxRetries:        3,
+		BaseBackoff:       0,
+	})
 
-	// 'project' query param is required. Replace 'my-project' with actual project slug.
+	// 'project' query param is required. Replace 'my-project' with your actual project slug.
 	q := url.Values{}
 	q.Set("project", "my-project")
 
-	req := &unifiedsdk.NormalizedRequest{
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: "/v3/environments?" + q.Encode(),
 		Headers:  map[string]string{"accept": "application/json"},
