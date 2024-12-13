@@ -1,4 +1,14 @@
 // rate_limiter.go
+// ----------------
+// This file defines the RateLimiter type, which stores and manages rate limit information
+// for each provider and call type. It integrates with the adapter-provided NormalizedRateLimitInfo
+// to determine if a request can proceed immediately or if it must wait until a reset time.
+//
+// Responsibilities:
+// - Storing rate limit info keyed by "provider:callType".
+// - Checking if requests can proceed based on RemainingRequests and ResetRequestsAt.
+// - Calculating delay durations before the next allowed request if the rate limit is exceeded.
+// - Integrating with ProviderConfig overrides if UseProviderLimits is false.
 package resilientbridge
 
 import (
@@ -17,13 +27,15 @@ func NewRateLimiter() *RateLimiter {
 	}
 }
 
-// UpdateRateLimits updates the rate limit info for the given provider and callType.
+// UpdateRateLimits updates the stored rate limit info for a given provider and call type,
+// applying overrides from the ProviderConfig if UseProviderLimits is false.
 func (r *RateLimiter) UpdateRateLimits(provider string, callType string, info *NormalizedRateLimitInfo, config *ProviderConfig) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	key := provider + ":" + callType
 
+	// Apply user overrides if not using provider limits
 	if info != nil && !config.UseProviderLimits {
 		if config.MaxRequestsOverride != nil {
 			info.MaxRequests = config.MaxRequestsOverride
@@ -44,6 +56,8 @@ func (r *RateLimiter) UpdateRateLimits(provider string, callType string, info *N
 	r.providerLimits[key] = info
 }
 
+// canProceed checks if a request can proceed immediately for a given provider and callType.
+// It returns false if the rate limit has been hit and the reset time hasn't passed yet.
 func (r *RateLimiter) canProceed(provider string, callType string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -51,12 +65,12 @@ func (r *RateLimiter) canProceed(provider string, callType string) bool {
 	key := provider + ":" + callType
 	info, ok := r.providerLimits[key]
 	if !ok || info == nil {
-		// No known limits, just proceed
+		// No known limits, assume proceed
 		return true
 	}
 
 	if info.RemainingRequests != nil && *info.RemainingRequests <= 0 {
-		// No requests left. Check if there's a reset time.
+		// Out of requests, check if reset time is still in the future
 		if info.ResetRequestsAt != nil && time.Now().UnixMilli() < *info.ResetRequestsAt {
 			return false
 		}
@@ -64,6 +78,8 @@ func (r *RateLimiter) canProceed(provider string, callType string) bool {
 	return true
 }
 
+// delayBeforeNextRequest calculates how long we must wait before making another request
+// if the rate limit is currently exceeded. It returns a duration to sleep, if any.
 func (r *RateLimiter) delayBeforeNextRequest(provider string, callType string) time.Duration {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -85,17 +101,14 @@ func (r *RateLimiter) delayBeforeNextRequest(provider string, callType string) t
 	return 0
 }
 
+// GetRateLimitInfo returns a copy of the rate limit info for a given provider's "rest" call type.
+// For simplicity, if multiple callTypes exist, it returns only the "rest" type info.
 func (r *RateLimiter) GetRateLimitInfo(provider string) *NormalizedRateLimitInfo {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Without specifying callType, we return nil or just one type.
-	// For simplicity, return nil here or pick a default callType "rest".
-	// If multiple callTypes exist, you might want to combine or pick the main one.
-	// For now, assume "rest" is the main type.
 	key := provider + ":rest"
 	if info, ok := r.providerLimits[key]; ok {
-		// Return a copy of info
 		copyInfo := *info
 		return &copyInfo
 	}

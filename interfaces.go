@@ -1,3 +1,14 @@
+// interfaces.go
+// --------------
+// This file defines the ProviderAdapter interface. Every adapter must implement these methods
+// to integrate with the SDK.
+//
+// Methods:
+// - ExecuteRequest: How to actually send the request to the provider.
+// - ParseRateLimitInfo: How to extract rate limit details from the response.
+// - IsRateLimitError: How to identify a rate limit error (e.g., HTTP 429).
+// - SetRateLimitDefaultsForType: Initialize default rate limits for different request types (rest, graphql, etc.).
+// - IdentifyRequestType: Determine the type of request (rest, graphql, read, write, etc.) based on the request.
 package resilientbridge
 
 // ProviderAdapter defines the interface all adapters must implement.
@@ -6,10 +17,6 @@ type ProviderAdapter interface {
 	ParseRateLimitInfo(resp *NormalizedResponse) (*NormalizedRateLimitInfo, error)
 	IsRateLimitError(resp *NormalizedResponse) bool
 
-	// SetRateLimitDefaultsForType allows setting default rate limits for a specific call type.
 	SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64)
-
-	// IdentifyRequestType inspects the request and returns a call type string
-	// This could be "rest", "graphql", or any other type the adapter supports.
 	IdentifyRequestType(req *NormalizedRequest) string
 }

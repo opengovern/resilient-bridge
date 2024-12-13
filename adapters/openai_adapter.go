@@ -1,3 +1,18 @@
+// openai_adapter.go
+// -----------------
+// This adapter integrates with the OpenAI API. We rely on the rate limit headers returned by the API:
+//
+// Headers:
+// - x-ratelimit-limit-requests: Maximum requests allowed before rate limit is hit.
+// - x-ratelimit-remaining-requests: Requests remaining in the current window.
+// - x-ratelimit-reset-requests: The time until the rate limit resets to its initial state, in a string like "1s".
+//   We must parse this duration and convert it to a future timestamp.
+//
+// Tokens are not applicable, so we ignore any token-related headers.
+//
+// We do not preemptively block requests before hitting the limit. Instead, if we receive a 429 response, we return
+// an error so the SDK can handle retries. ParseRateLimitInfo returns the rate limit info derived from the headers.
+
 package adapters
 
 import (
@@ -5,6 +20,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,13 +36,13 @@ const (
 type OpenAIAdapter struct {
 	APIKey string
 
-	mu                sync.Mutex
-	requestTimestamps []int64
+	mu sync.Mutex
 
 	restMaxRequests int
 	restWindowSecs  int64
 }
 
+// NewOpenAIAdapter creates a new adapter with default limits.
 func NewOpenAIAdapter(apiKey string) *OpenAIAdapter {
 	return &OpenAIAdapter{
 		APIKey:          apiKey,
@@ -35,6 +51,7 @@ func NewOpenAIAdapter(apiKey string) *OpenAIAdapter {
 	}
 }
 
+// SetRateLimitDefaultsForType sets defaults for "rest" requests. OpenAI doesn't use GraphQL.
 func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -49,16 +66,16 @@ func (o *OpenAIAdapter) SetRateLimitDefaultsForType(requestType string, maxReque
 		o.restMaxRequests = maxRequests
 		o.restWindowSecs = windowSecs
 	}
-	// Ignore GraphQL since OpenAI doesn't use it.
 }
 
+// IdentifyRequestType returns "rest" as OpenAI only supports REST endpoints.
 func (o *OpenAIAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
-	// OpenAI is REST-only.
 	return "rest"
 }
 
+// ExecuteRequest sends the request to OpenAI. If OpenAI returns 429, we return an error
+// so that the SDK can handle retries. We do not do synthetic 429 before sending.
 func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	// Do not return synthetic 429. Just make the request.
 	client := &http.Client{}
 	fullURL := "https://api.openai.com" + req.Endpoint
 
@@ -67,10 +84,10 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 		return nil, err
 	}
 
+	// Set headers
 	for k, v := range req.Headers {
 		httpReq.Header.Set(k, v)
 	}
-
 	if httpReq.Header.Get("Authorization") == "" && o.APIKey != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+o.APIKey)
 	}
@@ -83,8 +100,6 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	o.recordRequest()
 
 	data, _ := io.ReadAll(resp.Body)
 	headers := make(map[string]string)
@@ -100,7 +115,7 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 		Data:       data,
 	}
 
-	// If actual 429 from OpenAI, return an error so SDK can handle retries.
+	// If actual 429 from OpenAI, return error.
 	if resp.StatusCode == 429 {
 		return response, errors.New("openai: rate limit exceeded (429)")
 	}
@@ -108,61 +123,55 @@ func (o *OpenAIAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	return response, nil
 }
 
+// ParseRateLimitInfo uses the x-ratelimit-* headers to determine the current rate limit status.
+// We rely solely on these headers instead of internal timestamps.
+//
+// Example headers:
+// x-ratelimit-limit-requests: "60"
+// x-ratelimit-remaining-requests: "59"
+// x-ratelimit-reset-requests: "1s"
+//
+// We'll parse the integer values and the duration.
+// If reset is "1s", we'll convert it into a future Unix timestamp in milliseconds.
 func (o *OpenAIAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
+	h := resp.Headers
+	limitStr, limitOK := h["x-ratelimit-limit-requests"]
+	remainingStr, remainingOK := h["x-ratelimit-remaining-requests"]
+	resetStr, resetOK := h["x-ratelimit-reset-requests"]
 
-	now := time.Now().Unix()
-	windowStart := now - o.restWindowSecs
-	var newTimestamps []int64
-	for _, ts := range o.requestTimestamps {
-		if ts >= windowStart {
-			newTimestamps = append(newTimestamps, ts)
-		}
+	if !limitOK || !remainingOK || !resetOK {
+		// If headers are not present, return nil. We can't derive info without them.
+		return nil, nil
 	}
-	o.requestTimestamps = newTimestamps
 
-	remaining := o.restMaxRequests - len(o.requestTimestamps)
-	var resetAt *int64
-	if remaining <= 0 {
-		resetTime := (windowStart + o.restWindowSecs) * 1000
-		resetAt = &resetTime
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		return nil, nil
 	}
+	remaining, err := strconv.Atoi(remainingStr)
+	if err != nil {
+		return nil, nil
+	}
+
+	// Parse the reset duration string, e.g. "1s"
+	dur, err := time.ParseDuration(resetStr)
+	if err != nil {
+		// If we can't parse, just return nil. Better to have no info than wrong info.
+		return nil, nil
+	}
+	// Convert to a future reset timestamp in ms
+	resetMs := time.Now().Add(dur).UnixMilli()
 
 	info := &resilientbridge.NormalizedRateLimitInfo{
-		MaxRequests:       resilientbridge.IntPtr(o.restMaxRequests),
+		MaxRequests:       resilientbridge.IntPtr(limit),
 		RemainingRequests: resilientbridge.IntPtr(remaining),
-		ResetRequestsAt:   resetAt,
+		ResetRequestsAt:   &resetMs,
 	}
+
 	return info, nil
 }
 
+// IsRateLimitError returns true if the response status code is 429.
 func (o *OpenAIAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
-	// Return true only if the provider actually returns 429.
 	return resp.StatusCode == 429
-}
-
-func (o *OpenAIAdapter) isRateLimited() bool {
-	// Local internal counting not used to return synthetic 429,
-	// but we still track requests to parse rate limits if needed.
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	now := time.Now().Unix()
-	windowStart := now - o.restWindowSecs
-	var newTimestamps []int64
-	for _, ts := range o.requestTimestamps {
-		if ts >= windowStart {
-			newTimestamps = append(newTimestamps, ts)
-		}
-	}
-	o.requestTimestamps = newTimestamps
-
-	return len(o.requestTimestamps) >= o.restMaxRequests
-}
-
-func (o *OpenAIAdapter) recordRequest() {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	o.requestTimestamps = append(o.requestTimestamps, time.Now().Unix())
 }

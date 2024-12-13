@@ -1,3 +1,13 @@
+// internal/time_parser.go
+// ------------------------
+// This internal package provides helper functions for parsing and working with time strings and timestamps.
+// These might be used by adapters or internally in the SDK to convert provider-specific time formats
+// into a standard format or to check if a time is in the future.
+//
+// Functions:
+// - ParseTimeStr: Convert strings like "1s", "6m0s" into milliseconds.
+// - UnixToMs: Convert a UNIX timestamp in seconds to milliseconds.
+// - IsInFuture: Check if a given timestamp (ms) is in the future.
 package internal
 
 import (
@@ -32,12 +42,12 @@ func ParseTimeStr(s string) int64 {
 	return 0
 }
 
-// Convert UNIX timestamp (seconds) to ms
+// UnixToMs converts a UNIX timestamp in seconds to milliseconds.
 func UnixToMs(timestamp int64) int64 {
 	return timestamp * 1000
 }
 
-// Check if a timestamp (ms) is in the future
+// IsInFuture checks if a timestamp (in ms) is in the future relative to the current time.
 func IsInFuture(ms int64) bool {
 	return ms > time.Now().UnixMilli()
 }

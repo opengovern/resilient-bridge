@@ -1,3 +1,25 @@
+// linode_adapter.go
+// -----------------
+// This adapter integrates with the Linode API, assigning different rate limits based on the type of request.
+// It classifies requests into categories (e.g., create_linode, create_volume, list_images, stats_operation, etc.)
+// and applies corresponding rate limits and windows.
+// If a request would exceed the assigned rate limit for that action, it returns a synthetic 429 before sending the request.
+//
+// The code parses Linode's rate limits from response headers for informational purposes, but uses predefined logic
+// to limit requests by action type.
+//
+// Example categories and their limits:
+// - create_linode: 5 requests per 15 seconds
+// - create_volume: 25 requests per minute
+// - list_images: 20 requests per minute
+// - stats_operation: 50 requests per minute
+// - object_storage: 750 requests per second
+// - open_ticket: 2 requests per minute
+// - accept_service_transfer: 2 requests per minute
+// - get_paginated: 200 requests per minute (for listing resources)
+// - get_single_resource: 800 requests per minute
+// - default_action (other non-GET calls): 800 requests per minute
+
 package adapters
 
 import (
@@ -16,9 +38,10 @@ type LinodeAdapter struct {
 	APIToken string
 
 	mu             sync.Mutex
-	requestHistory map[string][]int64 // key: action
+	requestHistory map[string][]int64 // key: action, value: timestamps of recent requests
 }
 
+// NewLinodeAdapter creates a LinodeAdapter with an API token.
 func NewLinodeAdapter(apiToken string) *LinodeAdapter {
 	return &LinodeAdapter{
 		APIToken:       apiToken,
@@ -26,11 +49,12 @@ func NewLinodeAdapter(apiToken string) *LinodeAdapter {
 	}
 }
 
+// SetRateLimitDefaultsForType: Linode rates are considered fixed, ignoring overrides.
 func (l *LinodeAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
-	// Linode's rates are fixed, ignoring overrides.
+	// No custom logic since Linode rates are pre-defined per action category.
 }
 
-// IdentifyRequestType: Linode does not mention GraphQL, assume all are REST.
+// IdentifyRequestType returns "rest" since Linode does not use GraphQL in this integration.
 func (l *LinodeAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
 	return "rest"
 }
@@ -38,6 +62,7 @@ func (l *LinodeAdapter) IdentifyRequestType(req *resilientbridge.NormalizedReque
 func (l *LinodeAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	action, limit, window := l.classifyRequest(req)
 	if l.isRateLimited(action, limit, window) {
+		// If rate-limited, return a synthetic 429 before making the request.
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Headers:    map[string]string{},
@@ -70,6 +95,7 @@ func (l *LinodeAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	}
 	defer resp.Body.Close()
 
+	// Record the request timestamp after a successful execution
 	l.recordRequest(action)
 
 	data, _ := io.ReadAll(resp.Body)
@@ -88,6 +114,8 @@ func (l *LinodeAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 }
 
 func (l *LinodeAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
+	// Linode returns X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+	// Parse these for informational use.
 	h := resp.Headers
 	parseInt := func(key string) *int {
 		if val, ok := h[key]; ok {
@@ -100,6 +128,7 @@ func (l *LinodeAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedRespo
 	parseReset := func(key string) *int64 {
 		if val, ok := h[key]; ok {
 			if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
+				// convert seconds to ms
 				ms := ts * 1000
 				return &ms
 			}
@@ -119,88 +148,73 @@ func (l *LinodeAdapter) IsRateLimitError(resp *resilientbridge.NormalizedRespons
 	return resp.StatusCode == 429
 }
 
+// classifyRequest determines the action category and returns (action, limit, window_seconds).
+// Different endpoints and methods map to different rate limits, as documented above.
 func (l *LinodeAdapter) classifyRequest(req *resilientbridge.NormalizedRequest) (string, int, int64) {
 	method := strings.ToUpper(req.Method)
 	path := req.Endpoint
 
-	// Special actions:
-	// Create Linode: POST /linode/instances
-	if method == "POST" && strings.HasPrefix(path, "/linode/instances") && !strings.Contains(path, "/") {
-		// Actually, /linode/instances might also be followed by ID. If no ID, it's create.
-		// Check if path exactly "/linode/instances" or "/linode/instances?"
-		parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-		if len(parts) == 2 && parts[0] == "linode" && parts[1] == "instances" {
-			return "create_linode", 5, 15 // 5 req/15s
-		}
+	// Create a Linode: 5 req/15s
+	if method == "POST" && strings.HasPrefix(path, "/linode/instances") && !strings.Contains(strings.TrimPrefix(path, "/linode/instances"), "/") {
+		return "create_linode", 5, 15
 	}
 
-	// Create volume: POST /volumes
+	// Create a volume: POST /volumes = 25 req/min
 	if method == "POST" && strings.HasPrefix(path, "/volumes") && (path == "/volumes" || path == "/volumes?") {
-		return "create_volume", 25, 60 // 25/min
+		return "create_volume", 25, 60
 	}
 
-	// List images: GET /images
+	// List images: GET /images = 20 req/min
 	if method == "GET" && strings.HasPrefix(path, "/images") && (path == "/images" || strings.Contains(path, "/images?")) {
-		return "list_images", 20, 60 // 20/min
+		return "list_images", 20, 60
 	}
 
-	// Stats endpoints contain /stats:
-	// For example: GET /linode/instances/{id}/stats
-	// We'll just check if '/stats' appears:
+	// Stats operation: GET something/stats = 50 req/min
 	if method == "GET" && strings.Contains(path, "/stats") {
-		return "stats_operation", 50, 60 // 50/min
+		return "stats_operation", 50, 60
 	}
 
-	// Object Storage operations:
-	// Any endpoint containing /object-storage:
+	// Object storage: any endpoint containing /object-storage = 750 req/s
 	if strings.Contains(path, "/object-storage") {
-		return "object_storage", 750, 1 // 750/s
+		return "object_storage", 750, 1
 	}
 
-	// Open support ticket: POST /support/tickets
+	// Open a support ticket: POST /support/tickets = 2 req/min
 	if method == "POST" && strings.HasPrefix(path, "/support/tickets") {
-		return "open_ticket", 2, 60 // 2/min
+		return "open_ticket", 2, 60
 	}
 
-	// Accept a service transfer:
-	// POST /account/service-transfers/{transferId}/accept
+	// Accept a service transfer: POST /account/service-transfers/xxx/accept = 2 req/min
 	if method == "POST" && strings.Contains(path, "/account/service-transfers/") && strings.HasSuffix(path, "/accept") {
-		return "accept_service_transfer", 2, 60 // 2/min
+		return "accept_service_transfer", 2, 60
 	}
 
-	// Now fallback:
-	// If GET and likely returns a collection (paginated):
-	// We guess if the endpoint is plural and no id at the end, treat as get_paginated
-	// A simplistic approach: If method=GET and does not contain a numeric ID or additional segment after resource name:
+	// For GET requests, distinguish between fetching a single resource (with ID) or paginated lists:
 	if method == "GET" {
-		// Check if path likely ends at a collection endpoint:
-		// We'll assume if the path ends right after a resource name or has query params but no trailing id
-		// If there's a numeric ID at the end or a known pattern (like "/linode/instances/123"), skip.
-		// For simplicity: If no second level ID segment at the end:
 		parts := strings.Split(path, "/")
 		if len(parts) > 2 {
 			// Check last part if numeric
 			last := parts[len(parts)-1]
 			if isNumeric(last) {
-				// probably a single resource GET => default to 800/min
+				// single resource
 				return "get_single_resource", 800, 60
 			}
 		}
-		// assume paginated collection
+		// otherwise, assume it's a collection
 		return "get_paginated", 200, 60
 	}
 
-	// Default (non-GET operations): 800 req/min
+	// Default non-GET actions: 800 req/min
 	return "default_action", 800, 60
 }
 
+// isRateLimited checks if the given action has hit its rate limit.
 func (l *LinodeAdapter) isRateLimited(action string, limit int, windowSecs int64) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	now := time.Now().Unix()
 	windowStart := now - windowSecs
-
 	timestamps := l.requestHistory[action]
 	var newTimestamps []int64
 	for _, ts := range timestamps {
@@ -213,15 +227,15 @@ func (l *LinodeAdapter) isRateLimited(action string, limit int, windowSecs int64
 	return len(newTimestamps) >= limit
 }
 
+// recordRequest stores the current timestamp for the given action's request.
 func (l *LinodeAdapter) recordRequest(action string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
-	timestamps := l.requestHistory[action]
-	timestamps = append(timestamps, time.Now().Unix())
-	l.requestHistory[action] = timestamps
+	now := time.Now().Unix()
+	l.requestHistory[action] = append(l.requestHistory[action], now)
 }
 
+// isNumeric checks if a string consists only of digits.
 func isNumeric(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil

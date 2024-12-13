@@ -1,3 +1,24 @@
+// cloudflare_adapter.go
+// -----------------------
+// This adapter integrates with the Cloudflare API. Cloudflare has both a general API limit and a separate GraphQL limit.
+//
+// Limits:
+// - General API (rest): 1200 requests per 5 minutes per user.
+// - GraphQL API: 300 queries per 5 minutes per user.
+//
+// If a request is GraphQL: It must not exceed either the general limit or the GraphQL-specific limit.
+// If a request is non-GraphQL (rest): It must not exceed the general limit only.
+//
+// We track request timestamps locally to determine if we are rate-limited. Cloudflare does not return explicit rate-limit
+// headers for general usage in all cases, so we rely on our internal counters.
+//
+// Key Points:
+// - isGraphQLRequest checks if the endpoint contains "/graphql" to categorize request types.
+// - isRateLimited compares the counts of recent requests against known limits.
+// - recordRequest stores timestamps of successful requests, and filterTimestamps prunes old timestamps beyond the window.
+// - ParseRateLimitInfo returns nil since no specific headers are used.
+// - If we hit the limit, ExecuteRequest returns a synthetic 429 before even sending the request.
+
 package adapters
 
 import (
@@ -11,13 +32,10 @@ import (
 	resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
-// Cloudflare limits
-// General API: 1200 requests/5 min/user (rest)
-// GraphQL API: 300 GraphQL queries/5 min/user (graphql)
-//
-// If a request is GraphQL: must not exceed either the general limit or the GraphQL limit.
-// If a request is non-GraphQL: must not exceed the general limit only.
-
+// Cloudflare limits (fixed, ignoring user overrides for now):
+// General API (REST): 1200 requests/5 min
+// GraphQL: 300 queries/5 min
+// Window = 300 seconds (5 minutes)
 const (
 	cloudflareGeneralLimit = 1200
 	cloudflareGraphQLLimit = 300
@@ -28,20 +46,24 @@ type CloudflareAdapter struct {
 	APIToken string
 
 	mu             sync.Mutex
-	generalHistory []int64 // timestamps of all requests in seconds
-	graphqlHistory []int64 // timestamps of graphql requests in seconds
+	generalHistory []int64 // timestamps (in Unix seconds) of all requests
+	graphqlHistory []int64 // timestamps (in Unix seconds) of GraphQL requests
 }
 
+// NewCloudflareAdapter creates a new instance of CloudflareAdapter with the given API token.
 func NewCloudflareAdapter(apiToken string) *CloudflareAdapter {
 	return &CloudflareAdapter{
 		APIToken: apiToken,
 	}
 }
 
+// SetRateLimitDefaultsForType currently ignores overrides since Cloudflare rates are fixed.
 func (c *CloudflareAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
 	// Cloudflare has fixed rules. Ignore overrides for now.
 }
 
+// IdentifyRequestType determines if a given request should be categorized as "graphql" or "rest".
+// If endpoint contains "/graphql", we consider it a GraphQL request.
 func (c *CloudflareAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
 	if c.isGraphQLRequest(req) {
 		return "graphql"
@@ -49,9 +71,12 @@ func (c *CloudflareAdapter) IdentifyRequestType(req *resilientbridge.NormalizedR
 	return "rest"
 }
 
+// ExecuteRequest sends the request to Cloudflare if not rate-limited.
+// If rate-limited, returns a synthetic 429 directly, without hitting the API.
 func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	isGraphQL := c.isGraphQLRequest(req)
 	if c.isRateLimited(isGraphQL) {
+		// Return synthetic 429 if we're locally rate-limited.
 		return &resilientbridge.NormalizedResponse{
 			StatusCode: 429,
 			Headers:    map[string]string{},
@@ -61,8 +86,6 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 
 	client := &http.Client{}
 	baseURL := "https://api.cloudflare.com/client/v4"
-	// For GraphQL requests, endpoint might be "/graphql" from the user.
-	// If users specify full endpoint starting with "/graphql" it will append to base.
 	fullURL := baseURL + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
@@ -70,9 +93,11 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 		return nil, err
 	}
 
+	// Set headers from NormalizedRequest
 	for k, v := range req.Headers {
 		httpReq.Header.Set(k, v)
 	}
+	// If APIToken is provided, use it in Authorization header if not already present.
 	if c.APIToken != "" && httpReq.Header.Get("Authorization") == "" {
 		httpReq.Header.Set("Authorization", "Bearer "+c.APIToken)
 	}
@@ -86,7 +111,7 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 	}
 	defer resp.Body.Close()
 
-	// Record request after successful execution
+	// Record request timestamp after successful completion
 	c.recordRequest(isGraphQL)
 
 	data, _ := io.ReadAll(resp.Body)
@@ -104,22 +129,24 @@ func (c *CloudflareAdapter) ExecuteRequest(req *resilientbridge.NormalizedReques
 	}, nil
 }
 
+// ParseRateLimitInfo returns nil because Cloudflare general APIs do not consistently provide rate-limit headers.
+// We rely on internal tracking instead.
 func (c *CloudflareAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// Cloudflare docs on general rate limiting: no special headers mentioned.
-	// Return nil, as we can't parse any explicit rate limit from headers.
 	return nil, nil
 }
 
+// IsRateLimitError checks if Cloudflare actually returned a 429 status code.
 func (c *CloudflareAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
 	return resp.StatusCode == 429
 }
 
+// isGraphQLRequest checks if the request endpoint includes "/graphql".
 func (c *CloudflareAdapter) isGraphQLRequest(req *resilientbridge.NormalizedRequest) bool {
-	// Cloudflare GraphQL endpoint typically: /graphql
-	// If endpoint contains "/graphql", consider it GraphQL.
 	return strings.Contains(req.Endpoint, "/graphql")
 }
 
+// isRateLimited checks if making another request would exceed local rate limits.
+// It ensures that recent requests (within last 5 minutes) do not exceed either general or GraphQL counts.
 func (c *CloudflareAdapter) isRateLimited(isGraphQL bool) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -133,7 +160,7 @@ func (c *CloudflareAdapter) isRateLimited(isGraphQL bool) bool {
 		return true
 	}
 
-	// If GraphQL, also check GraphQL limit
+	// GraphQL limit check (only if this request is GraphQL)
 	if isGraphQL {
 		c.graphqlHistory = filterTimestamps(c.graphqlHistory, windowStart)
 		if len(c.graphqlHistory) >= cloudflareGraphQLLimit {
@@ -144,6 +171,7 @@ func (c *CloudflareAdapter) isRateLimited(isGraphQL bool) bool {
 	return false
 }
 
+// recordRequest appends the current timestamp to generalHistory, and graphqlHistory if it's a GraphQL request.
 func (c *CloudflareAdapter) recordRequest(isGraphQL bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -155,6 +183,7 @@ func (c *CloudflareAdapter) recordRequest(isGraphQL bool) {
 	}
 }
 
+// filterTimestamps returns only timestamps within the allowed window.
 func filterTimestamps(timestamps []int64, windowStart int64) []int64 {
 	var newT []int64
 	for _, ts := range timestamps {
