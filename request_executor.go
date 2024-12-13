@@ -23,6 +23,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 	}
 
 	attempts := 0
+	saw429 := false // track if we ever saw a real 429 response
 	for {
 		if !re.sdk.rateLimiter.canProceed(providerName, callType) {
 			delay := re.sdk.rateLimiter.delayBeforeNextRequest(providerName, callType)
@@ -44,7 +45,8 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 				continue
 			}
 			re.sdk.debugf("Provider %s (callType=%s): Max retries reached after error: %v\n", providerName, callType, err)
-			return nil, err
+			// No actual 429 seen, so this is just a generic failure
+			return nil, fmt.Errorf("after retries, request failed: %w", err)
 		}
 
 		// Parse rate limit info if available
@@ -53,7 +55,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		}
 
 		if adapter.IsRateLimitError(resp) {
-			// Actual 429 from provider
+			saw429 = true
 			if attempts < maxRetries {
 				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				re.sdk.debugf("Provider %s (callType=%s): 429 rate limit error. Backing off for %v before retry...\n", providerName, callType, wait)
