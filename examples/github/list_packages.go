@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -42,17 +43,20 @@ type PackageVersion struct {
 }
 
 func main() {
+	// Define flags
+	orgFlag := flag.String("org", "opengovern", "GitHub organization name (default: opengovern)")
+	typeFlag := flag.String("type", "container", "Package type (npm, maven, rubygems, nuget, container)")
+	flag.Parse()
+
+	org := *orgFlag
+	packageType := *typeFlag
+
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("GITHUB_API_TOKEN environment variable not set or missing read:packages scope")
 	}
 
-	// Set your organization and packageType:
-	org := "opengovern" // replace with your organization
 	// Allowed package types: npm, maven, rubygems, nuget, container
-	packageType := "container" // for example, "container"
-
-	// Validate packageType
 	allowedTypes := map[string]bool{"npm": true, "maven": true, "rubygems": true, "nuget": true, "container": true}
 	if !allowedTypes[packageType] {
 		log.Fatalf("Unsupported package type: %s. Allowed: npm, maven, rubygems, nuget, container", packageType)
@@ -121,7 +125,6 @@ func main() {
 	fmt.Printf("HTML URL: %s\n", singlePackage.HTMLURL)
 
 	// 3. List package versions for that package
-	// Endpoint: GET /orgs/{org}/packages/{package_type}/{package_name}/versions
 	versionsReq := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s/versions", org, packageType, packageName),
@@ -142,7 +145,7 @@ func main() {
 	}
 
 	// Only show the last 20 versions or fewer if less than 20 are available
-	maxVersionsToShow := 20
+	const maxVersionsToShow = 20
 	if len(versions) > maxVersionsToShow {
 		versions = versions[len(versions)-maxVersionsToShow:]
 	}
