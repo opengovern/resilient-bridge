@@ -25,7 +25,7 @@ type NormalizedRateLimitInfo struct {
 	GlobalResetAt *int64
 }
 
-// intPtr is a helper function to return a pointer to an int.
-func intPtr(i int) *int {
+// IntPtr returns a pointer to an int, exported so it can be used by adapters.
+func IntPtr(i int) *int {
 	return &i
 }
