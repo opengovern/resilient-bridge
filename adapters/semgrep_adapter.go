@@ -6,17 +6,15 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
 )
 
 type SemgrepAdapter struct {
 	APIToken string
-
-	mu sync.Mutex
 }
 
+// NewSemgrepAdapter creates a new SemgrepAdapter instance.
 func NewSemgrepAdapter(apiToken string) *SemgrepAdapter {
 	return &SemgrepAdapter{
 		APIToken: apiToken,
@@ -24,7 +22,12 @@ func NewSemgrepAdapter(apiToken string) *SemgrepAdapter {
 }
 
 func (s *SemgrepAdapter) SetRateLimitDefaultsForType(requestType string, maxRequests int, windowSecs int64) {
-	// Semgrep rate limits are not specified, ignoring overrides.
+	// Semgrep rate limits are not specifically documented. Ignore overrides.
+}
+
+// IdentifyRequestType returns "rest" since Semgrep uses REST endpoints.
+func (s *SemgrepAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
+	return "rest"
 }
 
 func (s *SemgrepAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
@@ -47,7 +50,6 @@ func (s *SemgrepAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) 
 		httpReq.Header.Set("Content-Type", "application/json")
 	}
 
-	// Simple request execution
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func (s *SemgrepAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) 
 }
 
 func (s *SemgrepAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResponse) (*resilientbridge.NormalizedRateLimitInfo, error) {
-	// No documented rate limit headers
+	// No documented rate limit headers for Semgrep.
 	return nil, nil
 }
 
