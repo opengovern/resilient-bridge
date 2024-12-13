@@ -1,4 +1,11 @@
-// utils/azure_spn.go
+// azure_spn.go
+
+// Package utils provides utility functions and helpers for authenticating and interacting with various services.
+//
+// This file contains logic to authenticate against Azure Active Directory (AAD) using a Service Principal Name (SPN).
+// It provides functions to acquire tokens (such as AAD tokens) needed to call Azure Resource Manager or other Azure services.
+// The SPN authentication is done via client_id, client_secret, and tenant_id.
+// Example usage: Acquire a token for Azure Management endpoints or other Azure resource endpoints using SPN credentials.
 package utils
 
 import (
