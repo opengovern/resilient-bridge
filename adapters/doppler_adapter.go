@@ -41,24 +41,16 @@ func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 		d.restMaxRequests = maxRequests
 		d.restWindowSecs = windowSecs
 	}
-	// If requestType == "graphql", ignore since Doppler does not support GraphQL.
+	// Ignore "graphql" since not applicable to Doppler.
 }
 
 func (d *DopplerAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
-	// Doppler does not have GraphQL. All requests are REST.
+	// All Doppler requests are REST.
 	return "rest"
 }
 
 func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	// Doppler = REST only
-	if d.isRateLimited() {
-		return &resilientbridge.NormalizedResponse{
-			StatusCode: 429,
-			Headers:    map[string]string{},
-			Data:       []byte(`{"error":"Doppler rate limit reached"}`),
-		}, nil
-	}
-
+	// Make the request without returning a synthetic 429 beforehand.
 	client := &http.Client{}
 	fullURL := "https://api.doppler.com" + req.Endpoint
 
@@ -80,6 +72,8 @@ func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) 
 	}
 	defer resp.Body.Close()
 
+	// Record the request after it's done, regardless of response.
+	// The SDK uses ParseRateLimitInfo to adjust any internal counters.
 	d.recordRequest()
 
 	data, _ := io.ReadAll(resp.Body)
@@ -129,24 +123,8 @@ func (d *DopplerAdapter) ParseRateLimitInfo(resp *resilientbridge.NormalizedResp
 }
 
 func (d *DopplerAdapter) IsRateLimitError(resp *resilientbridge.NormalizedResponse) bool {
+	// Only return true if the provider actually returned a 429 status code.
 	return resp.StatusCode == 429
-}
-
-func (d *DopplerAdapter) isRateLimited() bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	now := time.Now().Unix()
-	windowStart := now - d.restWindowSecs
-	var newTimestamps []int64
-	for _, ts := range d.requestTimestamps {
-		if ts >= windowStart {
-			newTimestamps = append(newTimestamps, ts)
-		}
-	}
-	d.requestTimestamps = newTimestamps
-
-	return len(d.requestTimestamps) >= d.restMaxRequests
 }
 
 func (d *DopplerAdapter) recordRequest() {

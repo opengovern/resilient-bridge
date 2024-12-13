@@ -1,3 +1,4 @@
+// list_configs.go
 package main
 
 import (
@@ -25,7 +26,7 @@ type DopplerConfigsResponse struct {
 }
 
 func main() {
-	// Command-line flags
+	// Define command-line flags
 	project := flag.String("project", "", "Project slug (required)")
 	environment := flag.String("environment", "", "Environment slug (optional)")
 	page := flag.Int("page", 1, "Page number")
@@ -45,25 +46,24 @@ func main() {
 
 	// Create a new instance of the SDK
 	sdk := resilientbridge.NewResilientBridge()
+	// If you want to see debug logs, uncomment the next line:
+	// sdk.SetDebug(true)
 
-	// Optional overrides: for demonstration, we specify REST and GraphQL overrides.
-	// In this case, Doppler doesn't use GraphQL, but let's say we just set them anyway.
-	restMaxRequests := 500      // override REST max requests if desired
+	// Optional overrides for demonstration:
+	// Using custom limits for REST calls only since Doppler doesn't use GraphQL.
+	restMaxRequests := 500      // override REST max requests
 	restWindowSecs := int64(60) // override REST window in seconds
-	// GraphQL not really used by Doppler, but we set them hypothetically
-	gqlMaxRequests := 200
-	gqlWindowSecs := int64(120)
 
+	// Register Doppler provider
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
-		UseProviderLimits:          true,
-		MaxRequestsOverride:        &restMaxRequests,
-		WindowSecsOverride:         &restWindowSecs,
-		GraphQLMaxRequestsOverride: &gqlMaxRequests,
-		GraphQLWindowSecsOverride:  &gqlWindowSecs,
-		MaxRetries:                 3,
-		BaseBackoff:                200 * time.Millisecond,
+		UseProviderLimits:   true,
+		MaxRequestsOverride: &restMaxRequests,
+		WindowSecsOverride:  &restWindowSecs,
+		MaxRetries:          3,
+		BaseBackoff:         200 * time.Millisecond,
 	})
 
+	// Build query parameters
 	q := url.Values{}
 	q.Set("project", *project)
 	if *environment != "" {
@@ -78,20 +78,24 @@ func main() {
 		Headers:  map[string]string{"accept": "application/json"},
 	}
 
+	// Execute the request through the SDK
 	resp, err := sdk.Request("doppler", req)
 	if err != nil {
 		log.Fatalf("Error listing configs: %v", err)
 	}
 
+	// Check HTTP status
 	if resp.StatusCode >= 400 {
 		log.Fatalf("Error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
+	// Parse the JSON response into our DopplerConfigsResponse struct
 	var configsResp DopplerConfigsResponse
 	if err := json.Unmarshal(resp.Data, &configsResp); err != nil {
 		log.Fatalf("Error parsing configs response: %v", err)
 	}
 
+	// Display results
 	fmt.Printf("Page: %d / %d\n", configsResp.Page, configsResp.TotalPages)
 	fmt.Println("Configs:")
 	for _, c := range configsResp.Configs {

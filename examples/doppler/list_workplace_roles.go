@@ -11,7 +11,6 @@ import (
 )
 
 // DopplerRolesResponse represents the JSON structure returned by the Doppler API for listing roles.
-// Adjust fields based on the actual API response.
 type DopplerRolesResponse struct {
 	Roles []struct {
 		ID   string `json:"id"`
@@ -28,8 +27,13 @@ func main() {
 
 	// Create a new instance of the SDK
 	sdk := resilientbridge.NewResilientBridge()
+	// If you want to see debug logs for the SDK, uncomment the next line:
+	// sdk.SetDebug(true)
+
+	// Register the Doppler provider. Since we're not relying on provider limits, set UseProviderLimits to false.
+	// If you'd like to enforce limits or overrides, adjust config accordingly.
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
-		UseProviderLimits:   false, // or true if you want to follow actual provider limits
+		UseProviderLimits:   false,
 		MaxRequestsOverride: nil,
 		MaxRetries:          3,
 		BaseBackoff:         0,
@@ -41,24 +45,32 @@ func main() {
 		Headers:  map[string]string{"accept": "application/json"},
 	}
 
+	// Execute the request through the SDK
 	resp, err := sdk.Request("doppler", req)
 	if err != nil {
 		log.Fatalf("Error listing workplace roles: %v", err)
 	}
 
+	// Handle HTTP errors
 	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 		log.Fatalf("Client error %d: %s", resp.StatusCode, string(resp.Data))
 	} else if resp.StatusCode >= 500 {
 		log.Fatalf("Server error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
+	// Parse the JSON response into our DopplerRolesResponse struct
 	var rolesResp DopplerRolesResponse
 	if err := json.Unmarshal(resp.Data, &rolesResp); err != nil {
 		log.Fatalf("Error parsing roles response: %v", err)
 	}
 
-	fmt.Println("Workplace Roles:")
-	for _, role := range rolesResp.Roles {
-		fmt.Printf("- ID: %s, Name: %s\n", role.ID, role.Name)
+	// Validate that the request succeeded
+	if !rolesResp.Success {
+		fmt.Println("The request did not succeed according to the 'success' field.")
+	} else {
+		fmt.Println("Workplace Roles:")
+		for _, role := range rolesResp.Roles {
+			fmt.Printf("- ID: %s, Name: %s\n", role.ID, role.Name)
+		}
 	}
 }

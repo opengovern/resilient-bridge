@@ -11,10 +11,10 @@ import (
 	"time"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
-
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
+// DopplerProjectsResponse represents the JSON structure returned by Doppler for listing projects.
 type DopplerProjectsResponse struct {
 	Projects []struct {
 		Name string `json:"name"`
@@ -31,7 +31,12 @@ func main() {
 		log.Fatal("Environment variable YOUR_DOPPLER_API_TOKEN not set")
 	}
 
-	sdk := resilientbridge.NewResilientBridge() // Updated constructor name and package
+	// Initialize the SDK
+	sdk := resilientbridge.NewResilientBridge()
+	// Optional: enable debug logs if you want to observe internal decision making:
+	// sdk.SetDebug(true)
+
+	// Register the Doppler provider, using provider limits and enabling retries with backoff.
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
 		MaxRetries:        3,
@@ -60,13 +65,14 @@ func main() {
 				case <-done:
 					return
 				default:
+					// continue
 				}
 
 				attempt++
 
-				// Introduce variability: random sleep before each request
+				// Introduce variability in timing
 				sleepTime := time.Duration(rand.Intn(500)) * time.Millisecond
-				fmt.Printf("[Worker %d][Attempt %d] Sleeping %v before request for variability.\n", workerID, attempt, sleepTime)
+				fmt.Printf("[Worker %d][Attempt %d] Sleeping %v for variability before request.\n", workerID, attempt, sleepTime)
 				time.Sleep(sleepTime)
 
 				// Vary the page parameter slightly over time
@@ -88,11 +94,12 @@ func main() {
 				}
 
 				if resp.StatusCode == 429 {
+					// Rate limit hit
 					once.Do(func() {
 						got429 = true
 						fmt.Printf("\n---\n[Worker %d][Attempt %d] Hit the rate limit!\n", workerID, attempt)
 						printRateLimitInfo(sdk)
-						fmt.Println("The SDK applied exponential backoff and retries but we hit 429 anyway.")
+						fmt.Println("The SDK applied retries with backoff, but we still hit 429.")
 						fmt.Println("Stopping all requests now.")
 						close(done)
 					})
@@ -118,7 +125,7 @@ func main() {
 	if !got429 {
 		fmt.Println("Did not receive 429 after many attempts.")
 	} else {
-		fmt.Println("Test completed, rate limit observed with variability in requests.")
+		fmt.Println("Test completed, rate limit observed and handled with variability in requests.")
 	}
 }
 
