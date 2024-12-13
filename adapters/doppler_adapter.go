@@ -41,7 +41,6 @@ func (d *DopplerAdapter) SetRateLimitDefaultsForType(requestType string, maxRequ
 		d.restMaxRequests = maxRequests
 		d.restWindowSecs = windowSecs
 	}
-	// Ignore "graphql" since not applicable to Doppler.
 }
 
 func (d *DopplerAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequest) string {
@@ -50,7 +49,7 @@ func (d *DopplerAdapter) IdentifyRequestType(req *resilientbridge.NormalizedRequ
 }
 
 func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
-	// Make the request without returning a synthetic 429 beforehand.
+	// No synthetic 429 returned here. We just send the request.
 	client := &http.Client{}
 	fullURL := "https://api.doppler.com" + req.Endpoint
 
@@ -72,8 +71,7 @@ func (d *DopplerAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) 
 	}
 	defer resp.Body.Close()
 
-	// Record the request after it's done, regardless of response.
-	// The SDK uses ParseRateLimitInfo to adjust any internal counters.
+	// Record the request after it completes
 	d.recordRequest()
 
 	data, _ := io.ReadAll(resp.Body)
