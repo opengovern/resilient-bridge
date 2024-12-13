@@ -33,8 +33,9 @@ func main() {
 
 	// Initialize the SDK
 	sdk := resilientbridge.NewResilientBridge()
-	// Optional: enable debug logs if you want to observe internal decision making:
-	sdk.SetDebug(true)
+
+	// You can enable debug to see internal decision making, but it can be very verbose:
+	// sdk.SetDebug(true)
 
 	// Register the Doppler provider, using provider limits and enabling retries with backoff.
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
@@ -45,13 +46,17 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	numWorkers := 20
+	numWorkers := 10
 	var wg sync.WaitGroup
 	wg.Add(numWorkers)
 
 	done := make(chan struct{})
 	var once sync.Once
 	var got429 bool
+
+	// We want to make a large number of requests. Let's say each worker tries 150 attempts.
+	// Total = numWorkers * 150 = 1500 requests.
+	maxAttemptsPerWorker := 150
 
 	for w := 0; w < numWorkers; w++ {
 		workerID := w
@@ -60,7 +65,8 @@ func main() {
 			attempt := 0
 			// Each worker starts with a different base page offset to add variability
 			pageOffset := workerID * 2
-			for {
+
+			for attempt < maxAttemptsPerWorker {
 				select {
 				case <-done:
 					return
@@ -89,17 +95,18 @@ func main() {
 
 				resp, err := sdk.Request("doppler", req)
 				if err != nil {
+					// If we failed after all retries, print error and stop this worker
 					fmt.Printf("[Worker %d][Attempt %d] After retries, request failed: %v\n", workerID, attempt, err)
 					return
 				}
 
 				if resp.StatusCode == 429 {
-					// Rate limit hit
+					// Rate limit hit from actual provider
 					once.Do(func() {
 						got429 = true
 						fmt.Printf("\n---\n[Worker %d][Attempt %d] Hit the rate limit!\n", workerID, attempt)
 						printRateLimitInfo(sdk)
-						fmt.Println("The SDK applied retries with backoff, but we still hit 429.")
+						fmt.Println("The SDK applied retries with backoff, but we still hit 429 from the provider.")
 						fmt.Println("Stopping all requests now.")
 						close(done)
 					})
@@ -109,6 +116,7 @@ func main() {
 					return
 				}
 
+				// Parse the response
 				var projectsResp DopplerProjectsResponse
 				if err := json.Unmarshal(resp.Data, &projectsResp); err != nil {
 					fmt.Printf("[Worker %d][Attempt %d] Error parsing projects response: %v\n", workerID, attempt, err)
@@ -123,9 +131,9 @@ func main() {
 	wg.Wait()
 
 	if !got429 {
-		fmt.Println("Did not receive 429 after many attempts.")
+		fmt.Println("Did not receive a 429 rate limit error from the provider after many attempts.")
 	} else {
-		fmt.Println("Test completed, rate limit observed and handled with variability in requests.")
+		fmt.Println("Test completed, a 429 rate limit error was observed from the provider and handled.")
 	}
 }
 
