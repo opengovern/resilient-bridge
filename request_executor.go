@@ -4,6 +4,7 @@ package resilientbridge
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -25,10 +26,11 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 
 	attempts := 0
 	for {
+		// If we can't proceed due to known rate limit info, wait preemptively
 		if !re.sdk.rateLimiter.canProceed(providerName, callType) {
 			delay := re.sdk.rateLimiter.delayBeforeNextRequest(providerName, callType)
 			if delay > 0 && re.sdk.Debug {
-				fmt.Printf("[DEBUG] Provider %s (callType=%s): Must wait %v due to pre-emptive rate limit.\n", providerName, callType, delay)
+				fmt.Printf("[DEBUG] Provider %s (callType=%s): Must wait %v due to preemptive rate limit.\n", providerName, callType, delay)
 			}
 			time.Sleep(delay)
 		}
@@ -36,7 +38,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		re.sdk.debugf("Provider %s (callType=%s): Sending request (attempt %d)...\n", providerName, callType, attempts+1)
 		resp, err := operation()
 		if err != nil {
-			// Non-HTTP error
+			// Network or other non-HTTP error
 			if attempts < maxRetries {
 				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 				re.sdk.debugf("Provider %s (callType=%s): Operation error: %v. Retrying in %v (attempt %d/%d)...\n", providerName, callType, err, wait, attempts+1, maxRetries)
@@ -56,9 +58,20 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		if adapter.IsRateLimitError(resp) {
 			// Actual 429 from provider
 			if attempts < maxRetries {
-				wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
-				re.sdk.debugf("Provider %s (callType=%s): 429 rate limit error. Backing off for %v before retry...\n", providerName, callType, wait)
-				time.Sleep(wait)
+				// Check if Retry-After header is present
+				retryAfter := re.parseRetryAfter(resp)
+				if retryAfter > 0 {
+					// Add jitter to the retry-after duration
+					jitter := re.calculateJitter(retryAfter, 0.1) // 10% jitter
+					totalWait := retryAfter + jitter
+					re.sdk.debugf("Provider %s (callType=%s): 429 rate limit, Retry-After present: waiting %v (+%v jitter) before retry (attempt %d/%d).\n", providerName, callType, retryAfter, jitter, attempts+1, maxRetries)
+					time.Sleep(totalWait)
+				} else {
+					// No Retry-After present, fallback to exponential backoff
+					wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
+					re.sdk.debugf("Provider %s (callType=%s): 429 rate limit, no Retry-After header. Backing off %v before retry (attempt %d/%d)...\n", providerName, callType, wait, attempts+1, maxRetries)
+					time.Sleep(wait)
+				}
 				attempts++
 				continue
 			}
@@ -67,7 +80,7 @@ func (re *RequestExecutor) ExecuteWithRetry(providerName string, callType string
 		}
 
 		if resp.StatusCode >= 500 && attempts < maxRetries {
-			// Server error, retry
+			// Server error, retry with backoff
 			wait := re.calculateBackoffWithJitter(baseBackoff, attempts)
 			re.sdk.debugf("Provider %s (callType=%s): Server error %d. Retrying in %v (attempt %d/%d)...\n", providerName, callType, resp.StatusCode, wait, attempts+1, maxRetries)
 			time.Sleep(wait)
@@ -96,4 +109,20 @@ func (re *RequestExecutor) calculateBackoffWithJitter(base time.Duration, attemp
 	jitterFactor := 0.5
 	jitter := time.Duration(rand.Float64() * float64(backoff) * jitterFactor)
 	return backoff + jitter
+}
+
+func (re *RequestExecutor) parseRetryAfter(resp *NormalizedResponse) time.Duration {
+	if val, ok := resp.Headers["retry-after"]; ok {
+		if seconds, err := strconv.Atoi(val); err == nil {
+			return time.Duration(seconds) * time.Second
+		}
+		// If it's not an integer, ignore and return 0
+	}
+	return 0
+}
+
+// calculateJitter calculates an additional jitter duration as a fraction of a base duration.
+func (re *RequestExecutor) calculateJitter(base time.Duration, fraction float64) time.Duration {
+	jitter := time.Duration(rand.Float64() * float64(base) * fraction)
+	return jitter
 }

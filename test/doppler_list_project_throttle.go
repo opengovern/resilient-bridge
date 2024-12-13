@@ -35,7 +35,7 @@ func main() {
 	sdk := resilientbridge.NewResilientBridge()
 
 	// You can enable debug to see internal decision making, but it can be very verbose:
-	// sdk.SetDebug(true)
+	sdk.SetDebug(true)
 
 	// Register the Doppler provider, using provider limits and enabling retries with backoff.
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
@@ -46,7 +46,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	numWorkers := 10
+	numWorkers := 20
 	var wg sync.WaitGroup
 	wg.Add(numWorkers)
 
@@ -55,7 +55,7 @@ func main() {
 	var got429 bool
 
 	// We want to make a large number of requests. Let's say each worker tries 150 attempts.
-	// Total = numWorkers * 150 = 1500 requests.
+	// Total requests = numWorkers * 150
 	maxAttemptsPerWorker := 150
 
 	for w := 0; w < numWorkers; w++ {
