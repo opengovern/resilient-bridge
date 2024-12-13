@@ -34,7 +34,7 @@ func main() {
 	// Initialize the SDK
 	sdk := resilientbridge.NewResilientBridge()
 	// Optional: enable debug logs if you want to observe internal decision making:
-	// sdk.SetDebug(true)
+	sdk.SetDebug(true)
 
 	// Register the Doppler provider, using provider limits and enabling retries with backoff.
 	sdk.RegisterProvider("doppler", &adapters.DopplerAdapter{APIToken: token}, &resilientbridge.ProviderConfig{
