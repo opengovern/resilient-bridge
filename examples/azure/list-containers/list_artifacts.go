@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,21 +9,42 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"myapp/utils" // Adjust import path as needed to point to your utils package
 )
 
 func main() {
 	tenantID := os.Getenv("AZURE_TENANT_ID")
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	registry := os.Getenv("ACR_REGISTRY_NAME")     // e.g. "myregistry.azurecr.io"
-	repository := os.Getenv("ACR_REPOSITORY_NAME") // e.g. "myrepo"
+	registry := os.Getenv("ACR_REGISTRY_LOGIN_URI") // e.g. "myregistry.azurecr.io"
+	repository := os.Getenv("ACR_REPOSITORY_NAME")  // e.g. "myrepo"
 
-	// 1. Get Azure AD token
-	aadToken, err := getAADToken(tenantID, clientID, clientSecret)
-	if err != nil {
-		fmt.Printf("Error getting AAD token: %v\n", err)
+	if tenantID == "" || clientID == "" || clientSecret == "" || registry == "" || repository == "" {
+		fmt.Println("Please set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ACR_REGISTRY_LOGIN_URI, and ACR_REPOSITORY_NAME environment variables.")
 		return
 	}
+
+	// 1. Use AzureSPN to get AAD token
+	cfg := &utils.AzureSPNConfig{
+		TenantID:     tenantID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		// AuthorityHost and Resource can be left as default if your utils sets them by default.
+	}
+	spn, err := utils.NewAzureSPN(cfg)
+	if err != nil {
+		fmt.Printf("Error creating AzureSPN: %v\n", err)
+		return
+	}
+
+	ctx := context.Background()
+	token, err := spn.AcquireToken(ctx)
+	if err != nil {
+		fmt.Printf("Error acquiring AAD token from SPN: %v\n", err)
+		return
+	}
+	aadToken := token.AccessToken
 
 	// 2. Exchange AAD token for ACR refresh token
 	refreshToken, err := getACRRefreshToken(registry, aadToken)
@@ -31,9 +53,7 @@ func main() {
 		return
 	}
 
-	// 3. Exchange ACR refresh token for ACR access token (for "registry:catalog:*" and "repository:*" actions)
-	// For listing repositories: scope = "registry:catalog:*"
-	// For listing artifacts in a repository: scope = "repository:{repository}:*"
+	// 3. Exchange ACR refresh token for ACR access token for catalog
 	acrTokenForCatalog, err := getACRAccessToken(registry, refreshToken, "registry:catalog:*")
 	if err != nil {
 		fmt.Printf("Error getting ACR access token for catalog: %v\n", err)
@@ -51,7 +71,7 @@ func main() {
 		fmt.Println(" -", r)
 	}
 
-	// Now get an access token for the specific repository
+	// Now get an access token for the specific repository to list artifacts
 	scope := fmt.Sprintf("repository:%s:*", repository)
 	acrTokenForRepo, err := getACRAccessToken(registry, refreshToken, scope)
 	if err != nil {
@@ -59,8 +79,7 @@ func main() {
 		return
 	}
 
-	// 4. List artifacts (manifests) in the given repository
-	// For simplicity, we'll list tags (if available) from _tags endpoint or manifests from _manifests endpoint.
+	// 4. List artifacts (tags) in the given repository
 	artifacts, err := listArtifacts(registry, repository, acrTokenForRepo)
 	if err != nil {
 		fmt.Printf("Error listing artifacts: %v\n", err)
@@ -72,41 +91,8 @@ func main() {
 	}
 }
 
-func getAADToken(tenantID, clientID, clientSecret string) (string, error) {
-	tokenURL := "https://login.microsoftonline.com/" + tenantID + "/oauth2/v2.0/token"
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("scope", "https://management.azure.com/.default")
-
-	resp, err := http.PostForm(tokenURL, data)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get AAD token: status %d, body: %s", resp.StatusCode, body)
-	}
-
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", err
-	}
-	return tokenResp.AccessToken, nil
-}
-
 // getACRRefreshToken exchanges AAD token for ACR refresh token
 func getACRRefreshToken(registry, aadToken string) (string, error) {
-	// POST https://{registry}/oauth2/exchange
-	// Content-Type: application/x-www-form-urlencoded
-	// grant_type=access_token
-	// service={registry}
-	// access_token={AAD token}
 	exchangeURL := fmt.Sprintf("https://%s/oauth2/exchange", registry)
 	data := url.Values{}
 	data.Set("grant_type", "access_token")
@@ -142,11 +128,6 @@ func getACRRefreshToken(registry, aadToken string) (string, error) {
 
 // getACRAccessToken exchanges ACR refresh token for ACR access token with a specific scope
 func getACRAccessToken(registry, refreshToken, scope string) (string, error) {
-	// POST https://{registry}/oauth2/token
-	// grant_type=refresh_token
-	// service={registry}
-	// scope={scope} e.g. "registry:catalog:*"
-	// refresh_token={refresh_token}
 	tokenURL := fmt.Sprintf("https://%s/oauth2/token", registry)
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
@@ -209,10 +190,8 @@ func listRepositories(registry, acrToken string) ([]string, error) {
 	return reposResp.Repositories, nil
 }
 
-// listArtifacts lists tags in a repository (artifacts) using _tags endpoint
+// listArtifacts lists tags in a repository (artifacts) using the _tags endpoint
 func listArtifacts(registry, repository, acrToken string) ([]string, error) {
-	// For listing artifact versions (tags), we can use the _tags endpoint:
-	// GET https://{registry}/acr/v1/{repository}/_tags
 	url := fmt.Sprintf("https://%s/acr/v1/%s/_tags", registry, repository)
 
 	req, err := http.NewRequest("GET", url, nil)
