@@ -1,62 +1,66 @@
 // Package utils provides a utility function that accepts a JSON input containing one or more credential configurations
 // for different container registries (Azure ACR via SPN Password or SPN Certificate, GitHub Container Registry (GHCR),
-// and DockerHub), and returns OCI-compatible (Docker) credentials.
+// DockerHub, and Google Container Registry (GCR) via a Google service account), and returns OCI-compatible (Docker) credentials.
 //
 // JSON Input Structure (example):
 //
-//	{
-//	  "azure_spn_password": {
-//	    "tenant_id": "your-tenant-id",
-//	    "client_id": "your-client-id",
-//	    "client_secret": "your-client-secret",
-//	    "registry": "yourregistry.azurecr.io"
-//	  },
-//	  "azure_spn_certificate": {
-//	    "tenant_id": "your-tenant-id",
-//	    "client_id": "your-client-id",
-//	    "cert_path": "/path/to/cert.pfx",
-//	    "cert_password": "cert-pass",
-//	    "registry": "yourregistry.azurecr.io"
-//	  },
-//	  "github": {
-//	    "username": "your-github-username",
-//	    "token": "your-github-pat"
-//	  },
-//	  "dockerhub": {
-//	    "username": "your-dockerhub-username",
-//	    "token": "your-dockerhub-token"
-//	  }
-//	}
+//  {
+//    "azure_spn_password": {
+//      "tenant_id": "your-tenant-id",
+//      "client_id": "your-client-id",
+//      "client_secret": "your-client-secret",
+//      "registry": "yourregistry.azurecr.io"
+//    },
+//    "azure_spn_certificate": {
+//      "tenant_id": "your-tenant-id",
+//      "client_id": "your-client-id",
+//      "cert_path": "/path/to/cert.pfx",
+//      "cert_password": "cert-pass",
+//      "registry": "yourregistry.azurecr.io"
+//    },
+//    "github": {
+//      "username": "your-github-username",
+//      "token": "your-github-pat"
+//    },
+//    "dockerhub": {
+//      "username": "your-dockerhub-username",
+//      "token": "your-dockerhub-token"
+//    },
+//    "google_service_account": {
+//      "service_account_json": "{...}", // the full JSON key for the GCP service account
+//      "registry": "gcr.io"
+//    }
+//  }
 //
 // Each field is optional, but if present, must provide the required sub-fields as noted above.
 // The returned map is a set of registry hostnames to base64-encoded "username:password" strings suitable
 // for inclusion in a Docker config.json or other OCI-compatible credential store.
 //
 // Example returned map keys/values:
-//
-//	"ghcr.io" -> base64("username:token")
-//	"index.docker.io" -> base64("username:token")
-//	"<yourregistry>.azurecr.io" -> base64("00000000-0000-0000-0000-000000000000:<access_token>")
+//  "ghcr.io" -> base64("username:token")
+//  "index.docker.io" -> base64("username:token")
+//  "<yourregistry>.azurecr.io" -> base64("00000000-0000-0000-0000-000000000000:<access_token>")
+//  "gcr.io" -> base64("oauth2accesstoken:<gcr_oauth2_token>")
 //
 // This utility replaces older files by consolidating all credential acquisition logic into a single entry point.
-// It uses a two-step approach for Azure ACR:
+// For Azure ACR, it uses a two-step approach:
 //   - Acquire a general AAD token for https://management.azure.com/.default
-//   - Exchange that AAD token for ACR refresh token
-//   - Exchange refresh token for ACR access token with desired scope
+//   - Exchange that AAD token for an ACR refresh token
+//   - Exchange refresh token for an ACR access token with desired scope
 //
-// GitHub (GHCR) and DockerHub are straightforward username/token pairs.
+// GitHub (GHCR), DockerHub are straightforward username/token pairs.
+// Google Service Account credentials obtain an OAuth2 token suitable for GCR.
 //
 // Usage:
+//  import "github.com/opengovern/resilient-bridge/utils"
 //
-//	import "github.com/opengovern/resilient-bridge/utils"
+//  jsonData := []byte(`{...}`) // JSON as described above
+//  creds, err := utils.GetAllCredentials(jsonData, "repository:myrepo:pull")
+//  if err != nil {
+//    panic(err)
+//  }
 //
-//	jsonData := []byte(`{...}`) // JSON as described above
-//	creds, err := utils.GetAllCredentials(jsonData, "repository:myrepo:pull")
-//	if err != nil {
-//	  panic(err)
-//	}
-//
-//	// creds can now be used to populate Docker config.json or similar.
+//  // creds can now be used to populate Docker config.json or similar.
 
 package utils
 
@@ -77,6 +81,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/pkcs12"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 // AzureSPNPasswordCredentials holds fields required for SPN password-based credential retrieval.
@@ -108,16 +114,24 @@ type DockerHubCredentials struct {
 	Token    string `json:"token"`
 }
 
+// GoogleServiceAccountCredentials represents the GCP service account JSON for GCR.
+type GoogleServiceAccountCredentials struct {
+	ServiceAccountJSON string `json:"service_account_json"`
+	Registry           string `json:"registry"`
+}
+
 // CredentialsInput is the combined structure for all supported credential types.
 type CredentialsInput struct {
-	AzureSPNPassword    *AzureSPNPasswordCredentials    `json:"azure_spn_password,omitempty"`
-	AzureSPNCertificate *AzureSPNCertificateCredentials `json:"azure_spn_certificate,omitempty"`
-	GitHub              *GitHubCredentials              `json:"github,omitempty"`
-	DockerHub           *DockerHubCredentials           `json:"dockerhub,omitempty"`
+	AzureSPNPassword       *AzureSPNPasswordCredentials       `json:"azure_spn_password,omitempty"`
+	AzureSPNCertificate    *AzureSPNCertificateCredentials    `json:"azure_spn_certificate,omitempty"`
+	GitHub                 *GitHubCredentials                 `json:"github,omitempty"`
+	DockerHub              *DockerHubCredentials              `json:"dockerhub,omitempty"`
+	GoogleServiceAccount   *GoogleServiceAccountCredentials   `json:"google_service_account,omitempty"`
 }
 
 // GetAllCredentials takes a JSON byte slice and a scope (e.g., `repository:myrepo:pull`).
 // If scope is empty and we have Azure credentials, it defaults to "registry:catalog:*".
+//
 // Returns a map of registry -> base64("username:password") credentials.
 func GetAllCredentials(jsonData []byte, scope string) (map[string]string, error) {
 	var input CredentialsInput
@@ -186,12 +200,46 @@ func GetAllCredentials(jsonData []byte, scope string) (map[string]string, error)
 		creds[input.AzureSPNCertificate.Registry] = spnCreds
 	}
 
+	// Google Service Account (GCR)
+	if input.GoogleServiceAccount != nil {
+		if input.GoogleServiceAccount.ServiceAccountJSON == "" || input.GoogleServiceAccount.Registry == "" {
+			return nil, fmt.Errorf("Google service account JSON and registry are required")
+		}
+		gcrCreds, err := getGCRCredentialsFromServiceAccount(input.GoogleServiceAccount.ServiceAccountJSON, input.GoogleServiceAccount.Registry)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get GCR token from service account: %w", err)
+		}
+		creds[input.GoogleServiceAccount.Registry] = gcrCreds
+	}
+
 	return creds, nil
 }
 
-// getAzureACRResourceScopedToken performs a two-step approach:
-// 1. Get a general AAD token (resource: https://management.azure.com/.default)
-// 2. Exchange AAD token for ACR refresh token, then exchange refresh token for resource-scoped ACR access token.
+// getGCRCredentialsFromServiceAccount obtains an access token for GCR using a Google service account's JSON key.
+// Scope: https://www.googleapis.com/auth/devstorage.read_write
+// Returns base64("oauth2accesstoken:access_token").
+func getGCRCredentialsFromServiceAccount(serviceAccountJSON, registry string) (string, error) {
+	ctx := context.Background()
+	scopes := []string{"https://www.googleapis.com/auth/devstorage.read_write"}
+
+	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), scopes...)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse service account JSON: %w", err)
+	}
+
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		return "", fmt.Errorf("failed to get token from service account: %w", err)
+	}
+
+	// Docker-compatible GCR creds:
+	// username: "oauth2accesstoken"
+	// password: token.AccessToken
+	authStr := "oauth2accesstoken:" + token.AccessToken
+	return base64.StdEncoding.EncodeToString([]byte(authStr)), nil
+}
+
+// getAzureACRResourceScopedToken performs a two-step token acquisition for ACR.
 func getAzureACRResourceScopedToken(tenantID, clientID, clientSecret, certPath, certPassword, registry, scope string) (string, error) {
 	// 1. Acquire a general AAD token
 	generalToken, err := acquireAADToken(tenantID, clientID, clientSecret, certPath, certPassword, "https://management.azure.com/.default")
