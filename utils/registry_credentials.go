@@ -45,11 +45,8 @@
 //
 //	import "github.com/opengovern/resilient-bridge/utils"
 //
-//	f, err := os.Open("input.json") // JSON as described above
-//	if err != nil {
-//	  panic(err)
-//	}
-//	creds, err := utils.GetAllCredentials(f)
+//	jsonData := []byte(`{...}`) // JSON as described above
+//	creds, err := utils.GetAllCredentials(jsonData)
 //	if err != nil {
 //	  panic(err)
 //	}
@@ -122,11 +119,11 @@ type CredentialsInput struct {
 	DockerHub           *DockerHubCredentials           `json:"dockerhub,omitempty"`
 }
 
-// GetAllCredentials takes a JSON reader containing optional azure_spn_password, azure_spn_certificate, github, and dockerhub fields,
+// GetAllCredentials takes a JSON byte slice containing optional azure_spn_password, azure_spn_certificate, github, and dockerhub fields,
 // returns a map of registry -> base64("username:password") credentials.
-func GetAllCredentials(r io.Reader) (map[string]string, error) {
+func GetAllCredentials(jsonData []byte) (map[string]string, error) {
 	var input CredentialsInput
-	if err := json.NewDecoder(r).Decode(&input); err != nil {
+	if err := json.Unmarshal(jsonData, &input); err != nil {
 		return nil, fmt.Errorf("failed to decode input JSON: %w", err)
 	}
 
