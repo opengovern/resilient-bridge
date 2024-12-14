@@ -38,71 +38,13 @@
 //	"index.docker.io" -> base64("username:token")
 //	"<yourregistry>.azurecr.io" -> base64("00000000-0000-0000-0000-000000000000:<access_token>")
 //
-// This utility replaces older files such as spn_to_acr.go and github_to_oci_cred.go by consolidating
-// all credential acquisition logic into a single entry point.
-//
-// Usage:
-//
-//	import "github.com/opengovern/resilient-bridge/utils"
-//
-//	jsonData := []byte(`{...}`) // JSON as described above
-//	creds, err := utils.GetAllCredentials(jsonData)
-//	if err != nil {
-//	  panic(err)
-//	}
-//
-//	// creds can now be used to populate Docker config.json or similar.
-//
-// Azure notes:
-// To use azure_spn_password or azure_spn_certificate, ensure the Service Principal (SPN) has been granted
-// appropriate access (e.g., acrpull or acrpush roles) to the ACR. Authentication uses the standard
-// Azure OAuth2 flow:
-//   - For password: Uses client_id/client_secret
-//   - For certificate: Uses client assertion (JWT signed by SPN’s certificate)
+// This utility replaces older files by consolidating all credential acquisition logic into a single entry point.
+// It uses a two-step approach for Azure ACR:
+//   - Acquire a general AAD token for https://management.azure.com/.default
+//   - Exchange that AAD token for ACR refresh token
+//   - Exchange refresh token for ACR access token with desired scope
 //
 // GitHub (GHCR) and DockerHub are straightforward username/token pairs.
-// Package utils provides a utility function that accepts a JSON input containing one or more credential configurations
-// for different container registries (Azure ACR via SPN Password or SPN Certificate, GitHub Container Registry (GHCR),
-// and DockerHub), and returns OCI-compatible (Docker) credentials.
-//
-// JSON Input Structure (example):
-//
-//	{
-//	  "azure_spn_password": {
-//	    "tenant_id": "your-tenant-id",
-//	    "client_id": "your-client-id",
-//	    "client_secret": "your-client-secret",
-//	    "registry": "yourregistry.azurecr.io"
-//	  },
-//	  "azure_spn_certificate": {
-//	    "tenant_id": "your-tenant-id",
-//	    "client_id": "your-client-id",
-//	    "cert_path": "/path/to/cert.pfx",
-//	    "cert_password": "cert-pass",
-//	    "registry": "yourregistry.azurecr.io"
-//	  },
-//	  "github": {
-//	    "username": "your-github-username",
-//	    "token": "your-github-pat"
-//	  },
-//	  "dockerhub": {
-//	    "username": "your-dockerhub-username",
-//	    "token": "your-dockerhub-token"
-//	  }
-//	}
-//
-// Each field is optional, but if present, must provide the required sub-fields as noted above.
-// The returned map is a set of registry hostnames to base64-encoded "username:password" strings suitable
-// for inclusion in a Docker config.json or other OCI-compatible credential store.
-//
-// Example returned map keys/values:
-//
-//	"ghcr.io" -> base64("username:token")
-//	"index.docker.io" -> base64("username:token")
-//	"<yourregistry>.azurecr.io" -> base64("00000000-0000-0000-0000-000000000000:<access_token>")
-//
-// This utility replaces older files such as spn_to_acr.go and github_to_oci_cred.go by consolidating
-// all credential acquisition logic into a single entry point.
 //
 // Usage:
 //
@@ -115,15 +57,7 @@
 //	}
 //
 //	// creds can now be used to populate Docker config.json or similar.
-//
-// Azure notes:
-// To use azure_spn_password or azure_spn_certificate, ensure the Service Principal (SPN) has been granted
-// appropriate access (e.g., acrpull or acrpush roles) to the ACR. The flow is now:
-//   - Acquire a general AAD token for https://management.azure.com/.default
-//   - Exchange that AAD token for ACR refresh token
-//   - Exchange refresh token for ACR access token with desired scope
-//
-// GitHub (GHCR) and DockerHub are straightforward username/token pairs.
+
 package utils
 
 import (
@@ -284,7 +218,6 @@ func getAzureACRResourceScopedToken(tenantID, clientID, clientSecret, certPath, 
 }
 
 // acquireAADToken gets a token from AAD using either client_secret or certificate-based auth.
-// The resource should be something like "https://management.azure.com/.default"
 func acquireAADToken(tenantID, clientID, clientSecret, certPath, certPassword, resource string) (string, error) {
 	var form url.Values
 	tokenEndpoint := "https://login.microsoftonline.com/" + tenantID + "/oauth2/v2.0/token"
