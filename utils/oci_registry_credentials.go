@@ -72,6 +72,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/golang-jwt/jwt"
 	"io"
 	"net/http"
 	"net/url"
@@ -79,9 +80,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/pkcs12"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
@@ -122,11 +121,11 @@ type GoogleServiceAccountCredentials struct {
 
 // CredentialsInput is the combined structure for all supported credential types.
 type CredentialsInput struct {
-	AzureSPNPassword       *AzureSPNPasswordCredentials       `json:"azure_spn_password,omitempty"`
-	AzureSPNCertificate    *AzureSPNCertificateCredentials    `json:"azure_spn_certificate,omitempty"`
-	GitHub                 *GitHubCredentials                 `json:"github,omitempty"`
-	DockerHub              *DockerHubCredentials              `json:"dockerhub,omitempty"`
-	GoogleServiceAccount   *GoogleServiceAccountCredentials   `json:"google_service_account,omitempty"`
+	AzureSPNPassword     *AzureSPNPasswordCredentials     `json:"azure_spn_password,omitempty"`
+	AzureSPNCertificate  *AzureSPNCertificateCredentials  `json:"azure_spn_certificate,omitempty"`
+	GitHub               *GitHubCredentials               `json:"github,omitempty"`
+	DockerHub            *DockerHubCredentials            `json:"dockerhub,omitempty"`
+	GoogleServiceAccount *GoogleServiceAccountCredentials `json:"google_service_account,omitempty"`
 }
 
 // GetAllCredentials takes a JSON byte slice and a scope (e.g., `repository:myrepo:pull`).
