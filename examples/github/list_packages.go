@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
 )
@@ -42,26 +46,33 @@ type PackageVersion struct {
 	} `json:"metadata"`
 }
 
+// ManifestOutput is the output format for a single image manifest request.
+type ManifestOutput struct {
+	Name             string          `json:"name"`
+	MediaType        string          `json:"MediaType"`
+	TotalSize        int64           `json:"Total Size"`
+	Digest           string          `json:"Digest"`
+	VersionID        int             `json:"Version ID"`
+	VersionCreatedAt string          `json:"CreatedAt"`
+	VersionUpdatedAt string          `json:"UpdatedAt"`
+	VersionHTML      string          `json:"HTML"`
+	CompleteManifest json.RawMessage `json:"complete manifest"`
+}
+
 func main() {
-	// Define flags
-	orgFlag := flag.String("org", "opengovern", "GitHub organization name (default: opengovern)")
-	typeFlag := flag.String("type", "container", "Package type (npm, maven, rubygems, nuget, container)")
+	scopeFlag := flag.String("scope", "", "Scope: ghcr.io/<org>/, ghcr.io/<org>/<package>, or ghcr.io/<org>/<package>:<tag>")
 	flag.Parse()
 
-	org := *orgFlag
-	packageType := *typeFlag
+	if *scopeFlag == "" {
+		log.Fatal("You must provide a -scope parameter")
+	}
 
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("GITHUB_API_TOKEN environment variable not set or missing read:packages scope")
 	}
 
-	// Allowed package types: npm, maven, rubygems, nuget, container
-	allowedTypes := map[string]bool{"npm": true, "maven": true, "rubygems": true, "nuget": true, "container": true}
-	if !allowedTypes[packageType] {
-		log.Fatalf("Unsupported package type: %s. Allowed: npm, maven, rubygems, nuget, container", packageType)
-	}
-
+	// Register provider for GitHub
 	sdk := resilientbridge.NewResilientBridge()
 	sdk.RegisterProvider("github", adapters.NewGitHubAdapter(apiToken), &resilientbridge.ProviderConfig{
 		UseProviderLimits: true,
@@ -69,13 +80,148 @@ func main() {
 		BaseBackoff:       0,
 	})
 
-	// 1. List packages for the organization of specified type
+	scope := *scopeFlag
+	if !strings.HasPrefix(scope, "ghcr.io/") {
+		log.Fatal("Scope must start with ghcr.io/")
+	}
+
+	parts := strings.Split(strings.TrimPrefix(scope, "ghcr.io/"), "/")
+	org := parts[0]
+
+	// Check if we have a trailing slash (namespace)
+	if strings.HasSuffix(scope, "/") {
+		// Case 1: ghcr.io/opengovern/
+		// List all container packages in the org
+		listPackages(sdk, org, apiToken)
+
+	} else {
+		// Not a trailing slash. Check for a tag or not
+		lastPart := parts[len(parts)-1]
+		refParts := strings.SplitN(lastPart, ":", 2)
+		if len(refParts) == 2 {
+			// Case 3: Has a tag
+			// Package name is everything after org, excluding the tag
+			packagePathParts := parts[1 : len(parts)-1]
+			packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
+			tag := refParts[1]
+			getManifestForVersion(sdk, org, packageName, tag, apiToken)
+
+		} else {
+			// Case 2: No tag, means list all versions of that package
+			packageName := strings.Join(parts[1:], "/")
+			listVersions(sdk, org, packageName, apiToken)
+		}
+	}
+}
+
+// listPackages lists all container packages in the given org and prints as JSON.
+func listPackages(sdk *resilientbridge.ResilientBridge, org string, apiToken string) {
+	packages := fetchPackages(sdk, org, "container")
+	output, err := json.MarshalIndent(packages, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshalling packages: %v", err)
+	}
+	fmt.Println(string(output))
+}
+
+// listVersions lists all versions for a given package and prints as JSON.
+func listVersions(sdk *resilientbridge.ResilientBridge, org, packageName, apiToken string) {
+	versions := fetchVersions(sdk, org, "container", packageName)
+	output, err := json.MarshalIndent(versions, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshalling versions: %v", err)
+	}
+	fmt.Println(string(output))
+}
+
+// getManifestForVersion fetches the manifest for a given package:tag and prints the JSON as specified.
+func getManifestForVersion(sdk *resilientbridge.ResilientBridge, org, packageName, tag, apiToken string) {
+	imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
+
+	// Fetch versions and find the one that matches this tag
+	versions := fetchVersions(sdk, org, "container", packageName)
+	var matchedVersion *PackageVersion
+	for i, v := range versions {
+		for _, t := range v.Metadata.Container.Tags {
+			if t == tag {
+				matchedVersion = &versions[i]
+				break
+			}
+		}
+		if matchedVersion != nil {
+			break
+		}
+	}
+
+	if matchedVersion == nil {
+		log.Fatalf("No version found with tag %s for package %s/%s", tag, org, packageName)
+	}
+
+	ref, err := name.ParseReference(imageRef)
+	if err != nil {
+		log.Fatalf("Error parsing reference %s: %v", imageRef, err)
+	}
+
+	// Auth option using the provided token
+	authOption := remote.WithAuth(&authn.Basic{
+		Username: "github",
+		Password: apiToken,
+	})
+
+	desc, err := remote.Get(ref, authOption)
+	if err != nil {
+		log.Fatalf("Error fetching manifest for %s: %v", imageRef, err)
+	}
+
+	// Calculate total size (config + layers)
+	var manifest struct {
+		SchemaVersion int    `json:"schemaVersion"`
+		MediaType     string `json:"mediaType"`
+		Config        struct {
+			Size      int64  `json:"size"`
+			Digest    string `json:"digest"`
+			MediaType string `json:"mediaType"`
+		} `json:"config"`
+		Layers []struct {
+			Size      int64  `json:"size"`
+			Digest    string `json:"digest"`
+			MediaType string `json:"mediaType"`
+		} `json:"layers"`
+	}
+	if err := json.Unmarshal(desc.Manifest, &manifest); err != nil {
+		log.Fatalf("Error unmarshaling manifest JSON: %v", err)
+	}
+
+	totalSize := manifest.Config.Size
+	for _, layer := range manifest.Layers {
+		totalSize += layer.Size
+	}
+
+	output := ManifestOutput{
+		Name:             imageRef,
+		MediaType:        string(desc.Descriptor.MediaType), // convert MediaType to string
+		TotalSize:        totalSize,
+		Digest:           desc.Descriptor.Digest.String(),
+		VersionID:        matchedVersion.ID,
+		VersionCreatedAt: matchedVersion.CreatedAt,
+		VersionUpdatedAt: matchedVersion.UpdatedAt,
+		VersionHTML:      matchedVersion.HTMLURL,
+		CompleteManifest: desc.Manifest,
+	}
+
+	outBytes, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshalling output: %v", err)
+	}
+	fmt.Println(string(outBytes))
+}
+
+func fetchPackages(sdk *resilientbridge.ResilientBridge, org, packageType string) []Package {
 	listReq := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: fmt.Sprintf("/orgs/%s/packages?package_type=%s", org, packageType),
 		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
 	}
-
 	listResp, err := sdk.Request("github", listReq)
 	if err != nil {
 		log.Fatalf("Error listing packages: %v", err)
@@ -83,48 +229,14 @@ func main() {
 	if listResp.StatusCode >= 400 {
 		log.Fatalf("HTTP error %d: %s", listResp.StatusCode, string(listResp.Data))
 	}
-
 	var packages []Package
 	if err := json.Unmarshal(listResp.Data, &packages); err != nil {
 		log.Fatalf("Error parsing packages list response: %v", err)
 	}
+	return packages
+}
 
-	fmt.Printf("Found %d %s packages in organization %s:\n", len(packages), packageType, org)
-	for _, p := range packages {
-		fmt.Printf("- Name: %s, Type: %s, Visibility: %s, URL: %s\n", p.Name, p.PackageType, p.Visibility, p.HTMLURL)
-	}
-
-	if len(packages) == 0 {
-		log.Println("No packages found.")
-		return
-	}
-
-	// 2. Get a specific package (e.g., the first one)
-	packageName := packages[0].Name
-	getReq := &resilientbridge.NormalizedRequest{
-		Method:   "GET",
-		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s", org, packageType, packageName),
-		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
-	}
-
-	getResp, err := sdk.Request("github", getReq)
-	if err != nil {
-		log.Fatalf("Error getting package details: %v", err)
-	}
-	if getResp.StatusCode >= 400 {
-		log.Fatalf("HTTP error %d: %s", getResp.StatusCode, string(getResp.Data))
-	}
-
-	var singlePackage Package
-	if err := json.Unmarshal(getResp.Data, &singlePackage); err != nil {
-		log.Fatalf("Error parsing package detail response: %v", err)
-	}
-
-	fmt.Printf("Package details for %s:\n", singlePackage.Name)
-	fmt.Printf("ID: %d, Visibility: %s, CreatedAt: %s, UpdatedAt: %s\n", singlePackage.ID, singlePackage.Visibility, singlePackage.CreatedAt, singlePackage.UpdatedAt)
-	fmt.Printf("HTML URL: %s\n", singlePackage.HTMLURL)
-
-	// 3. List package versions for that package
+func fetchVersions(sdk *resilientbridge.ResilientBridge, org, packageType, packageName string) []PackageVersion {
 	versionsReq := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s/versions", org, packageType, packageName),
@@ -143,19 +255,5 @@ func main() {
 	if err := json.Unmarshal(versionsResp.Data, &versions); err != nil {
 		log.Fatalf("Error parsing package versions response: %v", err)
 	}
-
-	// Only show the last 20 versions or fewer if less than 20 are available
-	const maxVersionsToShow = 20
-	if len(versions) > maxVersionsToShow {
-		versions = versions[len(versions)-maxVersionsToShow:]
-	}
-
-	fmt.Printf("Showing up to last %d versions (found %d total) for package %s:\n", maxVersionsToShow, len(versions), packageName)
-	for _, v := range versions {
-		fmt.Printf("- Version ID: %d, Name: %s, CreatedAt: %s, UpdatedAt: %s, HTML: %s\n",
-			v.ID, v.Name, v.CreatedAt, v.UpdatedAt, v.HTMLURL)
-		if len(v.Metadata.Container.Tags) > 0 {
-			fmt.Printf("  Tags: %v\n", v.Metadata.Container.Tags)
-		}
-	}
+	return versions
 }
