@@ -48,7 +48,6 @@ type PackageVersion struct {
 	Metadata       ContainerMetadata `json:"metadata"`
 }
 
-// The desired output structure for each version:
 type OutputVersion struct {
 	ID             int               `json:"id"`
 	Digest         string            `json:"digest"`
@@ -93,40 +92,32 @@ func main() {
 	parts := strings.Split(strings.TrimPrefix(scope, "ghcr.io/"), "/")
 	org := parts[0]
 
-	// Case 1: Namespace (e.g. ghcr.io/opengovern/)
+	// Org-level scope (e.g. ghcr.io/org/)
 	if strings.HasSuffix(scope, "/") {
-		// List all container packages in the org
 		packages := fetchPackages(sdk, org, "container")
-
-		// For each package, fetch versions and for each version fetch manifest and output structure
-		var allResults []OutputVersion
 		for _, p := range packages {
 			packageName := p.Name
 			versions := fetchVersions(sdk, org, "container", packageName)
 			for _, v := range versions {
 				results := getVersionOutput(apiToken, org, packageName, v)
-				allResults = append(allResults, results...)
+				// Print one JSON per version
+				for _, ov := range results {
+					printJSON(ov)
+				}
 			}
 		}
-
-		outBytes, err := json.MarshalIndent(allResults, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling final output: %v", err)
-		}
-		fmt.Println(string(outBytes))
 		return
 	}
 
-	// Case 2 or 3: Check if we have a tag
+	// Check if we have a tag (single version)
 	lastPart := parts[len(parts)-1]
 	refParts := strings.SplitN(lastPart, ":", 2)
 	if len(refParts) == 2 {
-		// Single version case
+		// Single version case: ghcr.io/org/package:tag
 		packagePathParts := parts[1 : len(parts)-1]
 		packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
 		tag := refParts[1]
 
-		// Fetch all versions and find the one matching this tag
 		versions := fetchVersions(sdk, org, "container", packageName)
 		var matchedVersion *PackageVersion
 		for i, v := range versions {
@@ -146,33 +137,35 @@ func main() {
 		}
 
 		results := getVersionOutput(apiToken, org, packageName, *matchedVersion)
-		// Since this is a single version, results will contain exactly one element (one tag)
-		outBytes, err := json.MarshalIndent(results[0], "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling final output: %v", err)
+		// Single version should yield exactly one result
+		if len(results) == 0 {
+			log.Fatalf("No output for matched version %s:%s", packageName, tag)
 		}
-		fmt.Println(string(outBytes))
+		// Print just the one JSON object for this version
+		printJSON(results[0])
 	} else {
-		// Package without tag: list versions for that package
+		// Package-level scope: ghcr.io/org/package
 		packageName := strings.Join(parts[1:], "/")
 		versions := fetchVersions(sdk, org, "container", packageName)
 
-		var allResults []OutputVersion
 		for _, v := range versions {
 			results := getVersionOutput(apiToken, org, packageName, v)
-			allResults = append(allResults, results...)
+			for _, ov := range results {
+				printJSON(ov)
+			}
 		}
-
-		outBytes, err := json.MarshalIndent(allResults, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling final output: %v", err)
-		}
-		fmt.Println(string(outBytes))
 	}
 }
 
+func printJSON(obj interface{}) {
+	outBytes, err := json.Marshal(obj)
+	if err != nil {
+		log.Fatalf("Error marshalling output: %v", err)
+	}
+	fmt.Println(string(outBytes))
+}
+
 func getVersionOutput(apiToken, org, packageName string, version PackageVersion) []OutputVersion {
-	// Each version can have multiple tags. We'll produce one output object per tag.
 	var results []OutputVersion
 	for _, tag := range version.Metadata.Container.Tags {
 		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
@@ -201,7 +194,7 @@ func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef st
 	var manifestStruct struct {
 		SchemaVersion int    `json:"schemaVersion"`
 		MediaType     string `json:"mediaType"`
-		Config struct {
+		Config        struct {
 			Size      int64  `json:"size"`
 			Digest    string `json:"digest"`
 			MediaType string `json:"mediaType"`
