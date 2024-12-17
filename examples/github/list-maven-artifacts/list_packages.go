@@ -8,18 +8,59 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
-type Owner struct {
-	Login string `json:"login"`
+type OwnerDetail struct {
+	Login        string `json:"login"`
+	ID           int    `json:"id,omitempty"`
+	NodeID       string `json:"node_id,omitempty"`
+	HTMLURL      string `json:"html_url,omitempty"`
+	Type         string `json:"type,omitempty"`
+	UserViewType string `json:"user_view_type,omitempty"`
+	SiteAdmin    bool   `json:"site_admin,omitempty"`
 }
 
-type Package struct {
+type RepoOwnerDetail struct {
+	Login     string `json:"login"`
+	ID        int    `json:"id,omitempty"`
+	NodeID    string `json:"node_id,omitempty"`
+	HTMLURL   string `json:"html_url,omitempty"`
+	Type      string `json:"type,omitempty"`
+	SiteAdmin bool   `json:"site_admin,omitempty"`
+}
+
+type Repository struct {
+	ID          int             `json:"id"`
+	NodeID      string          `json:"node_id"`
+	Name        string          `json:"name"`
+	FullName    string          `json:"full_name"`
+	Private     bool            `json:"private"`
+	Owner       RepoOwnerDetail `json:"owner"`
+	HTMLURL     string          `json:"html_url"`
+	Description string          `json:"description"`
+	Fork        bool            `json:"fork"`
+	URL         string          `json:"url"`
+	// We do not necessarily need all fields here,
+	// but including some for completeness.
+}
+
+type PackageDetail struct {
+	ID           int         `json:"id"`
+	Name         string      `json:"name"`
+	PackageType  string      `json:"package_type"`
+	Owner        OwnerDetail `json:"owner"`
+	VersionCount int         `json:"version_count"`
+	Visibility   string      `json:"visibility"`
+	URL          string      `json:"url"`
+	CreatedAt    string      `json:"created_at"`
+	UpdatedAt    string      `json:"updated_at"`
+	Repository   Repository  `json:"repository"`
+	HTMLURL      string      `json:"html_url"`
+}
+
+type PackageListItem struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	PackageType string `json:"package_type"`
@@ -27,45 +68,14 @@ type Package struct {
 	HTMLURL     string `json:"html_url"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
-	Owner       Owner  `json:"owner"`
-	URL         string `json:"url"`
-}
-
-type ContainerMetadata struct {
-	Container struct {
-		Tags []string `json:"tags"`
-	} `json:"container"`
-}
-
-type PackageVersion struct {
-	ID             int               `json:"id"`
-	Name           string            `json:"name"`
-	URL            string            `json:"url"`
-	PackageHTMLURL string            `json:"package_html_url"`
-	CreatedAt      string            `json:"created_at"`
-	UpdatedAt      string            `json:"updated_at"`
-	HTMLURL        string            `json:"html_url"`
-	Metadata       ContainerMetadata `json:"metadata"`
-}
-
-type OutputVersion struct {
-	ID             int               `json:"id"`
-	Digest         string            `json:"digest"`
-	URL            string            `json:"url"`
-	PackageURI     string            `json:"package_uri"`
-	PackageHTMLURL string            `json:"package_html_url"`
-	CreatedAt      string            `json:"created_at"`
-	UpdatedAt      string            `json:"updated_at"`
-	HTMLURL        string            `json:"html_url"`
-	Name           string            `json:"name"`
-	MediaType      string            `json:"media_type"`
-	TotalSize      int64             `json:"total_size"`
-	Metadata       ContainerMetadata `json:"metadata"`
-	Manifest       interface{}       `json:"manifest"`
+	Owner       struct {
+		Login string `json:"login"`
+	} `json:"owner"`
+	URL string `json:"url"`
 }
 
 func main() {
-	scopeFlag := flag.String("scope", "", "Scope: ghcr.io/<org>/, ghcr.io/<org>/<package>, or ghcr.io/<org>/<package>:<tag>")
+	scopeFlag := flag.String("scope", "", "Scope: github.com/<org>/, github.com/<org>/<package>, or github.com/<org>/<package>:<version>")
 	flag.Parse()
 
 	if *scopeFlag == "" {
@@ -85,195 +95,124 @@ func main() {
 	})
 
 	scope := *scopeFlag
-	if !strings.HasPrefix(scope, "ghcr.io/") {
-		log.Fatal("Scope must start with ghcr.io/")
+	if !strings.HasPrefix(scope, "github.com/") {
+		log.Fatal("Scope must start with github.com/")
 	}
 
-	parts := strings.Split(strings.TrimPrefix(scope, "ghcr.io/"), "/")
+	parts := strings.Split(strings.TrimPrefix(scope, "github.com/"), "/")
 	org := parts[0]
 
-	// Org-level scope (e.g. ghcr.io/org/)
+	// If just org-level, we list all packages and print each one’s details
 	if strings.HasSuffix(scope, "/") {
-		packages := fetchPackages(sdk, org, "container")
+		// Fetch all packages with pagination
+		packages := fetchAllPackages(sdk, org, "maven")
+
+		// For each package, fetch full details and print immediately
 		for _, p := range packages {
-			packageName := p.Name
-			versions := fetchVersions(sdk, org, "container", packageName)
-			for _, v := range versions {
-				results := getVersionOutput(apiToken, org, packageName, v)
-				// Print one JSON per version
-				for _, ov := range results {
-					printJSON(ov)
-				}
+			fullDetails, err := fetchPackageDetails(sdk, org, "maven", p.Name)
+			if err != nil {
+				log.Printf("Error fetching details for package %s/%s: %v", org, p.Name, err)
+				continue
 			}
+
+			printPackageIndented(fullDetails)
 		}
 		return
 	}
 
-	// Check if we have a tag (single version)
+	// Otherwise handle package or package:version scope as before
 	lastPart := parts[len(parts)-1]
 	refParts := strings.SplitN(lastPart, ":", 2)
 	if len(refParts) == 2 {
-		// Single version case: ghcr.io/org/package:tag
+		// Single version case: we won't implement here the version fetching from previous logic,
+		// since the requirement focuses on org-level output changes.
+		// But we could still just print package details here.
 		packagePathParts := parts[1 : len(parts)-1]
 		packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
-		tag := refParts[1]
 
-		versions := fetchVersions(sdk, org, "container", packageName)
-		var matchedVersion *PackageVersion
-		for i, v := range versions {
-			for _, t := range v.Metadata.Container.Tags {
-				if t == tag {
-					matchedVersion = &versions[i]
-					break
-				}
-			}
-			if matchedVersion != nil {
-				break
-			}
+		details, err := fetchPackageDetails(sdk, org, "maven", packageName)
+		if err != nil {
+			log.Fatalf("Error fetching details for package %s/%s: %v", org, packageName, err)
 		}
-
-		if matchedVersion == nil {
-			log.Fatalf("No version found with tag %s for package %s/%s", tag, org, packageName)
-		}
-
-		results := getVersionOutput(apiToken, org, packageName, *matchedVersion)
-		// Single version should yield exactly one result
-		if len(results) == 0 {
-			log.Fatalf("No output for matched version %s:%s", packageName, tag)
-		}
-		// Print just the one JSON object for this version
-		printJSON(results[0])
+		printPackageIndented(details)
 	} else {
-		// Package-level scope: ghcr.io/org/package
+		// Package-level scope
 		packageName := strings.Join(parts[1:], "/")
-		versions := fetchVersions(sdk, org, "container", packageName)
 
-		for _, v := range versions {
-			results := getVersionOutput(apiToken, org, packageName, v)
-			for _, ov := range results {
-				printJSON(ov)
-			}
+		details, err := fetchPackageDetails(sdk, org, "maven", packageName)
+		if err != nil {
+			log.Fatalf("Error fetching details for package %s/%s: %v", org, packageName, err)
 		}
+		printPackageIndented(details)
 	}
 }
 
-func printJSON(obj interface{}) {
-	outBytes, err := json.Marshal(obj)
-	if err != nil {
-		log.Fatalf("Error marshalling output: %v", err)
+func fetchAllPackages(sdk *resilientbridge.ResilientBridge, org, packageType string) []PackageListItem {
+	var allPackages []PackageListItem
+	page := 1
+	perPage := 100 // maximum allowed by API
+
+	for {
+		endpoint := fmt.Sprintf("/orgs/%s/packages?package_type=%s&page=%d&per_page=%d", org, packageType, page, perPage)
+		listReq := &resilientbridge.NormalizedRequest{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+		}
+
+		listResp, err := sdk.Request("github", listReq)
+		if err != nil {
+			log.Fatalf("Error listing packages: %v", err)
+		}
+		if listResp.StatusCode >= 400 {
+			log.Fatalf("HTTP error %d: %s", listResp.StatusCode, string(listResp.Data))
+		}
+
+		var packages []PackageListItem
+		if err := json.Unmarshal(listResp.Data, &packages); err != nil {
+			log.Fatalf("Error parsing packages list response: %v", err)
+		}
+
+		if len(packages) == 0 {
+			break
+		}
+
+		allPackages = append(allPackages, packages...)
+		page++
 	}
-	fmt.Println(string(outBytes))
+	return allPackages
 }
 
-func getVersionOutput(apiToken, org, packageName string, version PackageVersion) []OutputVersion {
-	var results []OutputVersion
-	for _, tag := range version.Metadata.Container.Tags {
-		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
-		ov := fetchAndAssembleOutput(apiToken, version, imageRef)
-		results = append(results, ov)
-	}
-	return results
-}
-
-func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef string) OutputVersion {
-	authOption := remote.WithAuth(&authn.Basic{
-		Username: "github",
-		Password: apiToken,
-	})
-
-	ref, err := name.ParseReference(imageRef)
-	if err != nil {
-		log.Fatalf("Error parsing reference %s: %v", imageRef, err)
-	}
-
-	desc, err := remote.Get(ref, authOption)
-	if err != nil {
-		log.Fatalf("Error fetching manifest for %s: %v", imageRef, err)
-	}
-
-	var manifestStruct struct {
-		SchemaVersion int    `json:"schemaVersion"`
-		MediaType     string `json:"mediaType"`
-		Config        struct {
-			Size      int64  `json:"size"`
-			Digest    string `json:"digest"`
-			MediaType string `json:"mediaType"`
-		} `json:"config"`
-		Layers []struct {
-			Size      int64  `json:"size"`
-			Digest    string `json:"digest"`
-			MediaType string `json:"mediaType"`
-		} `json:"layers"`
-	}
-	if err := json.Unmarshal(desc.Manifest, &manifestStruct); err != nil {
-		log.Fatalf("Error unmarshaling manifest JSON: %v", err)
-	}
-
-	totalSize := manifestStruct.Config.Size
-	for _, layer := range manifestStruct.Layers {
-		totalSize += layer.Size
-	}
-
-	var manifestInterface interface{}
-	if err := json.Unmarshal(desc.Manifest, &manifestInterface); err != nil {
-		log.Fatalf("Error unmarshaling manifest for output: %v", err)
-	}
-
-	return OutputVersion{
-		ID:             version.ID,
-		Digest:         version.Name, // version digest from "name"
-		URL:            version.URL,
-		PackageURI:     imageRef,
-		PackageHTMLURL: version.PackageHTMLURL,
-		CreatedAt:      version.CreatedAt,
-		UpdatedAt:      version.UpdatedAt,
-		HTMLURL:        version.HTMLURL,
-		Name:           imageRef,
-		MediaType:      string(desc.Descriptor.MediaType),
-		TotalSize:      totalSize,
-		Metadata:       version.Metadata,
-		Manifest:       manifestInterface,
-	}
-}
-
-func fetchPackages(sdk *resilientbridge.ResilientBridge, org, packageType string) []Package {
-	listReq := &resilientbridge.NormalizedRequest{
+func fetchPackageDetails(sdk *resilientbridge.ResilientBridge, org, packageType, packageName string) (PackageDetail, error) {
+	var pd PackageDetail
+	endpoint := fmt.Sprintf("/orgs/%s/packages/%s/%s", org, packageType, packageName)
+	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
-		Endpoint: fmt.Sprintf("/orgs/%s/packages?package_type=%s", org, packageType),
-		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
-	}
-	listResp, err := sdk.Request("github", listReq)
-	if err != nil {
-		log.Fatalf("Error listing packages: %v", err)
-	}
-	if listResp.StatusCode >= 400 {
-		log.Fatalf("HTTP error %d: %s", listResp.StatusCode, string(listResp.Data))
-	}
-	var packages []Package
-	if err := json.Unmarshal(listResp.Data, &packages); err != nil {
-		log.Fatalf("Error parsing packages list response: %v", err)
-	}
-	return packages
-}
-
-func fetchVersions(sdk *resilientbridge.ResilientBridge, org, packageType, packageName string) []PackageVersion {
-	versionsReq := &resilientbridge.NormalizedRequest{
-		Method:   "GET",
-		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s/versions", org, packageType, packageName),
+		Endpoint: endpoint,
 		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
 	}
 
-	versionsResp, err := sdk.Request("github", versionsReq)
+	resp, err := sdk.Request("github", req)
 	if err != nil {
-		log.Fatalf("Error listing package versions: %v", err)
+		return pd, fmt.Errorf("error fetching package details: %w", err)
 	}
-	if versionsResp.StatusCode >= 400 {
-		log.Fatalf("HTTP error %d: %s", versionsResp.StatusCode, string(versionsResp.Data))
+	if resp.StatusCode >= 400 {
+		return pd, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
-	var versions []PackageVersion
-	if err := json.Unmarshal(versionsResp.Data, &versions); err != nil {
-		log.Fatalf("Error parsing package versions response: %v", err)
+	if err := json.Unmarshal(resp.Data, &pd); err != nil {
+		return pd, fmt.Errorf("error parsing package details: %w", err)
 	}
-	return versions
+	return pd, nil
+}
+
+func printPackageIndented(pd PackageDetail) {
+	outBytes, err := json.MarshalIndent(pd, "", "  ")
+	if err != nil {
+		log.Printf("Error marshalling output: %v", err)
+		return
+	}
+	os.Stdout.Write(outBytes)
+	os.Stdout.Write([]byte("\n"))
+	os.Stdout.Sync() // ensure immediate output
 }
