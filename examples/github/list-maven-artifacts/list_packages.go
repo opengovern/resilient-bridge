@@ -1,3 +1,34 @@
+//
+// Usage:
+//   go run list_packages.go -scope=github.com/<org>/
+//   go run list_packages.go -scope=github.com/<org>/<package>
+//   go run list_packages.go -scope=github.com/<org>/<package>:<version>
+//
+// Description:
+//   This program lists and displays details about Maven packages hosted in a GitHub organization.
+//
+//   - If you provide an org-level scope (e.g., github.com/apache/), it will:
+//     1. Fetch all Maven packages from the organization (paging through all results).
+//     2. For each package, fetch detailed information including version_count, repository, owner details, etc.
+//     3. Print each package's details in a nicely formatted JSON, one by one, as they are fetched.
+//
+//   - If you provide a package-level scope (e.g., github.com/apache/org.apache.cloudstack.cloud-core),
+//     it will print detailed information about that single package.
+//
+//   - If you provide a package-level with a specific version (e.g., github.com/apache/org.apache.cloudstack.cloud-core:4.13.0.0),
+//     it will print details relevant to that package version (though currently the code focuses on package details).
+//
+// Prerequisites:
+//   - Set the GITHUB_API_TOKEN environment variable to a GitHub token with read:packages permission.
+//
+// Examples:
+//   go run list_packages.go -scope=github.com/apache/ > apache_packages.json
+//   go run list_packages.go -scope=github.com/apache/org.apache.cloudstack.cloud-core
+//
+// The output will be JSON structures with details about the packages, formatted for readability.
+// Each package will be printed immediately as it is fetched, rather than waiting until the end.
+//
+
 package main
 
 import (
