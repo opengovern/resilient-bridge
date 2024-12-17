@@ -31,30 +31,38 @@ type Package struct {
 	URL         string `json:"url"`
 }
 
-type PackageVersion struct {
-	ID             int    `json:"id"`
-	Name           string `json:"name"`
-	URL            string `json:"url"`
-	PackageHTMLURL string `json:"package_html_url"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
-	HTMLURL        string `json:"html_url"`
-	Metadata       struct {
-		Container struct {
-			Tags []string `json:"tags"`
-		} `json:"container"`
-	} `json:"metadata"`
-
-	// We'll add a Manifest field here to include the manifest inline when listing versions.
-	Manifest interface{} `json:"manifest,omitempty"`
+type ContainerMetadata struct {
+	Container struct {
+		Tags []string `json:"tags"`
+	} `json:"container"`
 }
 
-type ManifestDetail struct {
-	Name             string          `json:"name"`
-	MediaType        string          `json:"MediaType"`
-	TotalSize        int64           `json:"total_size"`
-	Digest           string          `json:"Digest"`
-	CompleteManifest json.RawMessage `json:"complete_manifest"`
+type PackageVersion struct {
+	ID             int               `json:"id"`
+	Name           string            `json:"name"`
+	URL            string            `json:"url"`
+	PackageHTMLURL string            `json:"package_html_url"`
+	CreatedAt      string            `json:"created_at"`
+	UpdatedAt      string            `json:"updated_at"`
+	HTMLURL        string            `json:"html_url"`
+	Metadata       ContainerMetadata `json:"metadata"`
+}
+
+// The desired output structure for each version:
+type OutputVersion struct {
+	ID             int               `json:"id"`
+	Digest         string            `json:"digest"`
+	URL            string            `json:"url"`
+	PackageURI     string            `json:"package_uri"`
+	PackageHTMLURL string            `json:"package_html_url"`
+	CreatedAt      string            `json:"created_at"`
+	UpdatedAt      string            `json:"updated_at"`
+	HTMLURL        string            `json:"html_url"`
+	Name           string            `json:"name"`
+	MediaType      string            `json:"media_type"`
+	TotalSize      int64             `json:"total_size"`
+	Metadata       ContainerMetadata `json:"metadata"`
+	Manifest       interface{}       `json:"manifest"`
 }
 
 func main() {
@@ -85,47 +93,153 @@ func main() {
 	parts := strings.Split(strings.TrimPrefix(scope, "ghcr.io/"), "/")
 	org := parts[0]
 
+	// Case 1: Namespace (e.g. ghcr.io/opengovern/)
 	if strings.HasSuffix(scope, "/") {
 		// List all container packages in the org
 		packages := fetchPackages(sdk, org, "container")
-		output, err := json.MarshalIndent(packages, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling packages: %v", err)
-		}
-		fmt.Println(string(output))
-		return
-	}
 
-	// Not a trailing slash. Check for a tag
-	lastPart := parts[len(parts)-1]
-	refParts := strings.SplitN(lastPart, ":", 2)
-	if len(refParts) == 2 {
-		// Has a tag: single version manifest
-		packagePathParts := parts[1 : len(parts)-1]
-		packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
-		tag := refParts[1]
-		getManifestForSpecificVersion(sdk, org, packageName, tag, apiToken)
-	} else {
-		// No tag: list versions for package
-		packageName := strings.Join(parts[1:], "/")
-		versions := fetchVersions(sdk, org, "container", packageName)
-		// For each version, if tags exist, fetch manifest of the first tag
-		for i, v := range versions {
-			if len(v.Metadata.Container.Tags) > 0 {
-				// Fetch the manifest for the first tag
-				// If you want all tags, you'd loop here, but let's do just the first for demonstration
-				tag := v.Metadata.Container.Tags[0]
-				imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
-				manifestDetail := fetchManifest(apiToken, imageRef)
-				versions[i].Manifest = manifestDetail
+		// For each package, fetch versions and for each version fetch manifest and output structure
+		var allResults []OutputVersion
+		for _, p := range packages {
+			packageName := p.Name
+			versions := fetchVersions(sdk, org, "container", packageName)
+			for _, v := range versions {
+				results := getVersionOutput(apiToken, org, packageName, v)
+				allResults = append(allResults, results...)
 			}
 		}
 
-		output, err := json.MarshalIndent(versions, "", "  ")
+		outBytes, err := json.MarshalIndent(allResults, "", "  ")
 		if err != nil {
-			log.Fatalf("Error marshalling versions: %v", err)
+			log.Fatalf("Error marshalling final output: %v", err)
 		}
-		fmt.Println(string(output))
+		fmt.Println(string(outBytes))
+		return
+	}
+
+	// Case 2 or 3: Check if we have a tag
+	lastPart := parts[len(parts)-1]
+	refParts := strings.SplitN(lastPart, ":", 2)
+	if len(refParts) == 2 {
+		// Single version case
+		packagePathParts := parts[1 : len(parts)-1]
+		packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
+		tag := refParts[1]
+
+		// Fetch all versions and find the one matching this tag
+		versions := fetchVersions(sdk, org, "container", packageName)
+		var matchedVersion *PackageVersion
+		for i, v := range versions {
+			for _, t := range v.Metadata.Container.Tags {
+				if t == tag {
+					matchedVersion = &versions[i]
+					break
+				}
+			}
+			if matchedVersion != nil {
+				break
+			}
+		}
+
+		if matchedVersion == nil {
+			log.Fatalf("No version found with tag %s for package %s/%s", tag, org, packageName)
+		}
+
+		results := getVersionOutput(apiToken, org, packageName, *matchedVersion)
+		// Since this is a single version, results will contain exactly one element (one tag)
+		outBytes, err := json.MarshalIndent(results[0], "", "  ")
+		if err != nil {
+			log.Fatalf("Error marshalling final output: %v", err)
+		}
+		fmt.Println(string(outBytes))
+	} else {
+		// Package without tag: list versions for that package
+		packageName := strings.Join(parts[1:], "/")
+		versions := fetchVersions(sdk, org, "container", packageName)
+
+		var allResults []OutputVersion
+		for _, v := range versions {
+			results := getVersionOutput(apiToken, org, packageName, v)
+			allResults = append(allResults, results...)
+		}
+
+		outBytes, err := json.MarshalIndent(allResults, "", "  ")
+		if err != nil {
+			log.Fatalf("Error marshalling final output: %v", err)
+		}
+		fmt.Println(string(outBytes))
+	}
+}
+
+func getVersionOutput(apiToken, org, packageName string, version PackageVersion) []OutputVersion {
+	// Each version can have multiple tags. We'll produce one output object per tag.
+	var results []OutputVersion
+	for _, tag := range version.Metadata.Container.Tags {
+		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
+		ov := fetchAndAssembleOutput(apiToken, version, imageRef)
+		results = append(results, ov)
+	}
+	return results
+}
+
+func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef string) OutputVersion {
+	authOption := remote.WithAuth(&authn.Basic{
+		Username: "github",
+		Password: apiToken,
+	})
+
+	ref, err := name.ParseReference(imageRef)
+	if err != nil {
+		log.Fatalf("Error parsing reference %s: %v", imageRef, err)
+	}
+
+	desc, err := remote.Get(ref, authOption)
+	if err != nil {
+		log.Fatalf("Error fetching manifest for %s: %v", imageRef, err)
+	}
+
+	var manifestStruct struct {
+		SchemaVersion int    `json:"schemaVersion"`
+		MediaType     string `json:"mediaType"`
+		Config struct {
+			Size      int64  `json:"size"`
+			Digest    string `json:"digest"`
+			MediaType string `json:"mediaType"`
+		} `json:"config"`
+		Layers []struct {
+			Size      int64  `json:"size"`
+			Digest    string `json:"digest"`
+			MediaType string `json:"mediaType"`
+		} `json:"layers"`
+	}
+	if err := json.Unmarshal(desc.Manifest, &manifestStruct); err != nil {
+		log.Fatalf("Error unmarshaling manifest JSON: %v", err)
+	}
+
+	totalSize := manifestStruct.Config.Size
+	for _, layer := range manifestStruct.Layers {
+		totalSize += layer.Size
+	}
+
+	var manifestInterface interface{}
+	if err := json.Unmarshal(desc.Manifest, &manifestInterface); err != nil {
+		log.Fatalf("Error unmarshaling manifest for output: %v", err)
+	}
+
+	return OutputVersion{
+		ID:             version.ID,
+		Digest:         version.Name, // version digest from "name"
+		URL:            version.URL,
+		PackageURI:     imageRef,
+		PackageHTMLURL: version.PackageHTMLURL,
+		CreatedAt:      version.CreatedAt,
+		UpdatedAt:      version.UpdatedAt,
+		HTMLURL:        version.HTMLURL,
+		Name:           imageRef,
+		MediaType:      string(desc.Descriptor.MediaType),
+		TotalSize:      totalSize,
+		Metadata:       version.Metadata,
+		Manifest:       manifestInterface,
 	}
 }
 
@@ -169,120 +283,4 @@ func fetchVersions(sdk *resilientbridge.ResilientBridge, org, packageType, packa
 		log.Fatalf("Error parsing package versions response: %v", err)
 	}
 	return versions
-}
-
-func getManifestForSpecificVersion(sdk *resilientbridge.ResilientBridge, org, packageName, tag, apiToken string) {
-	imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
-
-	// You may want to fetch versions if you need version details (ID, etc.)
-	// If you need version details from the version's metadata, fetch versions and find the matching one:
-	versions := fetchVersions(sdk, org, "container", packageName)
-	var matchedVersion *PackageVersion
-	for i, v := range versions {
-		for _, t := range v.Metadata.Container.Tags {
-			if t == tag {
-				matchedVersion = &versions[i]
-				break
-			}
-		}
-		if matchedVersion != nil {
-			break
-		}
-	}
-
-	manifestDetail := fetchManifest(apiToken, imageRef)
-
-	// If matchedVersion is found, we can augment manifestDetail with version info if required
-	if matchedVersion != nil {
-		// Add desired fields to manifestDetail or create a combined structure
-		type FullOutput struct {
-			ID             int            `json:"id"`
-			ReferenceName  string         `json:"reference_name"`
-			Name           string         `json:"name"`
-			URL            string         `json:"url"`
-			PackageHTMLURL string         `json:"package_html_url"`
-			CreatedAt      string         `json:"created_at"`
-			UpdatedAt      string         `json:"updated_at"`
-			HTMLURL        string         `json:"html_url"`
-			Metadata       interface{}    `json:"metadata"`
-			Manifest       ManifestDetail `json:"manifest"`
-		}
-
-		// Name field here is a bit ambiguous—`matchedVersion.Name` is usually a digest,
-		// and `manifestDetail.Name` is the imageRef. We'll keep `matchedVersion.Name` as `name`.
-		full := FullOutput{
-			ID:             matchedVersion.ID,
-			ReferenceName:  imageRef,
-			Name:           matchedVersion.Name,
-			URL:            matchedVersion.URL,
-			PackageHTMLURL: matchedVersion.PackageHTMLURL,
-			CreatedAt:      matchedVersion.CreatedAt,
-			UpdatedAt:      matchedVersion.UpdatedAt,
-			HTMLURL:        matchedVersion.HTMLURL,
-			Metadata:       matchedVersion.Metadata,
-			Manifest:       manifestDetail,
-		}
-
-		outBytes, err := json.MarshalIndent(full, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling output: %v", err)
-		}
-		fmt.Println(string(outBytes))
-	} else {
-		// If we didn't find a matched version, just print the manifest detail
-		outBytes, err := json.MarshalIndent(manifestDetail, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling output: %v", err)
-		}
-		fmt.Println(string(outBytes))
-	}
-}
-
-func fetchManifest(apiToken, imageRef string) ManifestDetail {
-	ref, err := name.ParseReference(imageRef)
-	if err != nil {
-		log.Fatalf("Error parsing reference %s: %v", imageRef, err)
-	}
-
-	authOption := remote.WithAuth(&authn.Basic{
-		Username: "github",
-		Password: apiToken,
-	})
-
-	desc, err := remote.Get(ref, authOption)
-	if err != nil {
-		log.Fatalf("Error fetching manifest for %s: %v", imageRef, err)
-	}
-
-	// Calculate total size
-	var manifest struct {
-		SchemaVersion int    `json:"schemaVersion"`
-		MediaType     string `json:"mediaType"`
-		Config        struct {
-			Size      int64  `json:"size"`
-			Digest    string `json:"digest"`
-			MediaType string `json:"mediaType"`
-		} `json:"config"`
-		Layers []struct {
-			Size      int64  `json:"size"`
-			Digest    string `json:"digest"`
-			MediaType string `json:"mediaType"`
-		} `json:"layers"`
-	}
-	if err := json.Unmarshal(desc.Manifest, &manifest); err != nil {
-		log.Fatalf("Error unmarshaling manifest JSON: %v", err)
-	}
-
-	totalSize := manifest.Config.Size
-	for _, layer := range manifest.Layers {
-		totalSize += layer.Size
-	}
-
-	return ManifestDetail{
-		Name:             imageRef,
-		MediaType:        string(desc.Descriptor.MediaType),
-		TotalSize:        totalSize,
-		Digest:           desc.Descriptor.Digest.String(),
-		CompleteManifest: desc.Manifest,
-	}
 }
