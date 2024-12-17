@@ -52,9 +52,9 @@ type PackageVersion struct {
 type ManifestDetail struct {
 	Name             string          `json:"name"`
 	MediaType        string          `json:"MediaType"`
-	TotalSize        int64           `json:"Total Size"`
+	TotalSize        int64           `json:"total_size"`
 	Digest           string          `json:"Digest"`
-	CompleteManifest json.RawMessage `json:"complete manifest"`
+	CompleteManifest json.RawMessage `json:"complete_manifest"`
 }
 
 func main() {
