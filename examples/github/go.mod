@@ -1,13 +1,10 @@
-module github.com/opengovern/resilient-bridge
+module image-manifest
 
 go 1.22.5
 
 require (
-	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/go-containerregistry v0.20.2
-	golang.org/x/crypto v0.31.0
-	golang.org/x/oauth2 v0.24.0
-	oras.land/oras-go/v2 v2.5.0
+	github.com/opengovern/resilient-bridge v0.0.0-20241215000157-ad74ef2e3cbe
 )
 
 require (
@@ -23,5 +20,5 @@ require (
 	github.com/sirupsen/logrus v1.9.1 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 )
