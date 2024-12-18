@@ -193,7 +193,7 @@ type FinalRepoDetail struct {
 	Source              *FinalRepoDetail     `json:"source,omitempty"`
 	SecurityAndAnalysis *SecurityAndAnalysis `json:"security_and_analysis,omitempty"`
 
-	RepositorySettings RepositorySettings `json:"repository_settings"`
+	RepositorySettings RepositorySettings `json:"repo_settings"`
 	RepoURLs           RepoURLs           `json:"repo_urls"`
 	RepoMetrics        RepoMetrics        `json:"repo_metrics"`
 
