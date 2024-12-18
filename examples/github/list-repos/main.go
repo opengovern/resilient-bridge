@@ -167,6 +167,7 @@ type RepoMetrics struct {
 	TotalIssues       int `json:"total_issues"`
 	TotalBranches     int `json:"total_branches"`
 	TotalPullRequests int `json:"total_pull_requests"`
+	TotalReleases     int `json:"total_releases"`
 }
 
 type FinalRepoDetail struct {
@@ -197,7 +198,6 @@ type FinalRepoDetail struct {
 	RepoMetrics        RepoMetrics        `json:"repo_metrics"`
 
 	IsArchived                    bool `json:"is_archived"`
-	IsBlankIssuesEnabled          bool `json:"is_blank_issues_enabled"`
 	IsDisabled                    bool `json:"is_disabled"`
 	IsEmpty                       bool `json:"is_empty"`
 	IsFork                        bool `json:"is_fork"`
@@ -223,7 +223,7 @@ func main() {
 	flag.Parse()
 
 	if *repoFlag == "" {
-		log.Fatal("You must provide a -repo parameter, e.g. -repo=https://github.com/opengovern or -repo=https://github.com/opengovern/opencomply")
+		log.Fatal("You must provide a -repo parameter")
 	}
 
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
@@ -328,6 +328,12 @@ func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName str
 		return fmt.Errorf("counting PRs: %w", err)
 	}
 	finalDetail.RepoMetrics.TotalPullRequests = prCount
+
+	releasesCount, err := countReleases(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting releases: %w", err)
+	}
+	finalDetail.RepoMetrics.TotalReleases = releasesCount
 
 	return nil
 }
@@ -504,7 +510,6 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		},
 
 		IsArchived:                    detail.Archived,
-		IsBlankIssuesEnabled:          detail.BlankIssuesEnabled,
 		IsDisabled:                    detail.Disabled,
 		IsEmpty:                       isEmpty,
 		IsFork:                        detail.Fork,
@@ -518,32 +523,28 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 	}
 }
 
-// The following functions are used to count commits, issues, branches, and PRs using pagination logic.
-
 func countCommits(sdk *resilientbridge.ResilientBridge, owner, repoName, defaultBranch string) (int, error) {
-	// per_page=1 so last page number = total commits
-	// use defaultBranch for sha
 	endpoint := fmt.Sprintf("/repos/%s/%s/commits?sha=%s&per_page=1", owner, repoName, defaultBranch)
 	return countItemsFromEndpoint(sdk, endpoint)
 }
 
 func countIssues(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
-	// per_page=1 so last page number = total issues
-	// state=all to count all issues (including open and closed)
 	endpoint := fmt.Sprintf("/repos/%s/%s/issues?state=all&per_page=1", owner, repoName)
 	return countItemsFromEndpoint(sdk, endpoint)
 }
 
 func countBranches(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
-	// per_page=1 so last page number = total branches
 	endpoint := fmt.Sprintf("/repos/%s/%s/branches?per_page=1", owner, repoName)
 	return countItemsFromEndpoint(sdk, endpoint)
 }
 
 func countPullRequests(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
-	// per_page=1 so last page number = total PRs
-	// state=all to count all PRs (open, closed, merged)
 	endpoint := fmt.Sprintf("/repos/%s/%s/pulls?state=all&per_page=1", owner, repoName)
+	return countItemsFromEndpoint(sdk, endpoint)
+}
+
+func countReleases(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+	endpoint := fmt.Sprintf("/repos/%s/%s/releases?per_page=1", owner, repoName)
 	return countItemsFromEndpoint(sdk, endpoint)
 }
 
@@ -563,7 +564,6 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
-	// Find Link header (case-insensitive)
 	var linkHeader string
 	for k, v := range resp.Headers {
 		if strings.ToLower(k) == "link" {
@@ -573,12 +573,10 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 	}
 
 	if linkHeader == "" {
-		// No Link header: possibly a single or zero page of results.
+		// No Link header, check if there's at least one item
 		if len(resp.Data) > 2 {
-			// Parse array
 			var items []interface{}
 			if err := json.Unmarshal(resp.Data, &items); err != nil {
-				// If parsing fails, assume at least one item since len(resp.Data)>2
 				return 1, nil
 			}
 			return len(items), nil
@@ -586,22 +584,18 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, nil
 	}
 
-	// Parse last page
 	lastPage, err := parseLastPage(linkHeader)
 	if err != nil {
 		return 0, fmt.Errorf("could not parse last page: %w", err)
 	}
 
-	// per_page=1, so lastPage = total items
 	return lastPage, nil
 }
 
-// parseLastPage extracts the page number from the `rel="last"` link in the Link header.
 func parseLastPage(linkHeader string) (int, error) {
 	re := regexp.MustCompile(`page=(\d+)>; rel="last"`)
 	matches := re.FindStringSubmatch(linkHeader)
 	if len(matches) < 2 {
-		// If no last page found, possibly only one page of results.
 		return 1, nil
 	}
 	var lastPage int
