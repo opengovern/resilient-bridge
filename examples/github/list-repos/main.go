@@ -560,10 +560,11 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, fmt.Errorf("error fetching data: %w", err)
 	}
 
-	// If 409 or other errors occur, return 0
+	// If repository is empty or no commits are available, GitHub returns 409.
+	// We can interpret this as 0 items.
 	if resp.StatusCode == 409 {
-		// 409 often indicates a repository is empty or no commits available.
-		// So we return 0 and no error.
+		// 409 conflict: often "Git Repository is empty."
+		// Just return 0 items without an error.
 		return 0, nil
 	}
 
@@ -580,10 +581,11 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 	}
 
 	if linkHeader == "" {
-		// No Link header, check if there's at least one item
+		// No Link header, possibly a single or zero page of results.
 		if len(resp.Data) > 2 {
 			var items []interface{}
 			if err := json.Unmarshal(resp.Data, &items); err != nil {
+				// If parsing fails, but data length > 2 suggests at least one item
 				return 1, nil
 			}
 			return len(items), nil
