@@ -15,114 +15,109 @@ import (
 
 type UserOrOrg struct {
 	Login        string `json:"login"`
-	ID           int    `json:"id,omitempty"`
-	NodeID       string `json:"node_id,omitempty"`
-	HTMLURL      string `json:"html_url,omitempty"`
-	Type         string `json:"type,omitempty"`
-	UserViewType string `json:"user_view_type,omitempty"`
-	SiteAdmin    bool   `json:"site_admin,omitempty"`
+	ID           int    `json:"id"`
+	NodeID       string `json:"node_id"`
+	HTMLURL      string `json:"html_url"`
+	Type         string `json:"type"`
+	UserViewType string `json:"user_view_type"`
+	SiteAdmin    bool   `json:"site_admin"`
 }
 
 type License struct {
-	Key    string `json:"key,omitempty"`
-	Name   string `json:"name,omitempty"`
-	SPDXID string `json:"spdx_id,omitempty"`
-	URL    string `json:"url,omitempty"`
-	NodeID string `json:"node_id,omitempty"`
+	Key    string `json:"key"`
+	Name   string `json:"name"`
+	SPDXID string `json:"spdx_id"`
+	URL    string `json:"url"`
+	NodeID string `json:"node_id"`
 }
 
 type Permissions struct {
-	Admin    bool `json:"admin,omitempty"`
-	Maintain bool `json:"maintain,omitempty"`
-	Push     bool `json:"push,omitempty"`
-	Triage   bool `json:"triage,omitempty"`
-	Pull     bool `json:"pull,omitempty"`
+	Admin    bool `json:"admin"`
+	Maintain bool `json:"maintain"`
+	Push     bool `json:"push"`
+	Triage   bool `json:"triage"`
+	Pull     bool `json:"pull"`
 }
 
 type StatusObj struct {
 	Status string `json:"status"`
 }
 
-type SecurityAndAnalysis struct {
-	SecretScanning                    *StatusObj `json:"secret_scanning,omitempty"`
-	SecretScanningPushProtection      *StatusObj `json:"secret_scanning_push_protection,omitempty"`
-	DependabotSecurityUpdates         *StatusObj `json:"dependabot_security_updates,omitempty"`
-	SecretScanningNonProviderPatterns *StatusObj `json:"secret_scanning_non_provider_patterns,omitempty"`
-	SecretScanningValidityChecks      *StatusObj `json:"secret_scanning_validity_checks,omitempty"`
-}
-
 type RepoDetail struct {
-	ID                        int                    `json:"id,omitempty"`
-	NodeID                    string                 `json:"node_id,omitempty"`
-	Name                      string                 `json:"name,omitempty"`
-	FullName                  string                 `json:"full_name,omitempty"`
-	Private                   bool                   `json:"private,omitempty"`
-	Owner                     *UserOrOrg             `json:"owner,omitempty"`
-	HTMLURL                   string                 `json:"html_url,omitempty"`
+	ID                        int                    `json:"id"`
+	NodeID                    string                 `json:"node_id"`
+	Name                      string                 `json:"name"`
+	FullName                  string                 `json:"full_name"`
+	Private                   bool                   `json:"private"`
+	Owner                     *UserOrOrg             `json:"owner"`
+	HTMLURL                   string                 `json:"html_url"`
 	Description               *string                `json:"description"`
-	Fork                      bool                   `json:"fork,omitempty"`
-	CreatedAt                 string                 `json:"created_at,omitempty"`
-	UpdatedAt                 string                 `json:"updated_at,omitempty"`
-	PushedAt                  string                 `json:"pushed_at,omitempty"`
-	GitURL                    string                 `json:"git_url,omitempty"`
-	SSHURL                    string                 `json:"ssh_url,omitempty"`
-	CloneURL                  string                 `json:"clone_url,omitempty"`
-	SVNURL                    string                 `json:"svn_url,omitempty"`
+	Fork                      bool                   `json:"fork"`
+	CreatedAt                 string                 `json:"created_at"`
+	UpdatedAt                 string                 `json:"updated_at"`
+	PushedAt                  string                 `json:"pushed_at"`
+	GitURL                    string                 `json:"git_url"`
+	SSHURL                    string                 `json:"ssh_url"`
+	CloneURL                  string                 `json:"clone_url"`
+	SVNURL                    string                 `json:"svn_url"`
 	Homepage                  *string                `json:"homepage"`
-	Size                      int                    `json:"size,omitempty"`
-	StargazersCount           int                    `json:"stargazers_count,omitempty"`
-	WatchersCount             int                    `json:"watchers_count,omitempty"`
+	Size                      int                    `json:"size"`
+	StargazersCount           int                    `json:"stargazers_count"`
+	WatchersCount             int                    `json:"watchers_count"`
 	Language                  *string                `json:"language"`
-	HasIssues                 bool                   `json:"has_issues,omitempty"`
-	HasProjects               bool                   `json:"has_projects,omitempty"`
-	HasDownloads              bool                   `json:"has_downloads,omitempty"`
-	HasWiki                   bool                   `json:"has_wiki,omitempty"`
-	HasPages                  bool                   `json:"has_pages,omitempty"`
-	HasDiscussions            bool                   `json:"has_discussions,omitempty"`
-	ForksCount                int                    `json:"forks_count,omitempty"`
+	HasIssues                 bool                   `json:"has_issues"`
+	HasProjects               bool                   `json:"has_projects"`
+	HasDownloads              bool                   `json:"has_downloads"`
+	HasWiki                   bool                   `json:"has_wiki"`
+	HasPages                  bool                   `json:"has_pages"`
+	HasDiscussions            bool                   `json:"has_discussions"`
+	ForksCount                int                    `json:"forks_count"`
 	MirrorURL                 *string                `json:"mirror_url"`
-	Archived                  bool                   `json:"archived,omitempty"`
-	Disabled                  bool                   `json:"disabled,omitempty"`
-	OpenIssuesCount           int                    `json:"open_issues_count,omitempty"`
-	License                   *License               `json:"license,omitempty"`
-	AllowForking              bool                   `json:"allow_forking,omitempty"`
-	IsTemplate                bool                   `json:"is_template,omitempty"`
-	WebCommitSignoffRequired  bool                   `json:"web_commit_signoff_required,omitempty"`
-	Topics                    []string               `json:"topics,omitempty"`
-	Visibility                string                 `json:"visibility,omitempty"`
-	Forks                     int                    `json:"forks,omitempty"`
-	OpenIssues                int                    `json:"open_issues,omitempty"`
-	Watchers                  int                    `json:"watchers,omitempty"`
-	DefaultBranch             string                 `json:"default_branch,omitempty"`
-	Permissions               *Permissions           `json:"permissions,omitempty"`
-	AllowSquashMerge          bool                   `json:"allow_squash_merge,omitempty"`
-	AllowMergeCommit          bool                   `json:"allow_merge_commit,omitempty"`
-	AllowRebaseMerge          bool                   `json:"allow_rebase_merge,omitempty"`
-	AllowAutoMerge            bool                   `json:"allow_auto_merge,omitempty"`
-	DeleteBranchOnMerge       bool                   `json:"delete_branch_on_merge,omitempty"`
-	AllowUpdateBranch         bool                   `json:"allow_update_branch,omitempty"`
-	UseSquashPRTitleAsDefault bool                   `json:"use_squash_pr_title_as_default,omitempty"`
-	SquashMergeCommitMessage  string                 `json:"squash_merge_commit_message,omitempty"`
-	SquashMergeCommitTitle    string                 `json:"squash_merge_commit_title,omitempty"`
-	MergeCommitMessage        string                 `json:"merge_commit_message,omitempty"`
-	MergeCommitTitle          string                 `json:"merge_commit_title,omitempty"`
-	CustomProperties          map[string]interface{} `json:"custom_properties,omitempty"`
-	Organization              *UserOrOrg             `json:"organization,omitempty"`
-	Parent                    *RepoDetail            `json:"parent,omitempty"`
-	Source                    *RepoDetail            `json:"source,omitempty"`
-	SecurityAndAnalysis       *SecurityAndAnalysis   `json:"security_and_analysis,omitempty"`
-	NetworkCount              int                    `json:"network_count,omitempty"`
-	SubscribersCount          int                    `json:"subscribers_count,omitempty"`
-	BlankIssuesEnabled        bool                   `json:"blank_issues_enabled,omitempty"`
-	Locked                    bool                   `json:"locked,omitempty"`
+	Archived                  bool                   `json:"archived"`
+	Disabled                  bool                   `json:"disabled"`
+	OpenIssuesCount           int                    `json:"open_issues_count"`
+	License                   *License               `json:"license"`
+	AllowForking              bool                   `json:"allow_forking"`
+	IsTemplate                bool                   `json:"is_template"`
+	WebCommitSignoffRequired  bool                   `json:"web_commit_signoff_required"`
+	Topics                    []string               `json:"topics"`
+	Visibility                string                 `json:"visibility"`
+	DefaultBranch             string                 `json:"default_branch"`
+	Permissions               *Permissions           `json:"permissions"`
+	AllowSquashMerge          bool                   `json:"allow_squash_merge"`
+	AllowMergeCommit          bool                   `json:"allow_merge_commit"`
+	AllowRebaseMerge          bool                   `json:"allow_rebase_merge"`
+	AllowAutoMerge            bool                   `json:"allow_auto_merge"`
+	DeleteBranchOnMerge       bool                   `json:"delete_branch_on_merge"`
+	AllowUpdateBranch         bool                   `json:"allow_update_branch"`
+	UseSquashPRTitleAsDefault bool                   `json:"use_squash_pr_title_as_default"`
+	SquashMergeCommitMessage  string                 `json:"squash_merge_commit_message"`
+	SquashMergeCommitTitle    string                 `json:"squash_merge_commit_title"`
+	MergeCommitMessage        string                 `json:"merge_commit_message"`
+	MergeCommitTitle          string                 `json:"merge_commit_title"`
+	CustomProperties          map[string]interface{} `json:"custom_properties"`
+	Organization              *UserOrOrg             `json:"organization"`
+	Parent                    *RepoDetail            `json:"parent"`
+	Source                    *RepoDetail            `json:"source"`
+	NetworkCount              int                    `json:"network_count"`
+	SubscribersCount          int                    `json:"subscribers_count"`
+	BlankIssuesEnabled        bool                   `json:"blank_issues_enabled"`
+	Locked                    bool                   `json:"locked"`
+
+	SecurityAndAnalysis *struct {
+		SecretScanning                    *StatusObj `json:"secret_scanning"`
+		SecretScanningPushProtection      *StatusObj `json:"secret_scanning_push_protection"`
+		DependabotSecurityUpdates         *StatusObj `json:"dependabot_security_updates"`
+		SecretScanningNonProviderPatterns *StatusObj `json:"secret_scanning_non_provider_patterns"`
+		SecretScanningValidityChecks      *StatusObj `json:"secret_scanning_validity_checks"`
+	} `json:"security_and_analysis"`
 }
 
 type RepositorySettings struct {
-	HasDiscussionsEnabled         bool `json:"has_discussions_enabled"`
-	HasIssuesEnabled              bool `json:"has_issues_enabled"`
-	HasProjectsEnabled            bool `json:"has_projects_enabled"`
-	HasVulnerabilityAlertsEnabled bool `json:"has_vulnerability_alerts_enabled"`
-	HasWikiEnabled                bool `json:"has_wiki_enabled"`
+	HasDiscussionsEnabled bool `json:"has_discussions_enabled"`
+	HasIssuesEnabled      bool `json:"has_issues_enabled"`
+	HasProjectsEnabled    bool `json:"has_projects_enabled"`
+	HasWikiEnabled        bool `json:"has_wiki_enabled"`
 
 	MergeCommitAllowed bool   `json:"merge_commit_allowed"`
 	MergeCommitMessage string `json:"merge_commit_message"`
@@ -141,70 +136,89 @@ type RepositorySettings struct {
 	DeleteBranchOnMerge       bool                   `json:"delete_branch_on_merge"`
 	AllowUpdateBranch         bool                   `json:"allow_update_branch"`
 	UseSquashPRTitleAsDefault bool                   `json:"use_squash_pr_title_as_default"`
-	CustomProperties          map[string]interface{} `json:"custom_properties,omitempty"`
-	AllowForking              bool                   `json:"allow_forking"`
+	CustomProperties          map[string]interface{} `json:"custom_properties"`
+	ForkingAllowed            bool                   `json:"forking_allowed"`
 	IsTemplate                bool                   `json:"is_template"`
 	AllowRebaseMerge          bool                   `json:"allow_rebase_merge"`
+
+	// Move is_archived and is_disabled here:
+	IsArchived bool `json:"is_archived"`
+	IsDisabled bool `json:"is_disabled"`
+}
+
+type SecuritySettings struct {
+	VulnerabilityAlertsEnabled          bool `json:"vulnerability_alerts_enabled"`
+	SecretScanningEnabled               bool `json:"secret_scanning_enabled"`
+	SecretScanningPushProtectionEnabled bool `json:"secret_scanning_push_protection_enabled"`
+	DependabotSecurityUpdatesEnabled    bool `json:"dependabot_security_updates_enabled"`
+	SecretScanningNonProviderPatterns   bool `json:"secret_scanning_non_provider_patterns_enabled"`
+	SecretScanningValidityChecksEnabled bool `json:"secret_scanning_validity_checks_enabled"`
 }
 
 type RepoURLs struct {
-	GitURL   string `json:"git_url,omitempty"`
-	SSHURL   string `json:"ssh_url,omitempty"`
-	CloneURL string `json:"clone_url,omitempty"`
-	SVNURL   string `json:"svn_url,omitempty"`
-	HTMLURL  string `json:"html_url,omitempty"`
+	GitURL   string `json:"git_url"`
+	SSHURL   string `json:"ssh_url"`
+	CloneURL string `json:"clone_url"`
+	SVNURL   string `json:"svn_url"`
+	HTMLURL  string `json:"html_url"`
 }
 
 type RepoMetrics struct {
-	StargazersCount   int `json:"stargazers_count"`
-	WatchersCount     int `json:"watchers_count"`
-	ForksCount        int `json:"forks_count"`
-	OpenIssuesCount   int `json:"open_issues_count"`
-	NetworkCount      int `json:"network_count"`
-	SubscribersCount  int `json:"subscribers_count"`
-	Size              int `json:"size"`
-	TotalCommits      int `json:"total_commits"`
-	TotalIssues       int `json:"total_issues"`
-	TotalBranches     int `json:"total_branches"`
-	TotalPullRequests int `json:"total_pull_requests"`
-	TotalReleases     int `json:"total_releases"`
+	StargazersCount    int `json:"stargazer_count"`
+	WatchersTotalCount int `json:"watchers_total_count"`
+	ForkCount          int `json:"fork_count"`
+	OpenIssuesCount    int `json:"open_issues_total_count"`
+	NetworkCount       int `json:"network_count"`
+	SubscribersCount   int `json:"subscribers_count"`
+	Size               int `json:"size"`
+	TotalCommits       int `json:"total_commits"`
+	TotalIssues        int `json:"total_issues"`
+	TotalBranches      int `json:"total_branches"`
+	TotalPullRequests  int `json:"total_pull_requests"`
+	TotalReleases      int `json:"total_releases"`
 }
 
 type FinalRepoDetail struct {
-	GitHubRepoID        int                  `json:"github_repo_id,omitempty"`
-	NodeID              string               `json:"node_id,omitempty"`
-	Name                string               `json:"name,omitempty"`
-	FullName            string               `json:"full_name,omitempty"`
-	Private             bool                 `json:"private,omitempty"`
-	Owner               *UserOrOrg           `json:"owner,omitempty"`
-	Description         *string              `json:"description"`
-	CreatedAt           string               `json:"created_at,omitempty"`
-	UpdatedAt           string               `json:"updated_at,omitempty"`
-	PushedAt            string               `json:"pushed_at,omitempty"`
-	Homepage            *string              `json:"homepage"`
-	Language            *string              `json:"language"`
-	License             *License             `json:"license,omitempty"`
-	Topics              []string             `json:"topics,omitempty"`
-	Visibility          string               `json:"visibility,omitempty"`
-	DefaultBranch       string               `json:"default_branch,omitempty"`
-	Permissions         *Permissions         `json:"permissions,omitempty"`
-	Organization        *UserOrOrg           `json:"organization,omitempty"`
-	Parent              *FinalRepoDetail     `json:"parent,omitempty"`
-	Source              *FinalRepoDetail     `json:"source,omitempty"`
-	SecurityAndAnalysis *SecurityAndAnalysis `json:"security_and_analysis,omitempty"`
+	GitHubRepoID  int    `json:"id"`
+	NodeID        string `json:"node_id"`
+	Name          string `json:"name"`
+	NameWithOwner string `json:"name_with_owner"`
+
+	// Add is_active at top level: repo is active if not archived and not disabled.
+	IsActive bool `json:"is_active"`
+
+	IsPrivate   bool       `json:"is_private"`
+	Owner       *UserOrOrg `json:"owner"`
+	Description *string    `json:"description"`
+	CreatedAt   string     `json:"created_at"`
+	UpdatedAt   string     `json:"updated_at"`
+	PushedAt    string     `json:"pushed_at"`
+	HomepageURL *string    `json:"homepage_url"`
+
+	LicenseInfo json.RawMessage `json:"license_info"`
+
+	Topics     []string `json:"topics"`
+	Visibility string   `json:"visibility"`
+
+	DefaultBranchRef json.RawMessage `json:"default_branch_ref"`
+
+	Permissions  *Permissions     `json:"permissions"`
+	Organization *UserOrOrg       `json:"organization"`
+	Parent       *FinalRepoDetail `json:"parent"`
+	Source       *FinalRepoDetail `json:"source"`
+	Language     *string          `json:"language"`
 
 	RepositorySettings RepositorySettings `json:"repo_settings"`
-	RepoURLs           RepoURLs           `json:"repo_urls"`
-	RepoMetrics        RepoMetrics        `json:"repo_metrics"`
+	SecuritySettings   SecuritySettings   `json:"security_settings"`
 
-	IsArchived                    bool `json:"is_archived"`
-	IsDisabled                    bool `json:"is_disabled"`
+	RepoURLs    RepoURLs    `json:"repo_urls"`
+	RepoMetrics RepoMetrics `json:"repo_metrics"`
+
 	IsEmpty                       bool `json:"is_empty"`
 	IsFork                        bool `json:"is_fork"`
 	IsInOrganization              bool `json:"is_in_organization"`
-	IsLocked                      bool `json:"is_locked"`
+	Locked                        bool `json:"locked"`
 	IsMirror                      bool `json:"is_mirror"`
-	IsPrivate                     bool `json:"is_private"`
 	IsSecurityPolicyEnabled       bool `json:"is_security_policy_enabled"`
 	IsTemplate                    bool `json:"is_template"`
 	IsUserConfigurationRepository bool `json:"is_user_configuration_repository"`
@@ -249,7 +263,6 @@ func main() {
 	})
 
 	if repoName == "" {
-		// Org-level
 		allRepos, err := fetchOrgRepos(sdk, owner, maxResults)
 		if err != nil {
 			log.Fatalf("Error fetching organization repositories: %v", err)
@@ -264,7 +277,6 @@ func main() {
 
 			finalDetail := transformToFinalRepoDetail(repoDetail)
 
-			// Count metrics
 			err = enrichRepoMetrics(sdk, r.Owner.Login, r.Name, finalDetail)
 			if err != nil {
 				log.Printf("Error enriching repo metrics for %s/%s: %v", r.Owner.Login, r.Name, err)
@@ -278,7 +290,6 @@ func main() {
 			fmt.Println(string(data))
 		}
 	} else {
-		// Single repo
 		repoDetail, err := fetchRepoDetails(sdk, owner, repoName)
 		if err != nil {
 			log.Fatalf("Error fetching repository details: %v", err)
@@ -286,7 +297,6 @@ func main() {
 
 		finalDetail := transformToFinalRepoDetail(repoDetail)
 
-		// Count metrics
 		err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
 		if err != nil {
 			log.Printf("Error enriching repo metrics for %s/%s: %v", owner, repoName, err)
@@ -301,10 +311,17 @@ func main() {
 }
 
 func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName string, finalDetail *FinalRepoDetail) error {
-	defaultBranch := finalDetail.DefaultBranch
+	var dbObj map[string]string
+	if finalDetail.DefaultBranchRef != nil {
+		if err := json.Unmarshal(finalDetail.DefaultBranchRef, &dbObj); err != nil {
+			return err
+		}
+	}
+	defaultBranch := dbObj["name"]
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
+
 	commitsCount, err := countCommits(sdk, owner, repoName, defaultBranch)
 	if err != nil {
 		return fmt.Errorf("counting commits: %w", err)
@@ -434,61 +451,97 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 
 	isInOrganization := (detail.Organization != nil && detail.Organization.Type == "Organization")
 	isMirror := (detail.MirrorURL != nil)
-	isSecurityPolicyEnabled := detail.SecurityAndAnalysis != nil && detail.SecurityAndAnalysis.DependabotSecurityUpdates != nil && detail.SecurityAndAnalysis.DependabotSecurityUpdates.Status == "enabled"
 	isEmpty := (detail.Size == 0)
-	isUserConfigurationRepository := false
+
+	sec := detail.SecurityAndAnalysis
+	secretScanningEnabled := false
+	secretScanningPushProtectionEnabled := false
+	dependabotSecurityUpdatesEnabled := false
+	secretScanningNonProviderPatternsEnabled := false
+	secretScanningValidityChecksEnabled := false
+	vulnerabilityAlertsEnabled := false
+	if sec != nil {
+		secretScanningEnabled = (sec.SecretScanning != nil && sec.SecretScanning.Status == "enabled")
+		secretScanningPushProtectionEnabled = (sec.SecretScanningPushProtection != nil && sec.SecretScanningPushProtection.Status == "enabled")
+		dependabotSecurityUpdatesEnabled = (sec.DependabotSecurityUpdates != nil && sec.DependabotSecurityUpdates.Status == "enabled")
+		secretScanningNonProviderPatternsEnabled = (sec.SecretScanningNonProviderPatterns != nil && sec.SecretScanningNonProviderPatterns.Status == "enabled")
+		secretScanningValidityChecksEnabled = (sec.SecretScanningValidityChecks != nil && sec.SecretScanningValidityChecks.Status == "enabled")
+	}
+	if dependabotSecurityUpdatesEnabled {
+		vulnerabilityAlertsEnabled = true
+	}
+
+	var licenseJSON json.RawMessage
+	if detail.License != nil {
+		lj, _ := json.Marshal(detail.License)
+		licenseJSON = lj
+	}
+
+	dbObj := map[string]string{"name": detail.DefaultBranch}
+	dbBytes, _ := json.Marshal(dbObj)
+
+	// Determine is_active: true if not archived and not disabled
+	isActive := !(detail.Archived || detail.Disabled)
 
 	return &FinalRepoDetail{
-		GitHubRepoID:        detail.ID,
-		NodeID:              detail.NodeID,
-		Name:                detail.Name,
-		FullName:            detail.FullName,
-		Private:             detail.Private,
-		Owner:               detail.Owner,
-		Description:         detail.Description,
-		CreatedAt:           detail.CreatedAt,
-		UpdatedAt:           detail.UpdatedAt,
-		PushedAt:            detail.PushedAt,
-		Homepage:            detail.Homepage,
-		Language:            detail.Language,
-		License:             detail.License,
-		Topics:              detail.Topics,
-		Visibility:          detail.Visibility,
-		DefaultBranch:       detail.DefaultBranch,
-		Permissions:         detail.Permissions,
-		Organization:        detail.Organization,
-		Parent:              parent,
-		Source:              source,
-		SecurityAndAnalysis: detail.SecurityAndAnalysis,
+		GitHubRepoID:  detail.ID,
+		NodeID:        detail.NodeID,
+		Name:          detail.Name,
+		NameWithOwner: detail.FullName,
+
+		IsActive: isActive,
+
+		IsPrivate:        detail.Private,
+		Owner:            detail.Owner,
+		Description:      detail.Description,
+		CreatedAt:        detail.CreatedAt,
+		UpdatedAt:        detail.UpdatedAt,
+		PushedAt:         detail.PushedAt,
+		HomepageURL:      detail.Homepage,
+		LicenseInfo:      licenseJSON,
+		Topics:           detail.Topics,
+		Visibility:       detail.Visibility,
+		DefaultBranchRef: dbBytes,
+		Permissions:      detail.Permissions,
+		Organization:     detail.Organization,
+		Parent:           parent,
+		Source:           source,
+		Language:         detail.Language,
 
 		RepositorySettings: RepositorySettings{
-			HasDiscussionsEnabled:         detail.HasDiscussions,
-			HasIssuesEnabled:              detail.HasIssues,
-			HasProjectsEnabled:            detail.HasProjects,
-			HasWikiEnabled:                detail.HasWiki,
-			HasVulnerabilityAlertsEnabled: isSecurityPolicyEnabled,
-
-			MergeCommitAllowed: detail.AllowMergeCommit,
-			MergeCommitMessage: detail.MergeCommitMessage,
-			MergeCommitTitle:   detail.MergeCommitTitle,
-
-			SquashMergeAllowed:       detail.AllowSquashMerge,
-			SquashMergeCommitMessage: detail.SquashMergeCommitMessage,
-			SquashMergeCommitTitle:   detail.SquashMergeCommitTitle,
-
-			HasDownloads:             detail.HasDownloads,
-			HasPages:                 detail.HasPages,
-			WebCommitSignoffRequired: detail.WebCommitSignoffRequired,
-
+			HasDiscussionsEnabled:     detail.HasDiscussions,
+			HasIssuesEnabled:          detail.HasIssues,
+			HasProjectsEnabled:        detail.HasProjects,
+			HasWikiEnabled:            detail.HasWiki,
+			MergeCommitAllowed:        detail.AllowMergeCommit,
+			MergeCommitMessage:        detail.MergeCommitMessage,
+			MergeCommitTitle:          detail.MergeCommitTitle,
+			SquashMergeAllowed:        detail.AllowSquashMerge,
+			SquashMergeCommitMessage:  detail.SquashMergeCommitMessage,
+			SquashMergeCommitTitle:    detail.SquashMergeCommitTitle,
+			HasDownloads:              detail.HasDownloads,
+			HasPages:                  detail.HasPages,
+			WebCommitSignoffRequired:  detail.WebCommitSignoffRequired,
 			MirrorURL:                 detail.MirrorURL,
 			AllowAutoMerge:            detail.AllowAutoMerge,
 			DeleteBranchOnMerge:       detail.DeleteBranchOnMerge,
 			AllowUpdateBranch:         detail.AllowUpdateBranch,
 			UseSquashPRTitleAsDefault: detail.UseSquashPRTitleAsDefault,
 			CustomProperties:          detail.CustomProperties,
-			AllowForking:              detail.AllowForking,
+			ForkingAllowed:            detail.AllowForking,
 			IsTemplate:                detail.IsTemplate,
 			AllowRebaseMerge:          detail.AllowRebaseMerge,
+			IsArchived:                detail.Archived,
+			IsDisabled:                detail.Disabled,
+		},
+
+		SecuritySettings: SecuritySettings{
+			VulnerabilityAlertsEnabled:          vulnerabilityAlertsEnabled,
+			SecretScanningEnabled:               secretScanningEnabled,
+			SecretScanningPushProtectionEnabled: secretScanningPushProtectionEnabled,
+			DependabotSecurityUpdatesEnabled:    dependabotSecurityUpdatesEnabled,
+			SecretScanningNonProviderPatterns:   secretScanningNonProviderPatternsEnabled,
+			SecretScanningValidityChecksEnabled: secretScanningValidityChecksEnabled,
 		},
 
 		RepoURLs: RepoURLs{
@@ -498,28 +551,24 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 			SVNURL:   detail.SVNURL,
 			HTMLURL:  detail.HTMLURL,
 		},
-
 		RepoMetrics: RepoMetrics{
-			StargazersCount:  detail.StargazersCount,
-			WatchersCount:    detail.WatchersCount,
-			ForksCount:       detail.ForksCount,
-			OpenIssuesCount:  detail.OpenIssuesCount,
-			NetworkCount:     detail.NetworkCount,
-			SubscribersCount: detail.SubscribersCount,
-			Size:             detail.Size,
+			StargazersCount:    detail.StargazersCount,
+			WatchersTotalCount: detail.WatchersCount,
+			ForkCount:          detail.ForksCount,
+			OpenIssuesCount:    detail.OpenIssuesCount,
+			NetworkCount:       detail.NetworkCount,
+			SubscribersCount:   detail.SubscribersCount,
+			Size:               detail.Size,
 		},
 
-		IsArchived:                    detail.Archived,
-		IsDisabled:                    detail.Disabled,
 		IsEmpty:                       isEmpty,
 		IsFork:                        detail.Fork,
 		IsInOrganization:              isInOrganization,
-		IsLocked:                      detail.Locked,
+		Locked:                        detail.Locked,
 		IsMirror:                      isMirror,
-		IsPrivate:                     detail.Private,
-		IsSecurityPolicyEnabled:       isSecurityPolicyEnabled,
+		IsSecurityPolicyEnabled:       false,
 		IsTemplate:                    detail.IsTemplate,
-		IsUserConfigurationRepository: isUserConfigurationRepository,
+		IsUserConfigurationRepository: false,
 	}
 }
 
@@ -560,11 +609,7 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, fmt.Errorf("error fetching data: %w", err)
 	}
 
-	// If repository is empty or no commits are available, GitHub returns 409.
-	// We can interpret this as 0 items.
 	if resp.StatusCode == 409 {
-		// 409 conflict: often "Git Repository is empty."
-		// Just return 0 items without an error.
 		return 0, nil
 	}
 
@@ -581,11 +626,9 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 	}
 
 	if linkHeader == "" {
-		// No Link header, possibly a single or zero page of results.
 		if len(resp.Data) > 2 {
 			var items []interface{}
 			if err := json.Unmarshal(resp.Data, &items); err != nil {
-				// If parsing fails, but data length > 2 suggests at least one item
 				return 1, nil
 			}
 			return len(items), nil
