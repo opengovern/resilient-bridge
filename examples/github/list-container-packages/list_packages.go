@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -62,6 +64,7 @@ type OutputVersion struct {
 	TotalSize      int64             `json:"total_size"`
 	Metadata       ContainerMetadata `json:"metadata"`
 	Manifest       interface{}       `json:"manifest"`
+	Attestation    interface{}       `json:"attestation"`
 }
 
 func main() {
@@ -100,7 +103,6 @@ func main() {
 			versions := fetchVersions(sdk, org, "container", packageName)
 			for _, v := range versions {
 				results := getVersionOutput(apiToken, org, packageName, v)
-				// Print one JSON per version
 				for _, ov := range results {
 					printJSON(ov)
 				}
@@ -137,11 +139,9 @@ func main() {
 		}
 
 		results := getVersionOutput(apiToken, org, packageName, *matchedVersion)
-		// Single version should yield exactly one result
 		if len(results) == 0 {
 			log.Fatalf("No output for matched version %s:%s", packageName, tag)
 		}
-		// Print just the one JSON object for this version
 		printJSON(results[0])
 	} else {
 		// Package-level scope: ghcr.io/org/package
@@ -219,9 +219,12 @@ func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef st
 		log.Fatalf("Error unmarshaling manifest for output: %v", err)
 	}
 
+	// Attempt to fetch attestation
+	attestation := fetchAttestation(apiToken, ref.Context().Name(), desc.Descriptor.Digest.String())
+
 	return OutputVersion{
 		ID:             version.ID,
-		Digest:         version.Name, // version digest from "name"
+		Digest:         version.Name,
 		URL:            version.URL,
 		PackageURI:     imageRef,
 		PackageHTMLURL: version.PackageHTMLURL,
@@ -233,7 +236,96 @@ func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef st
 		TotalSize:      totalSize,
 		Metadata:       version.Metadata,
 		Manifest:       manifestInterface,
+		Attestation:    attestation,
 	}
+}
+
+func fetchAttestation(apiToken, repoName, digest string) interface{} {
+	authOption := remote.WithAuth(&authn.Basic{
+		Username: "github",
+		Password: apiToken,
+	})
+
+	refByDigest, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, digest))
+	if err != nil {
+		// If we cannot parse, return nil
+		return nil
+	}
+
+	idx, err := remote.Referrers(refByDigest, authOption, remote.WithContext(context.Background()))
+	if err != nil {
+		// If the registry doesn't support or no referrers found, return nil
+		return nil
+	}
+
+	indexManifest, err := idx.IndexManifest()
+	if err != nil {
+		return nil
+	}
+
+	// Known attestation media types
+	knownAttestationMediaTypes := map[string]bool{
+		"application/vnd.dev.cosign.attestation.v1+json": true,
+	}
+
+	// Search through index for an attestation artifact
+	for _, artifact := range indexManifest.Manifests {
+		mt := string(artifact.MediaType)
+		if knownAttestationMediaTypes[mt] {
+			// The artifact here is an OCI Artifact Manifest. We need to fetch it.
+			attRef, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, artifact.Digest.String()))
+			if err != nil {
+				continue
+			}
+			attDesc, err := remote.Get(attRef, authOption)
+			if err != nil {
+				continue
+			}
+
+			var artifactManifest struct {
+				MediaType string `json:"mediaType"`
+				Blobs     []struct {
+					Digest    string `json:"digest"`
+					MediaType string `json:"mediaType"`
+				} `json:"blobs"`
+			}
+			if err := json.Unmarshal(attDesc.Manifest, &artifactManifest); err != nil {
+				continue
+			}
+
+			for _, blob := range artifactManifest.Blobs {
+				blobMT := string(blob.MediaType)
+				if knownAttestationMediaTypes[blobMT] {
+					blobRef, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, blob.Digest))
+					if err != nil {
+						continue
+					}
+					layer, err := remote.Layer(blobRef, authOption)
+					if err != nil {
+						continue
+					}
+					rc, err := layer.Uncompressed()
+					if err != nil {
+						continue
+					}
+					defer rc.Close()
+					blobBytes, err := io.ReadAll(rc)
+					if err != nil {
+						continue
+					}
+
+					var attPayload interface{}
+					if err := json.Unmarshal(blobBytes, &attPayload); err != nil {
+						continue
+					}
+					return attPayload
+				}
+			}
+		}
+	}
+
+	// If no attestation found
+	return nil
 }
 
 func fetchPackages(sdk *resilientbridge.ResilientBridge, org, packageType string) []Package {
