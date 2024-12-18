@@ -560,6 +560,13 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, fmt.Errorf("error fetching data: %w", err)
 	}
 
+	// If 409 or other errors occur, return 0
+	if resp.StatusCode == 409 {
+		// 409 often indicates a repository is empty or no commits available.
+		// So we return 0 and no error.
+		return 0, nil
+	}
+
 	if resp.StatusCode >= 400 {
 		return 0, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
