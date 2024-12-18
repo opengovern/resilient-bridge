@@ -69,6 +69,7 @@ type OutputVersion struct {
 
 func main() {
 	scopeFlag := flag.String("scope", "", "Scope: ghcr.io/<org>/, ghcr.io/<org>/<package>, or ghcr.io/<org>/<package>:<tag>")
+	maxVersionsFlag := flag.Int("max_versions", 1, "Maximum number of versions to retrieve (0 = no limit)")
 	flag.Parse()
 
 	if *scopeFlag == "" {
@@ -101,6 +102,9 @@ func main() {
 		for _, p := range packages {
 			packageName := p.Name
 			versions := fetchVersions(sdk, org, "container", packageName)
+			if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
+				versions = versions[:*maxVersionsFlag]
+			}
 			for _, v := range versions {
 				results := getVersionOutput(apiToken, org, packageName, v)
 				for _, ov := range results {
@@ -121,6 +125,9 @@ func main() {
 		tag := refParts[1]
 
 		versions := fetchVersions(sdk, org, "container", packageName)
+		if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
+			versions = versions[:*maxVersionsFlag]
+		}
 		var matchedVersion *PackageVersion
 		for i, v := range versions {
 			for _, t := range v.Metadata.Container.Tags {
@@ -147,6 +154,9 @@ func main() {
 		// Package-level scope: ghcr.io/org/package
 		packageName := strings.Join(parts[1:], "/")
 		versions := fetchVersions(sdk, org, "container", packageName)
+		if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
+			versions = versions[:*maxVersionsFlag]
+		}
 
 		for _, v := range versions {
 			results := getVersionOutput(apiToken, org, packageName, v)
