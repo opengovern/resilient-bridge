@@ -195,10 +195,7 @@ type FinalRepoDetail struct {
 	IsActive                bool               `json:"is_active"`
 	IsEmpty                 bool               `json:"is_empty"`
 	IsFork                  bool               `json:"is_fork"`
-	IsInOrganization        bool               `json:"is_in_organization"`
-	IsMirror                bool               `json:"is_mirror"`
 	IsSecurityPolicyEnabled bool               `json:"is_security_policy_enabled"`
-	IsTemplate              bool               `json:"is_template"`
 	Owner                   *Owner             `json:"owner"`
 	HomepageURL             *string            `json:"homepage_url"`
 	LicenseInfo             json.RawMessage    `json:"license_info"`
@@ -567,8 +564,8 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 
 	// Determine is_active: true if not archived and not disabled
 	isActive := !(detail.Archived || detail.Disabled)
-	isInOrganization := (detail.Organization != nil && detail.Organization.Type == "Organization")
-	isMirror := (detail.MirrorURL != nil)
+	//isInOrganization := (detail.Organization != nil && detail.Organization.Type == "Organization")
+	//isMirror := (detail.MirrorURL != nil)
 	isEmpty := (detail.Size == 0)
 
 	var licenseJSON json.RawMessage
@@ -578,32 +575,32 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 	}
 
 	finalDetail := &FinalRepoDetail{
-		GitHubRepoID:            detail.ID,
-		NodeID:                  detail.NodeID,
-		Name:                    detail.Name,
-		NameWithOwner:           detail.FullName,
-		Description:             detail.Description,
-		CreatedAt:               detail.CreatedAt,
-		UpdatedAt:               detail.UpdatedAt,
-		PushedAt:                detail.PushedAt,
-		IsActive:                isActive,
-		IsEmpty:                 isEmpty,
-		IsFork:                  detail.Fork,
-		IsInOrganization:        isInOrganization,
-		IsMirror:                isMirror,
+		GitHubRepoID:  detail.ID,
+		NodeID:        detail.NodeID,
+		Name:          detail.Name,
+		NameWithOwner: detail.FullName,
+		Description:   detail.Description,
+		CreatedAt:     detail.CreatedAt,
+		UpdatedAt:     detail.UpdatedAt,
+		PushedAt:      detail.PushedAt,
+		IsActive:      isActive,
+		IsEmpty:       isEmpty,
+		IsFork:        detail.Fork,
+		//IsInOrganization:        isInOrganization,
+		//IsMirror:                isMirror,
 		IsSecurityPolicyEnabled: false, // as before
-		IsTemplate:              detail.IsTemplate,
-		Owner:                   finalOwner,
-		HomepageURL:             detail.Homepage,
-		LicenseInfo:             licenseJSON,
-		Topics:                  detail.Topics,
-		Visibility:              detail.Visibility,
-		DefaultBranchRef:        dbBytes,
-		Permissions:             detail.Permissions,
-		Organization:            finalOrg,
-		Parent:                  parent,
-		Source:                  source,
-		Languages:               nil, // set after fetchLanguages
+		//IsTemplate:              detail.IsTemplate,
+		Owner:            finalOwner,
+		HomepageURL:      detail.Homepage,
+		LicenseInfo:      licenseJSON,
+		Topics:           detail.Topics,
+		Visibility:       detail.Visibility,
+		DefaultBranchRef: dbBytes,
+		Permissions:      detail.Permissions,
+		Organization:     finalOrg,
+		Parent:           parent,
+		Source:           source,
+		Languages:        nil, // set after fetchLanguages
 		RepositorySettings: RepositorySettings{
 			HasDiscussionsEnabled:     detail.HasDiscussions,
 			HasIssuesEnabled:          detail.HasIssues,
