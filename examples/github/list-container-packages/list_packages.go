@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -171,9 +172,12 @@ func printJSON(obj interface{}) {
 
 func getVersionOutput(apiToken, org, packageName string, version PackageVersion) []OutputVersion {
 	var results []OutputVersion
+	normalizedPackageName := strings.ToLower(packageName)
+
 	for _, tag := range version.Metadata.Container.Tags {
-		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
-		ov := fetchAndAssembleOutput(apiToken, org, packageName, version, imageRef)
+		normalizedTag := strings.ToLower(tag)
+		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, normalizedPackageName, normalizedTag)
+		ov := fetchAndAssembleOutput(apiToken, org, normalizedPackageName, version, imageRef)
 		results = append(results, ov)
 	}
 	return results
