@@ -234,12 +234,20 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	commitSection, _ := commitData["commit"].(map[string]interface{})
 	message := getString(commitSection, "message")
 
-	var date *string
+	// Declare commitAuthor here so it can be used later
 	var commitAuthor map[string]interface{}
+
+	// Extract authored_date and committed_date
+	// authored_date = commit.author.date
+	// committed_date = commit.committer.date
+	var authoredDate, committedDate *string
 	if commitSection != nil {
 		if ca, ok := commitSection["author"].(map[string]interface{}); ok {
 			commitAuthor = ca
-			date = getString(ca, "date")
+			authoredDate = getString(ca, "date")
+		}
+		if cc, ok := commitSection["committer"].(map[string]interface{}); ok {
+			committedDate = getString(cc, "date")
 		}
 	}
 
@@ -252,7 +260,7 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	deletions := getFloat(stats, "deletions")
 	total := getFloat(stats, "total")
 
-	// author
+	// author object
 	authorObj := map[string]interface{}{
 		"email":    nil,
 		"html_url": nil,
@@ -411,7 +419,6 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	}
 
 	// Determine the branch:
-	// If we have at least one PR, fetch the first PR details and use its base.ref as the branch.
 	var branchName string
 	if len(prs) > 0 {
 		prBranch, err := fetchFirstPRBranch(sdk, owner, repo, prs[0])
@@ -419,8 +426,6 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 			branchName = prBranch
 		}
 	}
-
-	// If no PR-based branch found, fallback to findBranchByCommit
 	if branchName == "" {
 		bname, berr := findBranchByCommit(sdk, owner, repo, sha)
 		if berr == nil && bname != "" {
@@ -438,6 +443,13 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 		targetObj["branch"] = branchName
 	}
 
+	// short_sha
+	var shortSHA interface{} = nil
+	if commitSha != nil && len(*commitSha) >= 7 {
+		short := (*commitSha)[:7]
+		shortSHA = short
+	}
+
 	// Convert pointers to interface{}
 	finalID := func() interface{} {
 		if commitSha == nil {
@@ -445,11 +457,17 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 		}
 		return *commitSha
 	}()
-	finalDate := func() interface{} {
-		if date == nil {
+	finalAuthoredDate := func() interface{} {
+		if authoredDate == nil {
 			return nil
 		}
-		return *date
+		return *authoredDate
+	}()
+	finalCommittedDate := func() interface{} {
+		if committedDate == nil {
+			return nil
+		}
+		return *committedDate
 	}()
 	finalMessage := func() interface{} {
 		if message == nil {
@@ -495,13 +513,15 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	}()
 
 	output := map[string]interface{}{
-		"id":          finalID,
-		"date":        finalDate,
-		"message":     finalMessage,
-		"html_url":    finalHtmlURL,
-		"target":      targetObj,
-		"is_verified": finalIsVerified,
-		"author":      authorObj,
+		"id":             finalID,
+		"short_id":       shortSHA,
+		"authored_date":  finalAuthoredDate,
+		"committed_date": finalCommittedDate,
+		"message":        finalMessage,
+		"html_url":       finalHtmlURL,
+		"target":         targetObj,
+		"is_verified":    finalIsVerified,
+		"author":         authorObj,
 		"changes": map[string]interface{}{
 			"additions": finalAdditions,
 			"deletions": finalDeletions,
@@ -555,7 +575,6 @@ func fetchPullRequestsForCommit(sdk *resilientbridge.ResilientBridge, owner, rep
 	return prNumbers, nil
 }
 
-// fetchFirstPRBranch fetches details of a given pull request number and returns the base branch
 func fetchFirstPRBranch(sdk *resilientbridge.ResilientBridge, owner, repo string, prNumber int) (string, error) {
 	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
