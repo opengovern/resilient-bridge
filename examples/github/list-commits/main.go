@@ -26,9 +26,15 @@ func main() {
 		log.Fatalf("Error parsing repo URL: %v", err)
 	}
 
-	// Check if the repository is active (not archived/disabled)
-	if err := checkRepositoryActive(owner, repo); err != nil {
-		log.Fatalf("Repository check failed: %v", err)
+	active, err := checkRepositoryActive(owner, repo)
+	if err != nil {
+		log.Fatalf("Error checking repository: %v", err)
+	}
+
+	if !active {
+		// Repository is archived or disabled, return 0 commits
+		// No output needed, just exit gracefully.
+		return
 	}
 
 	maxCommits := *maxCommitsFlag
@@ -74,26 +80,28 @@ type commitRef struct {
 	SHA string `json:"sha"`
 }
 
-func checkRepositoryActive(owner, repo string) error {
+// checkRepositoryActive returns false if the repository is archived or disabled, true otherwise.
+func checkRepositoryActive(owner, repo string) (bool, error) {
 	u := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
-		return fmt.Errorf("error creating request to check repo: %w", err)
+		return false, fmt.Errorf("error creating request to check repo: %w", err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error checking repository: %w", err)
+		return false, fmt.Errorf("error checking repository: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return fmt.Errorf("repository not found (404)")
+		// Repo not found, treat as inactive
+		return false, nil
 	} else if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+		return false, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
 	}
 
 	var repoInfo struct {
@@ -101,16 +109,14 @@ func checkRepositoryActive(owner, repo string) error {
 		Disabled bool `json:"disabled"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&repoInfo); err != nil {
-		return fmt.Errorf("error decoding repository info: %w", err)
+		return false, fmt.Errorf("error decoding repository info: %w", err)
 	}
 
-	if repoInfo.Archived {
-		return fmt.Errorf("the repository is archived and cannot be accessed for commits")
+	// If archived or disabled, mark as inactive
+	if repoInfo.Archived || repoInfo.Disabled {
+		return false, nil
 	}
-	if repoInfo.Disabled {
-		return fmt.Errorf("the repository is disabled and cannot be accessed for commits")
-	}
-	return nil
+	return true, nil
 }
 
 // fetchCommitList returns up to maxCommits commit references from the repo’s default branch (usually main).
