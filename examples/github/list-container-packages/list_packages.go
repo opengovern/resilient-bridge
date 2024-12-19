@@ -1,15 +1,13 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
+	"net/url"
 	"os"
-	"strings"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -31,7 +29,6 @@ type Package struct {
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 	Owner       Owner  `json:"owner"`
-	URL         string `json:"url"`
 }
 
 type ContainerMetadata struct {
@@ -43,7 +40,6 @@ type ContainerMetadata struct {
 type PackageVersion struct {
 	ID             int               `json:"id"`
 	Name           string            `json:"name"`
-	URL            string            `json:"url"`
 	PackageHTMLURL string            `json:"package_html_url"`
 	CreatedAt      string            `json:"created_at"`
 	UpdatedAt      string            `json:"updated_at"`
@@ -54,7 +50,6 @@ type PackageVersion struct {
 type OutputVersion struct {
 	ID             int               `json:"id"`
 	Digest         string            `json:"digest"`
-	URL            string            `json:"url"`
 	PackageURI     string            `json:"package_uri"`
 	PackageHTMLURL string            `json:"package_html_url"`
 	CreatedAt      string            `json:"created_at"`
@@ -65,17 +60,38 @@ type OutputVersion struct {
 	TotalSize      int64             `json:"total_size"`
 	Metadata       ContainerMetadata `json:"metadata"`
 	Manifest       interface{}       `json:"manifest"`
-	Attestation    interface{}       `json:"attestation"`
-	Language       map[string]int    `json:"language,omitempty"`
 }
 
+var (
+	startTime *time.Time
+	endTime   *time.Time
+)
+
 func main() {
-	scopeFlag := flag.String("scope", "", "Scope: ghcr.io/<org>/, ghcr.io/<org>/<package>, or ghcr.io/<org>/<package>:<tag>")
+	orgFlag := flag.String("organization", "", "GitHub organization name")
 	maxVersionsFlag := flag.Int("max_versions", 1, "Maximum number of versions to retrieve (0 = no limit)")
+	startTimeFlag := flag.String("start_time", "", "Filter results updated after this time (RFC3339)")
+	endTimeFlag := flag.String("end_time", "", "Filter results updated before this time (RFC3339)")
 	flag.Parse()
 
-	if *scopeFlag == "" {
-		log.Fatal("You must provide a -scope parameter")
+	if *orgFlag == "" {
+		log.Fatal("You must provide a -organization parameter")
+	}
+
+	// Parse time range if provided
+	if *startTimeFlag != "" {
+		t, err := time.Parse(time.RFC3339, *startTimeFlag)
+		if err != nil {
+			log.Fatalf("Invalid start_time format: %v", err)
+		}
+		startTime = &t
+	}
+	if *endTimeFlag != "" {
+		t, err := time.Parse(time.RFC3339, *endTimeFlag)
+		if err != nil {
+			log.Fatalf("Invalid end_time format: %v", err)
+		}
+		endTime = &t
 	}
 
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
@@ -90,76 +106,18 @@ func main() {
 		BaseBackoff:       0,
 	})
 
-	scope := *scopeFlag
-	if !strings.HasPrefix(scope, "ghcr.io/") {
-		log.Fatal("Scope must start with ghcr.io/")
-	}
+	org := *orgFlag
 
-	parts := strings.Split(strings.TrimPrefix(scope, "ghcr.io/"), "/")
-	org := parts[0]
+	packages := fetchPackages(sdk, org, "container")
+	packages = filterPackagesByTime(packages)
 
-	// Org-level scope (e.g. ghcr.io/org/)
-	if strings.HasSuffix(scope, "/") {
-		packages := fetchPackages(sdk, org, "container")
-		for _, p := range packages {
-			packageName := p.Name
-			versions := fetchVersions(sdk, org, "container", packageName)
-			if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
-				versions = versions[:*maxVersionsFlag]
-			}
-			for _, v := range versions {
-				results := getVersionOutput(apiToken, org, packageName, v)
-				for _, ov := range results {
-					printJSON(ov)
-				}
-			}
-		}
-		return
-	}
-
-	// Check if we have a tag (single version)
-	lastPart := parts[len(parts)-1]
-	refParts := strings.SplitN(lastPart, ":", 2)
-	if len(refParts) == 2 {
-		// Single version case: ghcr.io/org/package:tag
-		packagePathParts := parts[1 : len(parts)-1]
-		packageName := strings.Join(append(packagePathParts, refParts[0]), "/")
-		tag := refParts[1]
-
+	for _, p := range packages {
+		packageName := p.Name
 		versions := fetchVersions(sdk, org, "container", packageName)
+		versions = filterVersionsByTime(versions)
 		if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
 			versions = versions[:*maxVersionsFlag]
 		}
-		var matchedVersion *PackageVersion
-		for i, v := range versions {
-			for _, t := range v.Metadata.Container.Tags {
-				if t == tag {
-					matchedVersion = &versions[i]
-					break
-				}
-			}
-			if matchedVersion != nil {
-				break
-			}
-		}
-
-		if matchedVersion == nil {
-			log.Fatalf("No version found with tag %s for package %s/%s", tag, org, packageName)
-		}
-
-		results := getVersionOutput(apiToken, org, packageName, *matchedVersion)
-		if len(results) == 0 {
-			log.Fatalf("No output for matched version %s:%s", packageName, tag)
-		}
-		printJSON(results[0])
-	} else {
-		// Package-level scope: ghcr.io/org/package
-		packageName := strings.Join(parts[1:], "/")
-		versions := fetchVersions(sdk, org, "container", packageName)
-		if *maxVersionsFlag > 0 && len(versions) > *maxVersionsFlag {
-			versions = versions[:*maxVersionsFlag]
-		}
-
 		for _, v := range versions {
 			results := getVersionOutput(apiToken, org, packageName, v)
 			for _, ov := range results {
@@ -167,6 +125,40 @@ func main() {
 			}
 		}
 	}
+}
+
+func filterPackagesByTime(pkgs []Package) []Package {
+	if startTime == nil && endTime == nil {
+		return pkgs
+	}
+	var filtered []Package
+	for _, p := range pkgs {
+		t, err := time.Parse(time.RFC3339, p.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		if (startTime == nil || t.After(*startTime)) && (endTime == nil || t.Before(*endTime)) {
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
+}
+
+func filterVersionsByTime(vers []PackageVersion) []PackageVersion {
+	if startTime == nil && endTime == nil {
+		return vers
+	}
+	var filtered []PackageVersion
+	for _, v := range vers {
+		t, err := time.Parse(time.RFC3339, v.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		if (startTime == nil || t.After(*startTime)) && (endTime == nil || t.Before(*endTime)) {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered
 }
 
 func printJSON(obj interface{}) {
@@ -231,20 +223,9 @@ func fetchAndAssembleOutput(apiToken, org, packageName string, version PackageVe
 		log.Fatalf("Error unmarshaling manifest for output: %v", err)
 	}
 
-	// Attempt to fetch attestation
-	attestation := fetchAttestation(apiToken, ref.Context().Name(), desc.Descriptor.Digest.String())
-
-	// Fetch languages from GitHub API and store as a JSON object
-	languages, err := fetchLanguages(apiToken, org, packageName)
-	if err != nil {
-		// If there's an error fetching languages, just log and continue
-		log.Printf("Error fetching languages for %s/%s: %v", org, packageName, err)
-	}
-
 	return OutputVersion{
 		ID:             version.ID,
 		Digest:         version.Name,
-		URL:            version.URL,
 		PackageURI:     imageRef,
 		PackageHTMLURL: version.PackageHTMLURL,
 		CreatedAt:      version.CreatedAt,
@@ -255,127 +236,7 @@ func fetchAndAssembleOutput(apiToken, org, packageName string, version PackageVe
 		TotalSize:      totalSize,
 		Metadata:       version.Metadata,
 		Manifest:       manifestInterface,
-		Attestation:    attestation,
-		Language:       languages, // Set the languages map here
 	}
-}
-
-func fetchLanguages(apiToken, owner, repo string) (map[string]int, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/languages", owner, repo)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating languages request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	if apiToken != "" {
-		req.Header.Set("Authorization", "Bearer "+apiToken)
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetching languages: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
-	}
-
-	var langs map[string]int
-	if err := json.NewDecoder(resp.Body).Decode(&langs); err != nil {
-		return nil, fmt.Errorf("decoding languages JSON: %w", err)
-	}
-	return langs, nil
-}
-
-func fetchAttestation(apiToken, repoName, digest string) interface{} {
-	authOption := remote.WithAuth(&authn.Basic{
-		Username: "github",
-		Password: apiToken,
-	})
-
-	refByDigest, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, digest))
-	if err != nil {
-		// If we cannot parse, return nil
-		return nil
-	}
-
-	idx, err := remote.Referrers(refByDigest, authOption, remote.WithContext(context.Background()))
-	if err != nil {
-		// If the registry doesn't support or no referrers found, return nil
-		return nil
-	}
-
-	indexManifest, err := idx.IndexManifest()
-	if err != nil {
-		return nil
-	}
-
-	// Known attestation media types
-	knownAttestationMediaTypes := map[string]bool{
-		"application/vnd.dev.cosign.attestation.v1+json": true,
-	}
-
-	// Search through index for an attestation artifact
-	for _, artifact := range indexManifest.Manifests {
-		mt := string(artifact.MediaType)
-		if knownAttestationMediaTypes[mt] {
-			// The artifact here is an OCI Artifact Manifest. We need to fetch it.
-			attRef, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, artifact.Digest.String()))
-			if err != nil {
-				continue
-			}
-			attDesc, err := remote.Get(attRef, authOption)
-			if err != nil {
-				continue
-			}
-
-			var artifactManifest struct {
-				MediaType string `json:"mediaType"`
-				Blobs     []struct {
-					Digest    string `json:"digest"`
-					MediaType string `json:"mediaType"`
-				} `json:"blobs"`
-			}
-			if err := json.Unmarshal(attDesc.Manifest, &artifactManifest); err != nil {
-				continue
-			}
-
-			for _, blob := range artifactManifest.Blobs {
-				blobMT := string(blob.MediaType)
-				if knownAttestationMediaTypes[blobMT] {
-					blobRef, err := name.NewDigest(fmt.Sprintf("%s@%s", repoName, blob.Digest))
-					if err != nil {
-						continue
-					}
-					layer, err := remote.Layer(blobRef, authOption)
-					if err != nil {
-						continue
-					}
-					rc, err := layer.Uncompressed()
-					if err != nil {
-						continue
-					}
-					defer rc.Close()
-					blobBytes, err := io.ReadAll(rc)
-					if err != nil {
-						continue
-					}
-
-					var attPayload interface{}
-					if err := json.Unmarshal(blobBytes, &attPayload); err != nil {
-						continue
-					}
-					return attPayload
-				}
-			}
-		}
-	}
-
-	// If no attestation found
-	return nil
 }
 
 func fetchPackages(sdk *resilientbridge.ResilientBridge, org, packageType string) []Package {
@@ -399,9 +260,10 @@ func fetchPackages(sdk *resilientbridge.ResilientBridge, org, packageType string
 }
 
 func fetchVersions(sdk *resilientbridge.ResilientBridge, org, packageType, packageName string) []PackageVersion {
+	packageNameEncoded := url.PathEscape(packageName)
 	versionsReq := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
-		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s/versions", org, packageType, packageName),
+		Endpoint: fmt.Sprintf("/orgs/%s/packages/%s/%s/versions", org, packageType, packageNameEncoded),
 		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
 	}
 

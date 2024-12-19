@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	resilientbridge "github.com/opengovern/resilient-bridge"
@@ -15,16 +16,17 @@ import (
 
 func main() {
 	repoFlag := flag.String("repo", "", "Repository in the format https://github.com/<owner>/<repo>")
-	branchFlag := flag.String("branch", "", "Branch name (e.g. main)")
+	branchFlag := flag.String("branch", "", "Branch name (e.g. main). Leave empty to fetch all runs.")
 	maxRunsFlag := flag.Int("maxruns", 50, "Maximum number of workflow runs to fetch (default 50)")
+	runNumberFlag := flag.String("run_number", "", "Specify run numbers or ranges, e.g. 23,25 or 23-56 or 23")
 	flag.Parse()
 
 	if *repoFlag == "" {
 		log.Fatal("You must provide a -repo parameter, e.g. -repo=https://github.com/apache/cloudstack")
 	}
-	if *branchFlag == "" {
-		log.Fatal("You must provide a -branch parameter, e.g. -branch=main")
-	}
+
+	// Parse the run_number flag
+	runNumbers := parseRunNumberFlag(*runNumberFlag)
 
 	// Set up the resilient SDK
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
@@ -63,8 +65,31 @@ func main() {
 		log.Fatalf("Error fetching workflow runs: %v", err)
 	}
 
-	for _, run := range runs {
-		data, err := json.MarshalIndent(run, "", "  ")
+	// If runNumbers is specified, filter runs by run_number
+	if len(runNumbers) > 0 {
+		runs = filterRunsByNumber(runs, runNumbers)
+		if len(runs) == 0 {
+			log.Println("No runs found matching the specified run_number criteria.")
+			return
+		}
+	}
+
+	for _, runBasic := range runs {
+		runDetail, err := fetchRunDetails(sdk, owner, repo, runBasic.ID)
+		if err != nil {
+			log.Printf("Error fetching details for run %d: %v", runBasic.ID, err)
+			continue
+		}
+
+		artifactCount, artifacts, err := fetchArtifactsForRun(sdk, owner, repo, runBasic.ID)
+		if err != nil {
+			log.Printf("Error fetching artifacts for run %d: %v", runBasic.ID, err)
+			continue
+		}
+		runDetail.ArtifactCount = artifactCount
+		runDetail.Artifacts = artifacts
+
+		data, err := json.MarshalIndent(runDetail, "", "  ")
 		if err != nil {
 			log.Printf("Error marshaling run: %v", err)
 			continue
@@ -89,6 +114,73 @@ func parseRepoURL(repoURL string) (string, string, error) {
 	owner := parts[0]
 	repo := parts[1]
 	return owner, repo, nil
+}
+
+// parseRunNumberFlag parses the run_number flag.
+// It handles:
+// - Single run number: "23"
+// - Comma-separated: "23,25"
+// - Range: "23-56"
+//
+// The result is returned as a slice of runNumberCriterion, which can represent either single values or ranges.
+type runNumberCriterion struct {
+	From int
+	To   int
+}
+
+func parseRunNumberFlag(flagVal string) []runNumberCriterion {
+	if strings.TrimSpace(flagVal) == "" {
+		return nil
+	}
+
+	parts := strings.Split(flagVal, ",")
+	var criteria []runNumberCriterion
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if strings.Contains(p, "-") {
+			rangeParts := strings.SplitN(p, "-", 2)
+			if len(rangeParts) == 2 {
+				startStr := strings.TrimSpace(rangeParts[0])
+				endStr := strings.TrimSpace(rangeParts[1])
+				start, err1 := strconv.Atoi(startStr)
+				end, err2 := strconv.Atoi(endStr)
+				if err1 == nil && err2 == nil && start <= end {
+					criteria = append(criteria, runNumberCriterion{From: start, To: end})
+				}
+			}
+		} else {
+			// Single number
+			n, err := strconv.Atoi(p)
+			if err == nil {
+				criteria = append(criteria, runNumberCriterion{From: n, To: n})
+			}
+		}
+	}
+	return criteria
+}
+
+// filterRunsByNumber filters the given runs to include only those that match the runNumberCriterion(s).
+func filterRunsByNumber(runs []workflowRun, criteria []runNumberCriterion) []workflowRun {
+	var filtered []workflowRun
+
+	for _, run := range runs {
+		if runNumberMatches(run.RunNumber, criteria) {
+			filtered = append(filtered, run)
+		}
+	}
+	return filtered
+}
+
+func runNumberMatches(runNum int, criteria []runNumberCriterion) bool {
+	for _, c := range criteria {
+		if runNum >= c.From && runNum <= c.To {
+			return true
+		}
+	}
+	return false
 }
 
 // checkRepositoryActive returns false if the repository is archived or disabled, true otherwise.
@@ -124,36 +216,70 @@ func checkRepositoryActive(sdk *resilientbridge.ResilientBridge, owner, repo str
 	return true, nil
 }
 
-// workflowRun represents a GitHub Actions workflow run
-type workflowRun struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name"`
-	HeadBranch    string `json:"head_branch"`
-	HeadSHA       string `json:"head_sha"`
-	Status        string `json:"status"`
-	Conclusion    string `json:"conclusion"`
-	URL           string `json:"url"`
-	HTMLURL       string `json:"html_url"`
-	WorkflowID    int    `json:"workflow_id"`
-	RunNumber     int    `json:"run_number"`
-	Event         string `json:"event"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
-	RunAttempt    int    `json:"run_attempt"`
-	RunStartedAt  string `json:"run_started_at"`
-	JobsURL       string `json:"jobs_url"`
-	LogsURL       string `json:"logs_url"`
-	CheckSuiteURL string `json:"check_suite_url"`
-	ArtifactsURL  string `json:"artifacts_url"`
+type simpleActor struct {
+	Login  string `json:"login"`
+	ID     int    `json:"id"`
+	NodeID string `json:"node_id"`
+	Type   string `json:"type"`
 }
 
-// workflowRunsResponse is the response format from the GitHub API for listing runs
+type simpleRepo struct {
+	ID     int    `json:"id"`
+	NodeID string `json:"node_id"`
+}
+
+type commitRef struct {
+	ID string `json:"id"`
+}
+
+type workflowRun struct {
+	ID                  int                `json:"id"`
+	Name                string             `json:"name"`
+	HeadBranch          string             `json:"head_branch"`
+	HeadSHA             string             `json:"head_sha"`
+	Status              string             `json:"status"`
+	Conclusion          string             `json:"conclusion"`
+	HTMLURL             string             `json:"html_url"`
+	WorkflowID          int                `json:"workflow_id"`
+	RunNumber           int                `json:"run_number"`
+	Event               string             `json:"event"`
+	CreatedAt           string             `json:"created_at"`
+	UpdatedAt           string             `json:"updated_at"`
+	RunAttempt          int                `json:"run_attempt"`
+	RunStartedAt        string             `json:"run_started_at"`
+	Actor               *simpleActor       `json:"triggering_actor,omitempty"`
+	HeadCommit          *commitRef         `json:"head_commit,omitempty"`
+	Repository          *simpleRepo        `json:"repository,omitempty"`
+	HeadRepository      *simpleRepo        `json:"head_repository,omitempty"`
+	ReferencedWorkflows []interface{}      `json:"referenced_workflows,omitempty"`
+	ArtifactCount       int                `json:"artifact_count"`
+	Artifacts           []workflowArtifact `json:"artifacts,omitempty"`
+}
+
 type workflowRunsResponse struct {
 	TotalCount   int           `json:"total_count"`
 	WorkflowRuns []workflowRun `json:"workflow_runs"`
 }
 
-// fetchWorkflowRuns returns up to maxRuns workflow runs filtered by branch
+type workflowArtifact struct {
+	ID                 int    `json:"id"`
+	NodeID             string `json:"node_id"`
+	Name               string `json:"name"`
+	SizeInBytes        int    `json:"size_in_bytes"`
+	URL                string `json:"url"`
+	ArchiveDownloadURL string `json:"archive_download_url"`
+	Expired            bool   `json:"expired"`
+	CreatedAt          string `json:"created_at"`
+	UpdatedAt          string `json:"updated_at"`
+	ExpiresAt          string `json:"expires_at"`
+}
+
+type artifactsResponse struct {
+	TotalCount int                `json:"total_count"`
+	Artifacts  []workflowArtifact `json:"artifacts"`
+}
+
+// fetchWorkflowRuns returns up to maxRuns workflow runs. If branch is specified, filter by that branch, otherwise fetch all.
 func fetchWorkflowRuns(sdk *resilientbridge.ResilientBridge, owner, repo, branch string, maxRuns int) ([]workflowRun, error) {
 	var allRuns []workflowRun
 	perPage := 100
@@ -165,8 +291,16 @@ func fetchWorkflowRuns(sdk *resilientbridge.ResilientBridge, owner, repo, branch
 			perPage = remaining
 		}
 
-		endpoint := fmt.Sprintf("/repos/%s/%s/actions/runs?branch=%s&per_page=%d&page=%d",
-			owner, repo, url.QueryEscape(branch), perPage, page)
+		params := url.Values{}
+		params.Set("per_page", fmt.Sprintf("%d", perPage))
+		params.Set("page", fmt.Sprintf("%d", page))
+
+		// If branch is provided, add it to the query params
+		if branch != "" {
+			params.Set("branch", branch)
+		}
+
+		endpoint := fmt.Sprintf("/repos/%s/%s/actions/runs?%s", owner, repo, params.Encode())
 
 		req := &resilientbridge.NormalizedRequest{
 			Method:   "GET",
@@ -205,4 +339,96 @@ func fetchWorkflowRuns(sdk *resilientbridge.ResilientBridge, owner, repo, branch
 	}
 
 	return allRuns, nil
+}
+
+// fetchRunDetails fetches the full details for a specific run, including actor, repository info, and referenced_workflows.
+func fetchRunDetails(sdk *resilientbridge.ResilientBridge, owner, repo string, runID int) (workflowRun, error) {
+	endpoint := fmt.Sprintf("/repos/%s/%s/actions/runs/%d", owner, repo, runID)
+	req := &resilientbridge.NormalizedRequest{
+		Method:   "GET",
+		Endpoint: endpoint,
+		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+	}
+
+	resp, err := sdk.Request("github", req)
+	if err != nil {
+		return workflowRun{}, fmt.Errorf("error fetching run details: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return workflowRun{}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+	}
+
+	var fullDetail struct {
+		ID                  int           `json:"id"`
+		Name                string        `json:"name"`
+		HeadBranch          string        `json:"head_branch"`
+		HeadSHA             string        `json:"head_sha"`
+		Status              string        `json:"status"`
+		Conclusion          string        `json:"conclusion"`
+		HTMLURL             string        `json:"html_url"`
+		WorkflowID          int           `json:"workflow_id"`
+		RunNumber           int           `json:"run_number"`
+		Event               string        `json:"event"`
+		CreatedAt           string        `json:"created_at"`
+		UpdatedAt           string        `json:"updated_at"`
+		RunAttempt          int           `json:"run_attempt"`
+		RunStartedAt        string        `json:"run_started_at"`
+		Actor               *simpleActor  `json:"actor"`
+		HeadCommit          *commitRef    `json:"head_commit"`
+		Repository          *simpleRepo   `json:"repository"`
+		HeadRepository      *simpleRepo   `json:"head_repository"`
+		ReferencedWorkflows []interface{} `json:"referenced_workflows"`
+	}
+
+	if err := json.Unmarshal(resp.Data, &fullDetail); err != nil {
+		return workflowRun{}, fmt.Errorf("error decoding run details: %w", err)
+	}
+
+	return workflowRun{
+		ID:                  fullDetail.ID,
+		Name:                fullDetail.Name,
+		HeadBranch:          fullDetail.HeadBranch,
+		HeadSHA:             fullDetail.HeadSHA,
+		Status:              fullDetail.Status,
+		Conclusion:          fullDetail.Conclusion,
+		HTMLURL:             fullDetail.HTMLURL,
+		WorkflowID:          fullDetail.WorkflowID,
+		RunNumber:           fullDetail.RunNumber,
+		Event:               fullDetail.Event,
+		CreatedAt:           fullDetail.CreatedAt,
+		UpdatedAt:           fullDetail.UpdatedAt,
+		RunAttempt:          fullDetail.RunAttempt,
+		RunStartedAt:        fullDetail.RunStartedAt,
+		Actor:               fullDetail.Actor,
+		HeadCommit:          fullDetail.HeadCommit,
+		Repository:          fullDetail.Repository,
+		HeadRepository:      fullDetail.HeadRepository,
+		ReferencedWorkflows: fullDetail.ReferencedWorkflows,
+	}, nil
+}
+
+func fetchArtifactsForRun(sdk *resilientbridge.ResilientBridge, owner, repo string, runID int) (int, []workflowArtifact, error) {
+	endpoint := fmt.Sprintf("/repos/%s/%s/actions/runs/%d/artifacts", owner, repo, runID)
+	req := &resilientbridge.NormalizedRequest{
+		Method:   "GET",
+		Endpoint: endpoint,
+		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+	}
+
+	resp, err := sdk.Request("github", req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("error fetching artifacts: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return 0, nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+	}
+
+	var artResp artifactsResponse
+	if err := json.Unmarshal(resp.Data, &artResp); err != nil {
+		return 0, nil, fmt.Errorf("error decoding artifacts response: %w", err)
+	}
+
+	return artResp.TotalCount, artResp.Artifacts, nil
 }
