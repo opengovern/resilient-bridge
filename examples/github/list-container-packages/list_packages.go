@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -65,6 +66,7 @@ type OutputVersion struct {
 	Metadata       ContainerMetadata `json:"metadata"`
 	Manifest       interface{}       `json:"manifest"`
 	Attestation    interface{}       `json:"attestation"`
+	Language       map[string]int    `json:"language,omitempty"`
 }
 
 func main() {
@@ -179,13 +181,13 @@ func getVersionOutput(apiToken, org, packageName string, version PackageVersion)
 	var results []OutputVersion
 	for _, tag := range version.Metadata.Container.Tags {
 		imageRef := fmt.Sprintf("ghcr.io/%s/%s:%s", org, packageName, tag)
-		ov := fetchAndAssembleOutput(apiToken, version, imageRef)
+		ov := fetchAndAssembleOutput(apiToken, org, packageName, version, imageRef)
 		results = append(results, ov)
 	}
 	return results
 }
 
-func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef string) OutputVersion {
+func fetchAndAssembleOutput(apiToken, org, packageName string, version PackageVersion, imageRef string) OutputVersion {
 	authOption := remote.WithAuth(&authn.Basic{
 		Username: "github",
 		Password: apiToken,
@@ -232,6 +234,13 @@ func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef st
 	// Attempt to fetch attestation
 	attestation := fetchAttestation(apiToken, ref.Context().Name(), desc.Descriptor.Digest.String())
 
+	// Fetch languages from GitHub API and store as a JSON object
+	languages, err := fetchLanguages(apiToken, org, packageName)
+	if err != nil {
+		// If there's an error fetching languages, just log and continue
+		log.Printf("Error fetching languages for %s/%s: %v", org, packageName, err)
+	}
+
 	return OutputVersion{
 		ID:             version.ID,
 		Digest:         version.Name,
@@ -247,7 +256,38 @@ func fetchAndAssembleOutput(apiToken string, version PackageVersion, imageRef st
 		Metadata:       version.Metadata,
 		Manifest:       manifestInterface,
 		Attestation:    attestation,
+		Language:       languages, // Set the languages map here
 	}
+}
+
+func fetchLanguages(apiToken, owner, repo string) (map[string]int, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/languages", owner, repo)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating languages request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if apiToken != "" {
+		req.Header.Set("Authorization", "Bearer "+apiToken)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetching languages: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var langs map[string]int
+	if err := json.NewDecoder(resp.Body).Decode(&langs); err != nil {
+		return nil, fmt.Errorf("decoding languages JSON: %w", err)
+	}
+	return langs, nil
 }
 
 func fetchAttestation(apiToken, repoName, digest string) interface{} {

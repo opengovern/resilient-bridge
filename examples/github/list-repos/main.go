@@ -64,7 +64,7 @@ type RepoDetail struct {
 	Size                      int                    `json:"size"`
 	StargazersCount           int                    `json:"stargazers_count"`
 	WatchersCount             int                    `json:"watchers_count"`
-	Language                  *string                `json:"language"`
+	Language                  *string                `json:"language"` // original string language field
 	HasIssues                 bool                   `json:"has_issues"`
 	HasProjects               bool                   `json:"has_projects"`
 	HasDownloads              bool                   `json:"has_downloads"`
@@ -141,18 +141,17 @@ type RepositorySettings struct {
 	IsTemplate                bool                   `json:"is_template"`
 	AllowRebaseMerge          bool                   `json:"allow_rebase_merge"`
 
-	// Move is_archived and is_disabled here:
 	IsArchived bool `json:"is_archived"`
 	IsDisabled bool `json:"is_disabled"`
 }
 
 type SecuritySettings struct {
-	VulnerabilityAlertsEnabled          bool `json:"vulnerability_alerts_enabled"`
-	SecretScanningEnabled               bool `json:"secret_scanning_enabled"`
-	SecretScanningPushProtectionEnabled bool `json:"secret_scanning_push_protection_enabled"`
-	DependabotSecurityUpdatesEnabled    bool `json:"dependabot_security_updates_enabled"`
-	SecretScanningNonProviderPatterns   bool `json:"secret_scanning_non_provider_patterns_enabled"`
-	SecretScanningValidityChecksEnabled bool `json:"secret_scanning_validity_checks_enabled"`
+	VulnerabilityAlertsEnabled               bool `json:"vulnerability_alerts_enabled"`
+	SecretScanningEnabled                    bool `json:"secret_scanning_enabled"`
+	SecretScanningPushProtectionEnabled      bool `json:"secret_scanning_push_protection_enabled"`
+	DependabotSecurityUpdatesEnabled         bool `json:"dependabot_security_updates_enabled"`
+	SecretScanningNonProviderPatternsEnabled bool `json:"secret_scanning_non_provider_patterns_enabled"`
+	SecretScanningValidityChecksEnabled      bool `json:"secret_scanning_validity_checks_enabled"`
 }
 
 type RepoURLs struct {
@@ -171,6 +170,7 @@ type RepoMetrics struct {
 	NetworkCount       int `json:"network_count"`
 	SubscribersCount   int `json:"subscribers_count"`
 	Size               int `json:"size"`
+	TotalTags          int `json:"total_tags"`
 	TotalCommits       int `json:"total_commits"`
 	TotalIssues        int `json:"total_issues"`
 	TotalBranches      int `json:"total_branches"`
@@ -184,7 +184,6 @@ type FinalRepoDetail struct {
 	Name          string `json:"name"`
 	NameWithOwner string `json:"name_with_owner"`
 
-	// Add is_active at top level: repo is active if not archived and not disabled.
 	IsActive bool `json:"is_active"`
 
 	IsPrivate   bool       `json:"is_private"`
@@ -206,7 +205,9 @@ type FinalRepoDetail struct {
 	Organization *UserOrOrg       `json:"organization"`
 	Parent       *FinalRepoDetail `json:"parent"`
 	Source       *FinalRepoDetail `json:"source"`
-	Language     *string          `json:"language"`
+
+	// Change from *string to map[string]int for languages
+	Language map[string]int `json:"language"`
 
 	RepositorySettings RepositorySettings `json:"repo_settings"`
 	SecuritySettings   SecuritySettings   `json:"security_settings"`
@@ -276,6 +277,11 @@ func main() {
 			}
 
 			finalDetail := transformToFinalRepoDetail(repoDetail)
+			// Fetch languages
+			langs, err := fetchLanguages(sdk, r.Owner.Login, r.Name)
+			if err == nil {
+				finalDetail.Language = langs
+			}
 
 			err = enrichRepoMetrics(sdk, r.Owner.Login, r.Name, finalDetail)
 			if err != nil {
@@ -296,6 +302,12 @@ func main() {
 		}
 
 		finalDetail := transformToFinalRepoDetail(repoDetail)
+
+		// Fetch languages
+		langs, err := fetchLanguages(sdk, owner, repoName)
+		if err == nil {
+			finalDetail.Language = langs
+		}
 
 		err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
 		if err != nil {
@@ -352,8 +364,50 @@ func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName str
 	}
 	finalDetail.RepoMetrics.TotalReleases = releasesCount
 
+	// New: Count tags
+	tagsCount, err := countTags(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting tags: %w", err)
+	}
+	// Add "TotalTags" field to RepoMetrics struct and assign here
+	// You need to add the `TotalTags int `json:"total_tags"` field to RepoMetrics beforehand
+	finalDetail.RepoMetrics.TotalTags = tagsCount
+
 	return nil
 }
+
+// New function countTags
+func countTags(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+	endpoint := fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repoName)
+	return countItemsFromEndpoint(sdk, endpoint)
+}
+
+func fetchLanguages(sdk *resilientbridge.ResilientBridge, owner, repo string) (map[string]int, error) {
+	req := &resilientbridge.NormalizedRequest{
+		Method:   "GET",
+		Endpoint: fmt.Sprintf("/repos/%s/%s/languages", owner, repo),
+		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+	}
+
+	resp, err := sdk.Request("github", req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching languages: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+	}
+
+	var langs map[string]int
+	if err := json.Unmarshal(resp.Data, &langs); err != nil {
+		return nil, fmt.Errorf("error decoding languages: %w", err)
+	}
+	return langs, nil
+}
+
+// The rest of the functions (parseScopeURL, fetchOrgRepos, fetchRepoDetails, transformToFinalRepoDetail,
+// enrichRepoMetrics, countCommits, countIssues, countBranches, countPullRequests, countReleases,
+// countItemsFromEndpoint, and parseLastPage) remain unchanged.
 
 func parseScopeURL(repoURL string) (owner, repo string, err error) {
 	if !strings.HasPrefix(repoURL, "https://github.com/") {
@@ -506,7 +560,10 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		Organization:     detail.Organization,
 		Parent:           parent,
 		Source:           source,
-		Language:         detail.Language,
+
+		// Do NOT assign Language from detail.Language here.
+		// Language will be set after fetchLanguages call.
+		// Language: detail.Language, <--- REMOVE THIS LINE
 
 		RepositorySettings: RepositorySettings{
 			HasDiscussionsEnabled:     detail.HasDiscussions,
@@ -536,12 +593,12 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		},
 
 		SecuritySettings: SecuritySettings{
-			VulnerabilityAlertsEnabled:          vulnerabilityAlertsEnabled,
-			SecretScanningEnabled:               secretScanningEnabled,
-			SecretScanningPushProtectionEnabled: secretScanningPushProtectionEnabled,
-			DependabotSecurityUpdatesEnabled:    dependabotSecurityUpdatesEnabled,
-			SecretScanningNonProviderPatterns:   secretScanningNonProviderPatternsEnabled,
-			SecretScanningValidityChecksEnabled: secretScanningValidityChecksEnabled,
+			VulnerabilityAlertsEnabled:               vulnerabilityAlertsEnabled,
+			SecretScanningEnabled:                    secretScanningEnabled,
+			SecretScanningPushProtectionEnabled:      secretScanningPushProtectionEnabled,
+			DependabotSecurityUpdatesEnabled:         dependabotSecurityUpdatesEnabled,
+			SecretScanningNonProviderPatternsEnabled: secretScanningNonProviderPatternsEnabled,
+			SecretScanningValidityChecksEnabled:      secretScanningValidityChecksEnabled,
 		},
 
 		RepoURLs: RepoURLs{
