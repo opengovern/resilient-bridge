@@ -54,7 +54,7 @@ type RepoDetail struct {
 	Size                      int                    `json:"size"`
 	StargazersCount           int                    `json:"stargazers_count"`
 	WatchersCount             int                    `json:"watchers_count"`
-	Languages                 *string                `json:"languages"` // original string language field
+	Languages                 *string                `json:"languages"`
 	HasIssues                 bool                   `json:"has_issues"`
 	HasProjects               bool                   `json:"has_projects"`
 	HasDownloads              bool                   `json:"has_downloads"`
@@ -126,10 +126,9 @@ type RepositorySettings struct {
 	ForkingAllowed            bool                   `json:"forking_allowed"`
 	IsTemplate                bool                   `json:"is_template"`
 	AllowRebaseMerge          bool                   `json:"allow_rebase_merge"`
-	// Renamed fields:
-	Archived bool `json:"archived"`
-	Disabled bool `json:"disabled"`
-	Locked   bool `json:"locked"`
+	Archived                  bool                   `json:"archived"`
+	Disabled                  bool                   `json:"disabled"`
+	Locked                    bool                   `json:"locked"`
 }
 
 type SecuritySettings struct {
@@ -139,9 +138,7 @@ type SecuritySettings struct {
 	DependabotSecurityUpdatesEnabled         bool `json:"dependabot_security_updates_enabled"`
 	SecretScanningNonProviderPatternsEnabled bool `json:"secret_scanning_non_provider_patterns_enabled"`
 	SecretScanningValidityChecksEnabled      bool `json:"secret_scanning_validity_checks_enabled"`
-
-	// New field
-	PrivateVulnerabilityReportingEnabled bool `json:"private_vulnerability_reporting_enabled"`
+	PrivateVulnerabilityReportingEnabled     bool `json:"private_vulnerability_reporting_enabled"`
 }
 
 type RepoURLs struct {
@@ -151,6 +148,7 @@ type RepoURLs struct {
 	SVNURL   string `json:"svn_url"`
 	HTMLURL  string `json:"html_url"`
 }
+
 type Owner struct {
 	Login   string `json:"login"`
 	ID      int    `json:"id"`
@@ -206,7 +204,7 @@ type FinalRepoDetail struct {
 	Organization            *Organization      `json:"organization"`
 	Parent                  *FinalRepoDetail   `json:"parent"`
 	Source                  *FinalRepoDetail   `json:"source"`
-	Languages               map[string]int     `json:"language"`
+	Language                map[string]int     `json:"language"`
 	RepositorySettings      RepositorySettings `json:"repo_settings"`
 	SecuritySettings        SecuritySettings   `json:"security_settings"`
 	RepoURLs                RepoURLs           `json:"repo_urls"`
@@ -265,27 +263,30 @@ func main() {
 			}
 
 			finalDetail := transformToFinalRepoDetail(repoDetail)
-			// Fetch languages
 			langs, err := fetchLanguages(sdk, r.Owner.Login, r.Name)
 			if err == nil {
-				finalDetail.Languages = langs
+				// If no languages, result would be empty map. That's fine.
+				if len(langs) == 0 {
+					finalDetail.Language = nil
+				} else {
+					finalDetail.Language = langs
+				}
+			} else {
+				finalDetail.Language = nil
 			}
 
-			// Enrich metrics
-			err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
+			err = enrichRepoMetrics(sdk, r.Owner.Login, r.Name, finalDetail)
 			if err != nil {
-				log.Printf("Error enriching repo metrics for %s/%s: %v", owner, repoName, err)
+				log.Printf("Error enriching repo metrics for %s/%s: %v", r.Owner.Login, r.Name, err)
 			}
 
-			// **New addition: Fetch private vulnerability reporting status**
-			pvrEnabled, err := fetchPrivateVulnerabilityReporting(sdk, owner, repoName)
+			pvrEnabled, err := fetchPrivateVulnerabilityReporting(sdk, r.Owner.Login, r.Name)
 			if err != nil {
-				log.Printf("Error fetching private vulnerability reporting status for %s/%s: %v", owner, repoName, err)
+				log.Printf("Error fetching private vulnerability reporting status for %s/%s: %v", r.Owner.Login, r.Name, err)
 			} else {
 				finalDetail.SecuritySettings.PrivateVulnerabilityReportingEnabled = pvrEnabled
 			}
 
-			// Output final JSON
 			data, err := json.MarshalIndent(finalDetail, "", "  ")
 			if err != nil {
 				log.Fatalf("Error marshalling repo detail: %v", err)
@@ -300,15 +301,27 @@ func main() {
 
 		finalDetail := transformToFinalRepoDetail(repoDetail)
 
-		// Fetch languages
 		langs, err := fetchLanguages(sdk, owner, repoName)
 		if err == nil {
-			finalDetail.Languages = langs
+			if len(langs) == 0 {
+				finalDetail.Language = nil
+			} else {
+				finalDetail.Language = langs
+			}
+		} else {
+			finalDetail.Language = nil
 		}
 
 		err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
 		if err != nil {
 			log.Printf("Error enriching repo metrics for %s/%s: %v", owner, repoName, err)
+		}
+
+		pvrEnabled, err := fetchPrivateVulnerabilityReporting(sdk, owner, repoName)
+		if err != nil {
+			log.Printf("Error fetching private vulnerability reporting status for %s/%s: %v", owner, repoName, err)
+		} else {
+			finalDetail.SecuritySettings.PrivateVulnerabilityReportingEnabled = pvrEnabled
 		}
 
 		data, err := json.MarshalIndent(finalDetail, "", "  ")
@@ -317,6 +330,127 @@ func main() {
 		}
 		fmt.Println(string(data))
 	}
+}
+
+func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
+	// Handle parent and source
+	var parent *FinalRepoDetail
+	if detail.Parent != nil {
+		parent = transformToFinalRepoDetail(detail.Parent)
+	}
+	var source *FinalRepoDetail
+	if detail.Source != nil {
+		source = transformToFinalRepoDetail(detail.Source)
+	}
+
+	// LicenseInfo
+	var licenseJSON json.RawMessage
+	if detail.License != nil {
+		lj, _ := json.Marshal(detail.License)
+		licenseJSON = lj
+	} else {
+		licenseJSON = nil
+	}
+
+	// Topics: ensure it is at least an empty array
+	topics := detail.Topics
+	if topics == nil {
+		topics = []string{}
+	}
+
+	// Default branch ref
+	dbObj := map[string]string{"name": detail.DefaultBranch}
+	dbBytes, _ := json.Marshal(dbObj)
+
+	isActive := !(detail.Archived || detail.Disabled)
+	isEmpty := (detail.Size == 0)
+
+	// Ensure custom_properties is not nil, use empty map if nil
+	var customProps map[string]interface{}
+	if detail.CustomProperties == nil {
+		customProps = map[string]interface{}{}
+	} else {
+		customProps = detail.CustomProperties
+	}
+
+	finalDetail := &FinalRepoDetail{
+		GitHubRepoID:            detail.ID,
+		NodeID:                  detail.NodeID,
+		Name:                    detail.Name,
+		NameWithOwner:           detail.FullName, // renamed field to match user request
+		Description:             detail.Description,
+		CreatedAt:               detail.CreatedAt,
+		UpdatedAt:               detail.UpdatedAt,
+		PushedAt:                detail.PushedAt,
+		IsActive:                isActive,
+		IsEmpty:                 isEmpty,
+		IsFork:                  detail.Fork,
+		IsSecurityPolicyEnabled: false,
+		Owner:                   detail.Owner,
+		HomepageURL:             detail.Homepage,
+		LicenseInfo:             licenseJSON,
+		Topics:                  topics,
+		Visibility:              detail.Visibility,
+		DefaultBranchRef:        dbBytes,
+		Permissions:             detail.Permissions,
+		Organization:            detail.Organization,
+		Parent:                  parent,
+		Source:                  source,
+		Language:                nil, // set later
+		RepositorySettings: RepositorySettings{
+			HasDiscussionsEnabled:     detail.HasDiscussions,
+			HasIssuesEnabled:          detail.HasIssues,
+			HasProjectsEnabled:        detail.HasProjects,
+			HasWikiEnabled:            detail.HasWiki,
+			MergeCommitAllowed:        detail.AllowMergeCommit,
+			MergeCommitMessage:        detail.MergeCommitMessage,
+			MergeCommitTitle:          detail.MergeCommitTitle,
+			SquashMergeAllowed:        detail.AllowSquashMerge,
+			SquashMergeCommitMessage:  detail.SquashMergeCommitMessage,
+			SquashMergeCommitTitle:    detail.SquashMergeCommitTitle,
+			HasDownloads:              detail.HasDownloads,
+			HasPages:                  detail.HasPages,
+			WebCommitSignoffRequired:  detail.WebCommitSignoffRequired,
+			MirrorURL:                 detail.MirrorURL,
+			AllowAutoMerge:            detail.AllowAutoMerge,
+			DeleteBranchOnMerge:       detail.DeleteBranchOnMerge,
+			AllowUpdateBranch:         detail.AllowUpdateBranch,
+			UseSquashPRTitleAsDefault: detail.UseSquashPRTitleAsDefault,
+			CustomProperties:          customProps,
+			ForkingAllowed:            detail.AllowForking,
+			IsTemplate:                detail.IsTemplate,
+			AllowRebaseMerge:          detail.AllowRebaseMerge,
+			Archived:                  detail.Archived,
+			Disabled:                  detail.Disabled,
+			Locked:                    detail.Locked,
+		},
+		SecuritySettings: SecuritySettings{
+			VulnerabilityAlertsEnabled:               false,
+			SecretScanningEnabled:                    false,
+			SecretScanningPushProtectionEnabled:      false,
+			DependabotSecurityUpdatesEnabled:         false,
+			SecretScanningNonProviderPatternsEnabled: false,
+			SecretScanningValidityChecksEnabled:      false,
+			PrivateVulnerabilityReportingEnabled:     false,
+		},
+		RepoURLs: RepoURLs{
+			GitURL:   detail.GitURL,
+			SSHURL:   detail.SSHURL,
+			CloneURL: detail.CloneURL,
+			SVNURL:   detail.SVNURL,
+			HTMLURL:  detail.HTMLURL,
+		},
+		Metrics: Metrics{
+			Stargazers:  detail.StargazersCount,
+			Forks:       detail.ForksCount,
+			Subscribers: detail.SubscribersCount,
+			Size:        detail.Size,
+			OpenIssues:  detail.OpenIssuesCount,
+			// Tags, Commits, Issues, Branches, PullRequests, Releases are set later
+		},
+	}
+
+	return finalDetail
 }
 
 func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName string, finalDetail *FinalRepoDetail) error {
@@ -361,19 +495,15 @@ func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName str
 	}
 	finalDetail.Metrics.Releases = releasesCount
 
-	// New: Count tags
 	tagsCount, err := countTags(sdk, owner, repoName)
 	if err != nil {
 		return fmt.Errorf("counting tags: %w", err)
 	}
-	// Add "TotalTags" field to RepoMetrics struct and assign here
-	// You need to add the `TotalTags int `json:"total_tags"` field to RepoMetrics beforehand
 	finalDetail.Metrics.Tags = tagsCount
 
 	return nil
 }
 
-// New function countTags
 func countTags(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repoName)
 	return countItemsFromEndpoint(sdk, endpoint)
@@ -401,10 +531,6 @@ func fetchLanguages(sdk *resilientbridge.ResilientBridge, owner, repo string) (m
 	}
 	return langs, nil
 }
-
-// The rest of the functions (parseScopeURL, fetchOrgRepos, fetchRepoDetails, transformToFinalRepoDetail,
-// enrichRepoMetrics, countCommits, countIssues, countBranches, countPullRequests, countReleases,
-// countItemsFromEndpoint, and parseLastPage) remain unchanged.
 
 func parseScopeURL(repoURL string) (owner, repo string, err error) {
 	if !strings.HasPrefix(repoURL, "https://github.com/") {
@@ -434,8 +560,6 @@ func fetchPrivateVulnerabilityReporting(sdk *resilientbridge.ResilientBridge, ow
 	}
 
 	if resp.StatusCode == 404 {
-		// Endpoint returns 404 if private vulnerability reporting is not enabled
-		// or the resource is not found. Default to false.
 		return false, nil
 	}
 
@@ -520,144 +644,6 @@ func fetchRepoDetails(sdk *resilientbridge.ResilientBridge, owner, repo string) 
 		return nil, fmt.Errorf("error decoding repo details: %w", err)
 	}
 	return &detail, nil
-}
-
-func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
-	var parent *FinalRepoDetail
-	if detail.Parent != nil {
-		parent = transformToFinalRepoDetail(detail.Parent)
-	}
-	var source *FinalRepoDetail
-	if detail.Source != nil {
-		source = transformToFinalRepoDetail(detail.Source)
-	}
-
-	// Owner: no user_view_type, no site_admin
-	var finalOwner *Owner
-	if detail.Owner != nil {
-		finalOwner = &Owner{
-			Login:   detail.Owner.Login,
-			ID:      detail.Owner.ID,
-			NodeID:  detail.Owner.NodeID,
-			HTMLURL: detail.Owner.HTMLURL,
-			Type:    detail.Owner.Type,
-		}
-	}
-
-	// Organization: includes user_view_type, site_admin
-	var finalOrg *Organization
-	if detail.Organization != nil {
-		finalOrg = &Organization{
-			Login:        detail.Organization.Login,
-			ID:           detail.Organization.ID,
-			NodeID:       detail.Organization.NodeID,
-			HTMLURL:      detail.Organization.HTMLURL,
-			Type:         detail.Organization.Type,
-			UserViewType: detail.Organization.UserViewType,
-			SiteAdmin:    detail.Organization.SiteAdmin,
-		}
-	}
-
-	// Prepare default_branch_ref as before
-	dbObj := map[string]string{"name": detail.DefaultBranch}
-	dbBytes, _ := json.Marshal(dbObj)
-
-	// Determine is_active: true if not archived and not disabled
-	isActive := !(detail.Archived || detail.Disabled)
-	//isInOrganization := (detail.Organization != nil && detail.Organization.Type == "Organization")
-	//isMirror := (detail.MirrorURL != nil)
-	isEmpty := (detail.Size == 0)
-
-	var licenseJSON json.RawMessage
-	if detail.License != nil {
-		lj, _ := json.Marshal(detail.License)
-		licenseJSON = lj
-	}
-
-	finalDetail := &FinalRepoDetail{
-		GitHubRepoID:  detail.ID,
-		NodeID:        detail.NodeID,
-		Name:          detail.Name,
-		NameWithOwner: detail.FullName,
-		Description:   detail.Description,
-		CreatedAt:     detail.CreatedAt,
-		UpdatedAt:     detail.UpdatedAt,
-		PushedAt:      detail.PushedAt,
-		IsActive:      isActive,
-		IsEmpty:       isEmpty,
-		IsFork:        detail.Fork,
-		//IsInOrganization:        isInOrganization,
-		//IsMirror:                isMirror,
-		IsSecurityPolicyEnabled: false, // as before
-		//IsTemplate:              detail.IsTemplate,
-		Owner:            finalOwner,
-		HomepageURL:      detail.Homepage,
-		LicenseInfo:      licenseJSON,
-		Topics:           detail.Topics,
-		Visibility:       detail.Visibility,
-		DefaultBranchRef: dbBytes,
-		Permissions:      detail.Permissions,
-		Organization:     finalOrg,
-		Parent:           parent,
-		Source:           source,
-		Languages:        nil, // set after fetchLanguages
-		RepositorySettings: RepositorySettings{
-			HasDiscussionsEnabled:     detail.HasDiscussions,
-			HasIssuesEnabled:          detail.HasIssues,
-			HasProjectsEnabled:        detail.HasProjects,
-			HasWikiEnabled:            detail.HasWiki,
-			MergeCommitAllowed:        detail.AllowMergeCommit,
-			MergeCommitMessage:        detail.MergeCommitMessage,
-			MergeCommitTitle:          detail.MergeCommitTitle,
-			SquashMergeAllowed:        detail.AllowSquashMerge,
-			SquashMergeCommitMessage:  detail.SquashMergeCommitMessage,
-			SquashMergeCommitTitle:    detail.SquashMergeCommitTitle,
-			HasDownloads:              detail.HasDownloads,
-			HasPages:                  detail.HasPages,
-			WebCommitSignoffRequired:  detail.WebCommitSignoffRequired,
-			MirrorURL:                 detail.MirrorURL,
-			AllowAutoMerge:            detail.AllowAutoMerge,
-			DeleteBranchOnMerge:       detail.DeleteBranchOnMerge,
-			AllowUpdateBranch:         detail.AllowUpdateBranch,
-			UseSquashPRTitleAsDefault: detail.UseSquashPRTitleAsDefault,
-			CustomProperties:          detail.CustomProperties,
-			ForkingAllowed:            detail.AllowForking,
-			IsTemplate:                detail.IsTemplate,
-			AllowRebaseMerge:          detail.AllowRebaseMerge,
-			Archived:                  detail.Archived,
-			Disabled:                  detail.Disabled,
-			Locked:                    detail.Locked,
-		},
-		SecuritySettings: SecuritySettings{
-			VulnerabilityAlertsEnabled:               false,
-			SecretScanningEnabled:                    false,
-			SecretScanningPushProtectionEnabled:      false,
-			DependabotSecurityUpdatesEnabled:         false,
-			SecretScanningNonProviderPatternsEnabled: false,
-			SecretScanningValidityChecksEnabled:      false,
-			PrivateVulnerabilityReportingEnabled:     false,
-		},
-		RepoURLs: RepoURLs{
-			GitURL:   detail.GitURL,
-			SSHURL:   detail.SSHURL,
-			CloneURL: detail.CloneURL,
-			SVNURL:   detail.SVNURL,
-			HTMLURL:  detail.HTMLURL,
-		},
-		Metrics: Metrics{
-			Stargazers:  detail.StargazersCount,
-			Forks:       detail.ForksCount,
-			Subscribers: detail.SubscribersCount,
-			Size:        detail.Size,
-			// The rest (tags, commits, issues, open_issues, branches, pull_requests, releases)
-			// will be set after calling enrichRepoMetrics and assigning open issues from detail.
-		},
-	}
-
-	// Set open_issues before enrichRepoMetrics if needed:
-	finalDetail.Metrics.OpenIssues = detail.OpenIssuesCount
-
-	return finalDetail
 }
 
 func countCommits(sdk *resilientbridge.ResilientBridge, owner, repoName, defaultBranch string) (int, error) {
