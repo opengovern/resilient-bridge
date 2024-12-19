@@ -176,7 +176,6 @@ func fetchCommitList(sdk *resilientbridge.ResilientBridge, owner, repo string, m
 
 	return allCommits, nil
 }
-
 func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha string) ([]byte, error) {
 	// Fetch the commit details
 	req := &resilientbridge.NormalizedRequest{
@@ -234,12 +233,7 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	commitSection, _ := commitData["commit"].(map[string]interface{})
 	message := getString(commitSection, "message")
 
-	// Declare commitAuthor here so it can be used later
 	var commitAuthor map[string]interface{}
-
-	// Extract authored_date and committed_date
-	// authored_date = commit.author.date
-	// committed_date = commit.committer.date
 	var authoredDate, committedDate *string
 	if commitSection != nil {
 		if ca, ok := commitSection["author"].(map[string]interface{}); ok {
@@ -333,7 +327,7 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 		}
 	}
 
-	// parents
+	// parents at top-level now
 	parentsArray := []interface{}{}
 	if parents, ok := commitData["parents"].([]interface{}); ok {
 		for _, p := range parents {
@@ -398,7 +392,6 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	// additional_details
 	additionalDetailsObj := map[string]interface{}{
 		"node_id":              nil,
-		"parents":              parentsArray,
 		"tree":                 nil,
 		"verification_details": nil,
 	}
@@ -419,28 +412,18 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	}
 
 	// Determine the branch:
-	var branchName string
+	var branchName *string
 	if len(prs) > 0 {
 		prBranch, err := fetchFirstPRBranch(sdk, owner, repo, prs[0])
 		if err == nil && prBranch != "" {
-			branchName = prBranch
+			branchName = &prBranch
 		}
 	}
-	if branchName == "" {
+	if branchName == nil {
 		bname, berr := findBranchByCommit(sdk, owner, repo, sha)
 		if berr == nil && bname != "" {
-			branchName = bname
+			branchName = &bname
 		}
-	}
-
-	// target
-	targetObj := map[string]interface{}{
-		"branch":       nil,
-		"organization": owner,
-		"repository":   repo,
-	}
-	if branchName != "" {
-		targetObj["branch"] = branchName
 	}
 
 	// short_sha
@@ -448,6 +431,29 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	if commitSha != nil && len(*commitSha) >= 7 {
 		short := (*commitSha)[:7]
 		shortSHA = short
+	}
+
+	// Fetch repository details
+	repoID, repoNodeID, repoName, repoFullName, _ := fetchRepoDetails(sdk, owner, repo)
+
+	// Construct repository object
+	repoObj := map[string]interface{}{
+		"id":        repoID,
+		"node_id":   repoNodeID,
+		"name":      repoName,
+		"full_name": repoFullName,
+	}
+
+	// branch is a string
+	var finalBranch interface{} = nil
+	if branchName != nil {
+		finalBranch = *branchName
+	}
+
+	// target
+	targetObj := map[string]interface{}{
+		"repository": repoObj,
+		"branch":     finalBranch,
 	}
 
 	// Convert pointers to interface{}
@@ -514,7 +520,7 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 
 	output := map[string]interface{}{
 		"id":             finalID,
-		"short_id":       shortSHA,
+		"short_sha":      shortSHA,
 		"authored_date":  finalAuthoredDate,
 		"committed_date": finalCommittedDate,
 		"message":        finalMessage,
@@ -528,6 +534,7 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 			"total":     finalTotal,
 		},
 		"comment_count":      finalCommentCount,
+		"parents":            parentsArray, // moved here
 		"additional_details": additionalDetailsObj,
 		"files":              filesArray,
 		"pull_requests":      prs,
@@ -539,6 +546,44 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	}
 
 	return modifiedData, nil
+}
+
+// fetchRepoDetails fetches repository details: id, node_id, name, and full_name
+func fetchRepoDetails(sdk *resilientbridge.ResilientBridge, owner, repo string) (interface{}, interface{}, interface{}, interface{}, error) {
+	req := &resilientbridge.NormalizedRequest{
+		Method:   "GET",
+		Endpoint: fmt.Sprintf("/repos/%s/%s", owner, repo),
+		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+	}
+	resp, err := sdk.Request("github", req)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error fetching repo details: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		return nil, nil, nil, nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+	}
+
+	var repoData map[string]interface{}
+	if err := json.Unmarshal(resp.Data, &repoData); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error decoding repo details: %w", err)
+	}
+
+	var rID, rNodeID, rName, rFullName interface{}
+
+	if idVal, ok := repoData["id"].(float64); ok {
+		rID = int(idVal)
+	}
+	if nodeVal, ok := repoData["node_id"].(string); ok {
+		rNodeID = nodeVal
+	}
+	if nameVal, ok := repoData["name"].(string); ok {
+		rName = nameVal
+	}
+	if fullNameVal, ok := repoData["full_name"].(string); ok {
+		rFullName = fullNameVal
+	}
+
+	return rID, rNodeID, rName, rFullName, nil
 }
 
 func fetchPullRequestsForCommit(sdk *resilientbridge.ResilientBridge, owner, repo, sha string) ([]int, error) {

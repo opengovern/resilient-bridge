@@ -1,0 +1,4089 @@
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDU0ZGUyOTIxMjhkYTlhYzJmMTY3OTQ4ZjhmZGIyMzk2YzUxMWI2ODU",
+    "parents": [
+      {
+        "sha": "d33ceef891ea8563f543f1387babffaf542602a6"
+      },
+      {
+        "sha": "422ab93d849a72e5aab2eee832e9b1e6f1330fd6"
+      }
+    ],
+    "tree": {
+      "sha": "1a7dcd4f39d41ff0212233cfeb19f87b701fce5d"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnZFqvCRC1aQ7uu5UhlAAA82MQAD4A50kWtL50EcQMFH4zpPLH\n4MlcwyEq3OO/PRyU0CJXzcnaDE819AROeq05xph6H7A0Z0Epl2hl1NoNbUEE3hwF\nc6u08KSC9qr0FhlnmlhYLKWoGPmZPeA2S/rGC8rwoEV/oKobHcd1KsD22iikf2R/\n/NictBv1H0ppa+p40nCp3/Ku92+4K9xEyhjyN3EoCrBv9VLbF1P5qZoAxi72vBe+\nypOXvKG0XT2QVYzHq+7Zh8J/PzF94Sdz+DbsQB1ejb8u1cm87m6PEfeVumCzlYKr\nYpCLJhk5i3WsDhrXx7flTSHskn0jDsYX344T8mDwj8wimHZEM9etvqrAMpSGprKo\nYLCxSWwdFaidLY4xcTSb9znuQkmYQJA5xjQSOirB3oIft5SvFIkWEvelN2AQlVB8\nJ3h6dlosfXFbfIbV6WIXN3y239bbdO/b2GaukLbJQBWXeH9GHaf3/TRjuWCDEYzy\n5cZJ0lRQp2/0di6WXYb+17/0f/A1Yj+h+hguHr1d8pKdeBkkU0hMxYTxn+GFUV1M\nn6EiBRNbXPKn+38AsZDy6tJJglKvlJKfymwPOwuF1evJVyVW7vO3eAFHDMe2ePhN\nwAHUHornSKi4OUWwFa5qPzogBDr1rxYU/6HzBJDszTwbJGhgAMMKfQMIhklCWTIY\nvgxXcDmkVkAWa3AYiDK+\n=FtQq\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T17:41:36Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T17:41:03Z",
+  "changes": {
+    "additions": 34,
+    "deletions": 14,
+    "total": 48
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T17:41:03Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/describe/api/jobs.go",
+      "sha": "d0bd75f4b610168b2cf47ae527a04eb717754251",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 3,
+      "deletions": 0,
+      "filename": "services/describe/db/model/describe.go",
+      "sha": "b1437038c20469aadc5bf0a900c4c433f1717664",
+      "status": "modified"
+    },
+    {
+      "additions": 25,
+      "changes": 30,
+      "deletions": 5,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "94938d2f4f55b28dce1287d279bda9c900396654",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/describe/scheduler_quickscan_sequence.go",
+      "sha": "3f1c81b5b34e1344c6604dda38ba7932fe0754be",
+      "status": "modified"
+    },
+    {
+      "additions": 4,
+      "changes": 11,
+      "deletions": 7,
+      "filename": "services/describe/server.go",
+      "sha": "86bdf2fa9a51ef9cc6b2ea00954eb354df7f88fb",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/54de292128da9ac2f167948f8fdb2396c511b685",
+  "id": "54de292128da9ac2f167948f8fdb2396c511b685",
+  "is_verified": true,
+  "message": "Merge pull request #2288 from opengovern/fix-tasks\n\nFix tasks",
+  "pull_requests": [
+    2288
+  ],
+  "short_id": "54de292",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDQyMmFiOTNkODQ5YTcyZTVhYWIyZWVlODMyZTliMWU2ZjEzMzBmZDY",
+    "parents": [
+      {
+        "sha": "bfdca4fb5c111f768d6857c9c778eb3feba364d0"
+      }
+    ],
+    "tree": {
+      "sha": "1a7dcd4f39d41ff0212233cfeb19f87b701fce5d"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T17:40:28Z",
+  "changes": {
+    "additions": 0,
+    "deletions": 4,
+    "total": 4
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T17:40:28Z",
+  "files": [
+    {
+      "additions": 0,
+      "changes": 1,
+      "deletions": 1,
+      "filename": "services/describe/api/jobs.go",
+      "sha": "d0bd75f4b610168b2cf47ae527a04eb717754251",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 3,
+      "deletions": 3,
+      "filename": "services/describe/server.go",
+      "sha": "86bdf2fa9a51ef9cc6b2ea00954eb354df7f88fb",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/422ab93d849a72e5aab2eee832e9b1e6f1330fd6",
+  "id": "422ab93d849a72e5aab2eee832e9b1e6f1330fd6",
+  "is_verified": false,
+  "message": "fix: pass parameters to describe function",
+  "pull_requests": [
+    2288
+  ],
+  "short_id": "422ab93",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGJmZGNhNGZiNWMxMTFmNzY4ZDY4NTdjOWM3NzhlYjNmZWJhMzY0ZDA",
+    "parents": [
+      {
+        "sha": "4c33a48573ee5999ab508752d67c0bf603aa136a"
+      }
+    ],
+    "tree": {
+      "sha": "ab29a71dfd6fb8daeff67220d0b3495787aa3b22"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T17:39:30Z",
+  "changes": {
+    "additions": 34,
+    "deletions": 10,
+    "total": 44
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T17:39:30Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/describe/api/jobs.go",
+      "sha": "e84e9e208827f3cb7ea647bd30e8c5bc6a334273",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 3,
+      "deletions": 0,
+      "filename": "services/describe/db/model/describe.go",
+      "sha": "b1437038c20469aadc5bf0a900c4c433f1717664",
+      "status": "modified"
+    },
+    {
+      "additions": 25,
+      "changes": 30,
+      "deletions": 5,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "94938d2f4f55b28dce1287d279bda9c900396654",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/describe/scheduler_quickscan_sequence.go",
+      "sha": "3f1c81b5b34e1344c6604dda38ba7932fe0754be",
+      "status": "modified"
+    },
+    {
+      "additions": 4,
+      "changes": 8,
+      "deletions": 4,
+      "filename": "services/describe/server.go",
+      "sha": "2b24b5bdcfed1c2b224566d1c712a4821fd95904",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/bfdca4fb5c111f768d6857c9c778eb3feba364d0",
+  "id": "bfdca4fb5c111f768d6857c9c778eb3feba364d0",
+  "is_verified": false,
+  "message": "fix: pass parameters to describe function",
+  "pull_requests": [
+    2288
+  ],
+  "short_id": "bfdca4f",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGQzM2NlZWY4OTFlYTg1NjNmNTQzZjEzODdiYWJmZmFmNTQyNjAyYTY",
+    "parents": [
+      {
+        "sha": "5a57edaea50a0ce205f41af16115bf276db657fc"
+      },
+      {
+        "sha": "4c33a48573ee5999ab508752d67c0bf603aa136a"
+      }
+    ],
+    "tree": {
+      "sha": "e831aef37d05c8737ce77a1b76d9f2b0a2b0ed11"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnZFFZCRC1aQ7uu5UhlAAA0BMQACg4tPm/lCktahSw1BKIuByy\nfWYEhOQY98g/QLQKG8h3XZeyUGrzgUuyEy8Drp8/eemNZ/cmDebLRb76rCzu0JTP\npYDFrQhKZ8a6Eg2zUIGgy2ATeqp4+dkIFkom/otQS9lx7v6fXctB3E+50vhSuQxl\nTNCzDEeFoou8bRG/PMu5KTchytYbG9KsqaWj5cRwWnpH8F1ROqrwdtZBlsw0IGxD\nKhLQua5S5KyQW8ix8c8JjYB03MImEPG9nhv7k1kQDmCAnKTgsYHhz9SPxlJ2tY3E\n2xgf7QGwF9x9RlfVCv4kc/fPht8Ku3KxJgN/4SOCw+/6l7JtTyuBeeBPi3ZSDdq7\niLH223e6JgxLgtxQskIlTTDfDWkuZGZBw0XNz+4jWzsgWXDa8LIYpIEwdik6DOGb\nIvrIvGwCXKwklMKUHQRV4XELjBNfs/WqSfAteXu3ibqTxb8r8Yrw04Jjv46Xw4up\nyv5UNmRCzhlhsWS8CXeN8M1JY12Dan9i0TA8Ucp0lGMc6ovuAzCJ5IWxHGlCCNm+\n70g9HdLXh5H6G1pehCFclqVfK06U6V7rJomRQISzlVxE7ooxuJ3r+jLMIDPHUYYX\noZynEiKtB+DwrnPuCa8K16i4h7lvmNoXyrLMG67NnQXj/IlO+rfhb8b49HkuwJme\nBYlTDYOANe5Y2wj1n2wU\n=/+bw\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T17:01:38Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T17:01:13Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 1,
+    "total": 14
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T17:01:13Z",
+  "files": [
+    {
+      "additions": 13,
+      "changes": 14,
+      "deletions": 1,
+      "filename": "services/integration/integration-type/github-account/configs/resource_type_configs.go",
+      "sha": "8cc8811ce1993a64d6ef2109e1d50d4df3556f1e",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/d33ceef891ea8563f543f1387babffaf542602a6",
+  "id": "d33ceef891ea8563f543f1387babffaf542602a6",
+  "is_verified": true,
+  "message": "Merge pull request #2287 from opengovern/fix-tasks\n\nfix: add github resource types",
+  "pull_requests": [
+    2287
+  ],
+  "short_id": "d33ceef",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDRjMzNhNDg1NzNlZTU5OTlhYjUwODc1MmQ2N2MwYmY2MDNhYTEzNmE",
+    "parents": [
+      {
+        "sha": "006319cf4f38d09447e0dfc557ccfa3a003cbc67"
+      }
+    ],
+    "tree": {
+      "sha": "e831aef37d05c8737ce77a1b76d9f2b0a2b0ed11"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:59:58Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 1,
+    "total": 14
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:59:58Z",
+  "files": [
+    {
+      "additions": 13,
+      "changes": 14,
+      "deletions": 1,
+      "filename": "services/integration/integration-type/github-account/configs/resource_type_configs.go",
+      "sha": "8cc8811ce1993a64d6ef2109e1d50d4df3556f1e",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/4c33a48573ee5999ab508752d67c0bf603aa136a",
+  "id": "4c33a48573ee5999ab508752d67c0bf603aa136a",
+  "is_verified": false,
+  "message": "fix: add github resource types",
+  "pull_requests": [
+    2287
+  ],
+  "short_id": "4c33a48",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDVhNTdlZGFlYTUwYTBjZTIwNWY0MWFmMTYxMTViZjI3NmRiNjU3ZmM",
+    "parents": [
+      {
+        "sha": "e2a3648cbebe49a17ddc3e6690cf1ee983fc1297"
+      },
+      {
+        "sha": "006319cf4f38d09447e0dfc557ccfa3a003cbc67"
+      }
+    ],
+    "tree": {
+      "sha": "e0f98e0930337c370857279194481dac6130521e"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnZEuRCRC1aQ7uu5UhlAAAneYQAH7vjUPgCibxtx1FI34l0HrX\nLMYKwNKkKgPOLzvZ3dpWTNaYCo+4Syhv019mAaJWnJvJ6VotbdyvX7PJRTt5yQcn\nZozEnS5yZPlKlnKU3bKjSEw2+fBPQ7hEsnlhW+St7B5DlOo09LcbaeGcoG1Y3p2h\nS3c7d5QJr013gE6N53sFdHlQ1TDNsj1lw1wBeaKkjCKJ6JamovzhL9+WlQ+5R5Nw\nYlyFh/dD3e/dPxhPlZMKxfcq8WR5L/9Y8fsCI1tbcK5e1hProBrF+dorUX8cOhwc\ntCNJkipyey7MKfIOsKDGhWQfBSOJYNITPJPrQmX91eUACxQLABWSvTKcHVoInkMC\nEqtzJpH+2nfowj4RfxNZ+Ke5Q5Y1UjV3pNDfmYuwWpUp10tk/Px60YdpCIvZLFgB\nU0/dfsbNUg1Vwro59BrvUEgnYTO6MYS9Oc/5YJUjnhLl2Jyit+sEhxzSAnTQ/aLh\nI5MF3SeQkM4oaKlyjP7s8/OTUcdnniD4kg1bZhJMrQs1/eV83svCc4I/Sy05pQ29\nqPzPsFOAYZ9W5EpWJ6p5YPxV9ztD+fA+GvbFjPzk663D7gDfoYs2O/CIfv+dt6D5\n5O/byTJNdB2t+ONHnb2mw5K4bVh4RS1s6DnCfEX7IhrVXFQ0oT7PRrAVL08zRfhb\nnndi/kcE298sDj/7iFyr\n=xpQX\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T16:37:05Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:36:33Z",
+  "changes": {
+    "additions": 50,
+    "deletions": 13,
+    "total": 63
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:36:33Z",
+  "files": [
+    {
+      "additions": 5,
+      "changes": 11,
+      "deletions": 6,
+      "filename": "services/integration/api/integrations/api.go",
+      "sha": "ac6b261e7fe75411d4a7e50994d99be44f8e2393",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 7,
+      "deletions": 7,
+      "filename": "services/integration/api/models/integration_type.go",
+      "sha": "dd5007ded1668eed3e3b036e9b73f4c0f91565f8",
+      "status": "modified"
+    },
+    {
+      "additions": 22,
+      "changes": 22,
+      "deletions": 0,
+      "filename": "services/integration/api/models/resource_type.go",
+      "sha": "05ef877a3840f6af29634f7d494fd0843b392582",
+      "status": "added"
+    },
+    {
+      "additions": 23,
+      "changes": 23,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/interfaces/resource_type.go",
+      "sha": "76c44709650eb7d3269e11ec7220d251aaec116f",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/5a57edaea50a0ce205f41af16115bf276db657fc",
+  "id": "5a57edaea50a0ce205f41af16115bf276db657fc",
+  "is_verified": true,
+  "message": "Merge pull request #2286 from opengovern/fix-tasks\n\nfix: resolve import cycle",
+  "pull_requests": [
+    2286
+  ],
+  "short_id": "5a57eda",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDAwNjMxOWNmNGYzOGQwOTQ0N2UwZGZjNTU3Y2NmYTNhMDAzY2JjNjc",
+    "parents": [
+      {
+        "sha": "435b277f226f4e257b37e8eda73efb61d20fe8cd"
+      }
+    ],
+    "tree": {
+      "sha": "e0f98e0930337c370857279194481dac6130521e"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:35:55Z",
+  "changes": {
+    "additions": 50,
+    "deletions": 13,
+    "total": 63
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:35:55Z",
+  "files": [
+    {
+      "additions": 5,
+      "changes": 11,
+      "deletions": 6,
+      "filename": "services/integration/api/integrations/api.go",
+      "sha": "ac6b261e7fe75411d4a7e50994d99be44f8e2393",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 7,
+      "deletions": 7,
+      "filename": "services/integration/api/models/integration_type.go",
+      "sha": "dd5007ded1668eed3e3b036e9b73f4c0f91565f8",
+      "status": "modified"
+    },
+    {
+      "additions": 22,
+      "changes": 22,
+      "deletions": 0,
+      "filename": "services/integration/api/models/resource_type.go",
+      "sha": "05ef877a3840f6af29634f7d494fd0843b392582",
+      "status": "added"
+    },
+    {
+      "additions": 23,
+      "changes": 23,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/interfaces/resource_type.go",
+      "sha": "76c44709650eb7d3269e11ec7220d251aaec116f",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/006319cf4f38d09447e0dfc557ccfa3a003cbc67",
+  "id": "006319cf4f38d09447e0dfc557ccfa3a003cbc67",
+  "is_verified": false,
+  "message": "fix: resolve import cycle",
+  "pull_requests": [
+    2286
+  ],
+  "short_id": "006319c",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGUyYTM2NDhjYmViZTQ5YTE3ZGRjM2U2NjkwY2YxZWU5ODNmYzEyOTc",
+    "parents": [
+      {
+        "sha": "e7c09c5c0d4202d5c5ca51ee17c9fcb2562f8e8c"
+      },
+      {
+        "sha": "435b277f226f4e257b37e8eda73efb61d20fe8cd"
+      }
+    ],
+    "tree": {
+      "sha": "383a1d0908af2a99a81e72dfd0174ada0244c391"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnZEkNCRC1aQ7uu5UhlAAA5UIQAHyF4lt4aldLWQO3E462Pzmd\nXYjUpyflQ82Px+zMEb99yGMbDU1Fnse00iyd+vYxRefqCnFJRo38ICnM8X7xxSkR\nwSHXrem4jLz3yAv60hfSYI9x4JDwzV7dxUQN84yevnjyFCdXFyDgF7g9qmYnUSBV\nHJ3Upc/kJNO3uOKM3CzMNsRaIsLrfFJL/1GwGeq9U7zoeHAhRkkQqLJE3NasRS8N\np9CXYFLRVf7F0bpQCfTxL836JKUSwULS7vD1DbR35+Y4m7BMgQq79BAxBQa0507k\nIQa+2pQD9XxFK6NavMzRzw1M9aUpOhq/hZlnZpsO5QVBVHFnY7VZ7xhi/+OpA3Ay\n4R4m7UZXFke9Lw7qKYzMVeX4ASRDRxyYqaIal6sUYX6gm17Bd4qGilirnI8hHBVB\nEICXgX5C3R0GKoPg1Ue3S1QSUYCOYo5oM0Kf6067k+RDgTeH5DutSFKscd14qf7e\nPiR4izsGr3fwRojqeseRk4tzx1F6A34sCSz6z5hl9AAjgVHV8Y4rNtGlGzBJdeM3\nPsKwOhg2yt/lHuJX91f1we+56R26nCAnRa9V86CCi+/emSzumC9tTZ9Ytk3yuODW\nuDthLjNtYmN+t7P0gzIoaXE0V6RwVgZWEd1wyhwseAhQWquVGpFoo81ZHLwA4Ygg\n724p4V8dRYosanO1y59z\n=s+4d\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T16:26:21Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:25:49Z",
+  "changes": {
+    "additions": 254,
+    "deletions": 45,
+    "total": 299
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:25:49Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "0b81acc6818d6c659e73dc2da59bee12ce023976",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/describe/scheduler_quickscan_sequence.go",
+      "sha": "ab19767213b8112287232e2004ee47669cd5adb1",
+      "status": "modified"
+    },
+    {
+      "additions": 14,
+      "changes": 18,
+      "deletions": 4,
+      "filename": "services/describe/server.go",
+      "sha": "24270045fdc3b01ca2a9a55509d3e9431b8fe510",
+      "status": "modified"
+    },
+    {
+      "additions": 108,
+      "changes": 108,
+      "deletions": 0,
+      "filename": "services/integration/api/integrations/api.go",
+      "sha": "870c7a5ba6d49103491c79457312cb8b13661900",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "services/integration/api/models/integration_type.go",
+      "sha": "a4fcc35d33a257a50dba6c8730f3a3b34d1147d0",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/aws-account/aws_account.go",
+      "sha": "bd46a0dbdc242c40e91be53ce8f744262b9a10f0",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/azure-subscription/azure_subscription.go",
+      "sha": "a7422992ff3260b3585f6e8621f6ef370e9b1780",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/cloudflare-account/cloudflare_account.go",
+      "sha": "19487b41cedd7685ff07acff3268a1844fa8f9cd",
+      "status": "modified"
+    },
+    {
+      "additions": 14,
+      "changes": 27,
+      "deletions": 13,
+      "filename": "services/integration/integration-type/cohereai-project/cohere_project.go",
+      "sha": "e13a689319bc66c3624e9e91a04be875fae5142b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/digitalocean-team/digitalocean-team.go",
+      "sha": "2aa71676ea32790241c90571ce58a62570403a80",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/doppler-account/doppler_account.go",
+      "sha": "a63f1d0238e642ed8a419eaa9823d697d048b8fb",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/entra-id-directory/entra_id_directory.go",
+      "sha": "32c1da333b314458ea8b40033daa57c5ba492ff5",
+      "status": "modified"
+    },
+    {
+      "additions": 12,
+      "changes": 12,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/github-account/configs/resource_type_configs.go",
+      "sha": "fe9434a591db363fb17c958b631f102779c3afbe",
+      "status": "added"
+    },
+    {
+      "additions": 10,
+      "changes": 12,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/github-account/github_account.go",
+      "sha": "386af573344c835d4ac06d6a34b606533dc21b6b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/google-workspace-account/google_workspace_account.go",
+      "sha": "7492cdeeb480df0139fb502efce4ef7e0b658502",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/integration/integration-type/interfaces/integration.go",
+      "sha": "99e56c824f5e12a87fbe8ed7865266853cadc3b9",
+      "status": "modified"
+    },
+    {
+      "additions": 19,
+      "changes": 19,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/interfaces/resource_type.go",
+      "sha": "b5be2bad04b9de964c79369341a02f340a1cb5f3",
+      "status": "added"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/linode-account/linode_account.go",
+      "sha": "d2d0e4a70889ba173ad6c8fffab7645a57e704ad",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/oci-repository/oci-repository.go",
+      "sha": "840d4433fa39c5de3b1d7cdf36b47e3e485d657b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/openai-integration/openai_integration.go",
+      "sha": "4fa35249b7b2d75df8d3012d656522643e1cd24d",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/render-account/render_account.go",
+      "sha": "5752f1fc2cb1525cb9b875a25a40415919d11bfc",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/e2a3648cbebe49a17ddc3e6690cf1ee983fc1297",
+  "id": "e2a3648cbebe49a17ddc3e6690cf1ee983fc1297",
+  "is_verified": true,
+  "message": "Merge pull request #2285 from opengovern/fix-tasks\n\nFix tasks",
+  "pull_requests": [
+    2285
+  ],
+  "short_id": "e2a3648",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDQzNWIyNzdmMjI2ZjRlMjU3YjM3ZThlZGE3M2VmYjYxZDIwZmU4Y2Q",
+    "parents": [
+      {
+        "sha": "48a184d47a7821bffdb980a66128f72af3390615"
+      },
+      {
+        "sha": "e7c09c5c0d4202d5c5ca51ee17c9fcb2562f8e8c"
+      }
+    ],
+    "tree": {
+      "sha": "383a1d0908af2a99a81e72dfd0174ada0244c391"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:24:42Z",
+  "changes": {
+    "additions": 322,
+    "deletions": 135,
+    "total": 457
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:24:42Z",
+  "files": [
+    {
+      "additions": 41,
+      "changes": 41,
+      "deletions": 0,
+      "filename": ".github/workflows/go.yaml",
+      "sha": "bc10067c51012f7c464ae9cb68e7091ccb6f742e",
+      "status": "modified"
+    },
+    {
+      "additions": 35,
+      "changes": 35,
+      "deletions": 0,
+      "filename": "cmd/rego-service/main.go",
+      "sha": "2109445baa0d7e3b33175a7c77440e0450c77110",
+      "status": "added"
+    },
+    {
+      "additions": 59,
+      "changes": 59,
+      "deletions": 0,
+      "filename": "docker/RegoServiceDockerfile",
+      "sha": "dc0c2aa8360d15fb9a1bccc1d24067bc4396827c",
+      "status": "added"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "docker/SteampipeServiceDockerfile",
+      "sha": "4fdbb51acdbd335c8148c60a1494f0f75258ada4",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 8,
+      "deletions": 6,
+      "filename": "go.mod",
+      "sha": "dbd5f7511c676968ce595028132e61f693ee4f32",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 20,
+      "deletions": 14,
+      "filename": "go.sum",
+      "sha": "2a47cd7d953e29c8d60dd77cb7986aef8ac58923",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 43,
+      "deletions": 43,
+      "filename": "pkg/cloudql/sdk/extra/rego/http.go",
+      "sha": "8daa78a6d413f57d9f59da616b08fb40456327f4",
+      "status": "removed"
+    },
+    {
+      "additions": 1,
+      "changes": 9,
+      "deletions": 8,
+      "filename": "pkg/cloudql/tables/plugin.go",
+      "sha": "2349a4d3add3ee483a10d74a05ee769e8654e6da",
+      "status": "modified"
+    },
+    {
+      "additions": 25,
+      "changes": 25,
+      "deletions": 0,
+      "filename": "services/rego/api/api.go",
+      "sha": "7640a0522b18b057465016d8c44317ba5da78829",
+      "status": "added"
+    },
+    {
+      "additions": 14,
+      "changes": 14,
+      "deletions": 0,
+      "filename": "services/rego/api/models/evaluate.go",
+      "sha": "07c5062eb516385388e94123f303989435dd74e4",
+      "status": "added"
+    },
+    {
+      "additions": 51,
+      "changes": 51,
+      "deletions": 0,
+      "filename": "services/rego/api/rego/api.go",
+      "sha": "7648e07219600b5b8e423734e70add3bd11b6445",
+      "status": "added"
+    },
+    {
+      "additions": 64,
+      "changes": 64,
+      "deletions": 0,
+      "filename": "services/rego/cmd.go",
+      "sha": "5cac7c233647efe62114bdd92f8eb3de7926a586",
+      "status": "added"
+    },
+    {
+      "additions": 11,
+      "changes": 11,
+      "deletions": 0,
+      "filename": "services/rego/config/service.go",
+      "sha": "201f75cef1ef6a8508776b05b7de73dc6fafd228",
+      "status": "added"
+    },
+    {
+      "additions": 12,
+      "changes": 76,
+      "deletions": 64,
+      "filename": "services/rego/internal/rego.go",
+      "sha": "a38c855feeaa763561f5c6adf91178fe4d800d68",
+      "status": "renamed"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/435b277f226f4e257b37e8eda73efb61d20fe8cd",
+  "id": "435b277f226f4e257b37e8eda73efb61d20fe8cd",
+  "is_verified": false,
+  "message": "Merge remote-tracking branch 'origin/main' into fix-tasks",
+  "pull_requests": [
+    2285
+  ],
+  "short_id": "435b277",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDQ4YTE4NGQ0N2E3ODIxYmZmZGI5ODBhNjYxMjhmNzJhZjMzOTA2MTU",
+    "parents": [
+      {
+        "sha": "8012df39451fa315525056d4ba0f6c7e759f5e4e"
+      }
+    ],
+    "tree": {
+      "sha": "260c1ee3fca5f34ac6545e8d18512da6a56fa0ec"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T16:24:14Z",
+  "changes": {
+    "additions": 254,
+    "deletions": 45,
+    "total": 299
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T16:24:29Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "0b81acc6818d6c659e73dc2da59bee12ce023976",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/describe/scheduler_quickscan_sequence.go",
+      "sha": "ab19767213b8112287232e2004ee47669cd5adb1",
+      "status": "modified"
+    },
+    {
+      "additions": 14,
+      "changes": 18,
+      "deletions": 4,
+      "filename": "services/describe/server.go",
+      "sha": "24270045fdc3b01ca2a9a55509d3e9431b8fe510",
+      "status": "modified"
+    },
+    {
+      "additions": 108,
+      "changes": 108,
+      "deletions": 0,
+      "filename": "services/integration/api/integrations/api.go",
+      "sha": "870c7a5ba6d49103491c79457312cb8b13661900",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "services/integration/api/models/integration_type.go",
+      "sha": "a4fcc35d33a257a50dba6c8730f3a3b34d1147d0",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/aws-account/aws_account.go",
+      "sha": "bd46a0dbdc242c40e91be53ce8f744262b9a10f0",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/azure-subscription/azure_subscription.go",
+      "sha": "a7422992ff3260b3585f6e8621f6ef370e9b1780",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/cloudflare-account/cloudflare_account.go",
+      "sha": "19487b41cedd7685ff07acff3268a1844fa8f9cd",
+      "status": "modified"
+    },
+    {
+      "additions": 14,
+      "changes": 27,
+      "deletions": 13,
+      "filename": "services/integration/integration-type/cohereai-project/cohere_project.go",
+      "sha": "e13a689319bc66c3624e9e91a04be875fae5142b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/digitalocean-team/digitalocean-team.go",
+      "sha": "2aa71676ea32790241c90571ce58a62570403a80",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/doppler-account/doppler_account.go",
+      "sha": "a63f1d0238e642ed8a419eaa9823d697d048b8fb",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/entra-id-directory/entra_id_directory.go",
+      "sha": "32c1da333b314458ea8b40033daa57c5ba492ff5",
+      "status": "modified"
+    },
+    {
+      "additions": 12,
+      "changes": 12,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/github-account/configs/resource_type_configs.go",
+      "sha": "fe9434a591db363fb17c958b631f102779c3afbe",
+      "status": "added"
+    },
+    {
+      "additions": 10,
+      "changes": 12,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/github-account/github_account.go",
+      "sha": "386af573344c835d4ac06d6a34b606533dc21b6b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/google-workspace-account/google_workspace_account.go",
+      "sha": "7492cdeeb480df0139fb502efce4ef7e0b658502",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/integration/integration-type/interfaces/integration.go",
+      "sha": "99e56c824f5e12a87fbe8ed7865266853cadc3b9",
+      "status": "modified"
+    },
+    {
+      "additions": 19,
+      "changes": 19,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/interfaces/resource_type.go",
+      "sha": "b5be2bad04b9de964c79369341a02f340a1cb5f3",
+      "status": "added"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/linode-account/linode_account.go",
+      "sha": "d2d0e4a70889ba173ad6c8fffab7645a57e704ad",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/oci-repository/oci-repository.go",
+      "sha": "840d4433fa39c5de3b1d7cdf36b47e3e485d657b",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/openai-integration/openai_integration.go",
+      "sha": "4fa35249b7b2d75df8d3012d656522643e1cd24d",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "services/integration/integration-type/render-account/render_account.go",
+      "sha": "5752f1fc2cb1525cb9b875a25a40415919d11bfc",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/48a184d47a7821bffdb980a66128f72af3390615",
+  "id": "48a184d47a7821bffdb980a66128f72af3390615",
+  "is_verified": false,
+  "message": "fix: resource types configurations",
+  "pull_requests": [
+    2285
+  ],
+  "short_id": "48a184d",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGU3YzA5YzVjMGQ0MjAyZDVjNWNhNTFlZTE3YzlmY2IyNTYyZjhlOGM",
+    "parents": [
+      {
+        "sha": "0dfce12f3039ddedb809992d7bc44d243128e6cf"
+      }
+    ],
+    "tree": {
+      "sha": "5880f06a0a47aae3903fc13585d1b1273dec7571"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdkHFQACgkQttBTXV2m\nYIJpqw//TAikJkJAY4yH48NUFliEbHWnMRcqm6Yo2bOVdDvymQmn3cF6iX06M3Q6\nICLoMXzA1ylYstXOwt23wtCeGT/K2QOBm52n/I6wjqqDZukqYmuRrM/aEoRKTlLP\nfRkYAFbjrjWdsBDZ5wubSvO7DjQ3aJ2QiThsHBHXIAKnBi6l4RHO3ZYwj9AZsMYu\n7jUHcPhb7RFqKfYpLyZw/W0I5pMchBeRRTa824f5stVpL8G76skvQ/Yar/luqc+U\nDOzLcT1vrqQFdEcVu5njDU+HN7xI6iSldZWiD3QIMLbYf5y5DEzIzb44eW09gBTq\nw4blz2x2R7f7hb8xFbsKzw/VomEP+I0+XOx7kPlrssxyiKXp5lmjcf0FAo8lftPN\nAp0+RbWd3W5siDFZKvP2OLVzP2RzIO+3nXR/kjMmAoPquuAsSDgYU19uMG+EsoDK\nVwCIHl7WK2uHZZS0y96B4gT6qiBzwnNA2mu/e2QtqWsdoiBMM8UkjLpVLQK11Nqv\negtX6XeIZCVNPTA+2MJYo18RIYcIGB/h0XAt0071I4QecKomndVZj//kaoRGSBLu\not70J2nctowiu61JTVnadwyjhJcZQoIHQ9nv9RAwusHLMJRutjWAQ0WGTnTT1qKa\nxlUm7eMOhzbvMa/AaPKk15KfCcQTfOyS03OUFWSHpCZNE+mqcmw=\n=3S/l\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-19T13:15:34Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T13:15:00Z",
+  "changes": {
+    "additions": 10,
+    "deletions": 39,
+    "total": 49
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T13:15:00Z",
+  "files": [
+    {
+      "additions": 4,
+      "changes": 39,
+      "deletions": 35,
+      "filename": "services/rego/cmd.go",
+      "sha": "5cac7c233647efe62114bdd92f8eb3de7926a586",
+      "status": "modified"
+    },
+    {
+      "additions": 6,
+      "changes": 10,
+      "deletions": 4,
+      "filename": "services/rego/config/service.go",
+      "sha": "201f75cef1ef6a8508776b05b7de73dc6fafd228",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/e7c09c5c0d4202d5c5ca51ee17c9fcb2562f8e8c",
+  "id": "e7c09c5c0d4202d5c5ca51ee17c9fcb2562f8e8c",
+  "is_verified": true,
+  "message": "fix: config",
+  "pull_requests": null,
+  "short_id": "e7c09c5",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDBkZmNlMTJmMzAzOWRkZWRiODA5OTkyZDdiYzQ0ZDI0MzEyOGU2Y2Y",
+    "parents": [
+      {
+        "sha": "8de06bdace29882a99f768d49da73ac1ae2e3d1a"
+      }
+    ],
+    "tree": {
+      "sha": "14b7ccbe780eec03edba047a863cc1c21185b758"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdkGz8ACgkQttBTXV2m\nYIJSvhAA0nyM3f5iAPdzu0x2e3Je/ArRCq3LJhhXwg8bqAuxVZ0rb+X/wgR42mW6\nfsSgumSw97BpNfCHASPG3jNQtkDl/8fygDFtNT76aEQecaqiXPPbeexApa2YstAu\nNytdxTDwOJH5EG65THqNlCcVgk4q/CA7eiOTatgPHcQp9zt6azG2fgTWQB6DXu8k\nEYZ2ARxnmwhMGYJl1ThQJhzQYzfescqNVUJRgqvWzx5BFWfVSYLhyfigLVAMFM+h\naqb1WtPc00dmGMfsPZjXQTBZrYiCdwUAVy56KtXUdQNy8PRz37qpECvTgqPoTGgx\nuduuaj+dOAG6kXozknztOUhxVUx2HKErCb4NeGKORugi3qYxb+96TNBCE/45rwTY\nitN804ueVYvoGNQpBnyl9Oc95pbhEJg70q9l6uy36vhlfNV4eQeVYBdlaDO0NIF3\nGc/mD8TIiOOgi11elbQXwzoYw2yMdCt5NtwBTmXW5IZWZFK8CPjFq/GIyB+o3brk\nokj5vw4CNgY+Q0lduF9PzPhVDp1NSxDZMOHP/7Jdj9kVHDKwXFZoFt4EfbFLF9bF\nyZNO4o4QXgoGpw3CxD9vQOdbZvsQ2dWUktdsvs9eHhp2XMLSezMw4HSxDLWpTZYW\np23irZVv2qfbfzfnGXIAJ8MVxpXeaMKemCxWfn0NsGi5S65XJ5c=\n=3w8p\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-19T13:10:56Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T13:10:23Z",
+  "changes": {
+    "additions": 69,
+    "deletions": 47,
+    "total": 116
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T13:10:23Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 6,
+      "deletions": 5,
+      "filename": "go.mod",
+      "sha": "dbd5f7511c676968ce595028132e61f693ee4f32",
+      "status": "modified"
+    },
+    {
+      "additions": 4,
+      "changes": 14,
+      "deletions": 10,
+      "filename": "go.sum",
+      "sha": "2a47cd7d953e29c8d60dd77cb7986aef8ac58923",
+      "status": "modified"
+    },
+    {
+      "additions": 54,
+      "changes": 55,
+      "deletions": 1,
+      "filename": "services/rego/cmd.go",
+      "sha": "2ec12adf7efd5436d4cf563b5f31c37dcbdf8182",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 4,
+      "deletions": 1,
+      "filename": "services/rego/config/service.go",
+      "sha": "3fd1673c6e15f0b0db870f8b039de5b68e40ac32",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 37,
+      "deletions": 30,
+      "filename": "services/rego/internal/rego.go",
+      "sha": "a38c855feeaa763561f5c6adf91178fe4d800d68",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/0dfce12f3039ddedb809992d7bc44d243128e6cf",
+  "id": "0dfce12f3039ddedb809992d7bc44d243128e6cf",
+  "is_verified": true,
+  "message": "feat: init steampipe",
+  "pull_requests": null,
+  "short_id": "0dfce12",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDhkZTA2YmRhY2UyOTg4MmE5OWY3NjhkNDlkYTczYWMxYWUyZTNkMWE",
+    "parents": [
+      {
+        "sha": "581e0f5c72649edeb969a91bc0ea73e1478d26e0"
+      }
+    ],
+    "tree": {
+      "sha": "6775bbb51668e78bb11b10fb935e6f45d34c7818"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdkCp0ACgkQttBTXV2m\nYIJ+GQ//br+oQ5fJDINXc8laOUG0TJTztIlTgXIHxhC9tKiF9AJ7H5Dc/jbbwzBJ\nKe7YuKjqYENaUaxHJzYb9l8JKBu/Tl+0PY5EsZ1n6G4Cizev++0u3DASGyy1kSxP\nJw0MLD80WxwJNIiOUM8YitOAH8bhO8m9XxtwM/8Fsso8/eRfNO2a3WvfctzMws0v\nDcEOtcc79TeKZDHko2LQR9DsxQKi6zPOzy5iiUgEHFIBL+nP3fEsAuJBZJpBcxIy\nnxAyaoXpOdP54GiD7PYkQsgm1d8XDjNcqNvF2TFnPLVFTzZ+umgnEnaaf6NtsGnp\natPs09a1zqa+TQxZUS5IhnJ+k6NI0HOkaYyPOreEgVJdvc+dOisiFlj40BENSSlI\ninzWXy2b+bFJm4JEhQqy8ILEsaY+0LTVI1cdMb/Wvm318VOBEBS59x6aiByHmy7k\n7mGjg0UvMIv2hLuNHU0UzSmLY9/gkoLo8IY2f7jcUrTXSeRHIb5kUoVQT1ZpSwSc\n+fPlxYl+bz+90wIjNb/vSUtnp/LlFryWSrNtZFVJ6V4ZbNJv4pcj/CXR4ySiAus7\n81Gl25DM07IT+Wi7pEQgDu4LyZJw8CCiUZtCACf8t1wjYu1Nccf01w7VLwKriUfI\nz49SY9BvcC/Gpf+VtV2fDcRMt5+npNuRu/KeVwceX5fLIM5M4JA=\n=hf/D\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-19T12:00:00Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T11:59:25Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 8,
+    "total": 9
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T11:59:25Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 9,
+      "deletions": 8,
+      "filename": "pkg/cloudql/tables/plugin.go",
+      "sha": "2349a4d3add3ee483a10d74a05ee769e8654e6da",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/8de06bdace29882a99f768d49da73ac1ae2e3d1a",
+  "id": "8de06bdace29882a99f768d49da73ac1ae2e3d1a",
+  "is_verified": true,
+  "message": "fix: complie errors",
+  "pull_requests": null,
+  "short_id": "8de06bd",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDU4MWUwZjVjNzI2NDllZGViOTY5YTkxYmMwZWE3M2UxNDc4ZDI2ZTA",
+    "parents": [
+      {
+        "sha": "5337c158573c04f24bf45ed184b5307935a28589"
+      }
+    ],
+    "tree": {
+      "sha": "8f05ee17e2b8303893af1e065bf1c794070f4185"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnZAf5CRC1aQ7uu5UhlAAAja0QALCVNeEaR1Uq6NypQCyGu+fi\n7KMzMLkqq8jTOzbzebKwju/SpS9ayhxcZo2VEGn1bLRtAn5BvCuFX6SlTppaF+7n\nJbdzjp58N1imkSnjCzGA2EswLTLffo9bZcm16plIJInJ0k/qbSPLSjGaZTRQ/uTM\nh2gZ3qNy3SIPCey1YKij31EAKU1g7l6EBdbBN4o+lDfOf4bTeZmWrkoVv1FUYe/7\ntxOGFuN4YR42Q/7iRaKb8q6YupA//k2vXyvzGUBRUz3QeFddcMEJC/AvBHTdbgUQ\n47+3Om6K9bN1RBKuMtV08GQs1xfwvcZKEr+ptZBTS6ciu5EYMPEYAxC3nKkcytYQ\nkupPU7nIPSDPisusX6cP6kDwb4wXz1JKvENYgz7TkrnAHun8vi80oeY3G19KWg5z\nJrMHfscYg2Md3BJBG1hCiyFXDG9cZhY0bUoid3EKu9GDLxjFHNPth2g0Lm63DKJc\nIsaAx/1ly6MIRPNkKnSUNd3eIOZbnaO7D90QdQcOqAYFQcuUmhddAsbkmcHE/VT4\nl0m/qZxiXIn5/SZmEJ1gJ0aUm6zu/lV/y+fvk/iSxys5cfbWoXgYPBQjIuefOArq\n1AsIUG5ePllzE2slMwlK6JdhjSCU4X+VzcIVaykZQ83VEvBwdLzHNFaz7uVcgzr2\nNZYAKNh2qCzPCLexupYR\n=VaXN\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T11:48:33Z"
+    }
+  },
+  "author": {
+    "email": "mahanz@kaytu.io",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T11:48:09Z",
+  "changes": {
+    "additions": 290,
+    "deletions": 90,
+    "total": 380
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T11:48:09Z",
+  "files": [
+    {
+      "additions": 41,
+      "changes": 41,
+      "deletions": 0,
+      "filename": ".github/workflows/go.yaml",
+      "sha": "bc10067c51012f7c464ae9cb68e7091ccb6f742e",
+      "status": "modified"
+    },
+    {
+      "additions": 35,
+      "changes": 35,
+      "deletions": 0,
+      "filename": "cmd/rego-service/main.go",
+      "sha": "2109445baa0d7e3b33175a7c77440e0450c77110",
+      "status": "added"
+    },
+    {
+      "additions": 59,
+      "changes": 59,
+      "deletions": 0,
+      "filename": "docker/RegoServiceDockerfile",
+      "sha": "dc0c2aa8360d15fb9a1bccc1d24067bc4396827c",
+      "status": "added"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "go.mod",
+      "sha": "4b11f520f9c29a9bd9606be822f5cba2de201622",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 6,
+      "deletions": 4,
+      "filename": "go.sum",
+      "sha": "b59271770e8280535139df34e47e5f4bd5f8a305",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 43,
+      "deletions": 43,
+      "filename": "pkg/cloudql/sdk/extra/rego/http.go",
+      "sha": "8daa78a6d413f57d9f59da616b08fb40456327f4",
+      "status": "removed"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "pkg/cloudql/tables/plugin.go",
+      "sha": "4d049616ea8f8e13e1b5d409ea38fae8fb69d66c",
+      "status": "modified"
+    },
+    {
+      "additions": 25,
+      "changes": 25,
+      "deletions": 0,
+      "filename": "services/rego/api/api.go",
+      "sha": "7640a0522b18b057465016d8c44317ba5da78829",
+      "status": "added"
+    },
+    {
+      "additions": 14,
+      "changes": 14,
+      "deletions": 0,
+      "filename": "services/rego/api/models/evaluate.go",
+      "sha": "07c5062eb516385388e94123f303989435dd74e4",
+      "status": "added"
+    },
+    {
+      "additions": 51,
+      "changes": 51,
+      "deletions": 0,
+      "filename": "services/rego/api/rego/api.go",
+      "sha": "7648e07219600b5b8e423734e70add3bd11b6445",
+      "status": "added"
+    },
+    {
+      "additions": 42,
+      "changes": 42,
+      "deletions": 0,
+      "filename": "services/rego/cmd.go",
+      "sha": "4f6f2a505de6d125bbf7408aded496e7a37590c3",
+      "status": "added"
+    },
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "services/rego/config/service.go",
+      "sha": "7d68d0102834ea763ac2e4099732cc2c71892a09",
+      "status": "added"
+    },
+    {
+      "additions": 11,
+      "changes": 51,
+      "deletions": 40,
+      "filename": "services/rego/internal/rego.go",
+      "sha": "aa89398829cc564d8a1512ee67f93d2ae4b47e1e",
+      "status": "renamed"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/581e0f5c72649edeb969a91bc0ea73e1478d26e0",
+  "id": "581e0f5c72649edeb969a91bc0ea73e1478d26e0",
+  "is_verified": true,
+  "message": "fix: security vulnerability (#2284)\n\n* fix: security vulnerability\n\n* feat: add rego service",
+  "pull_requests": [
+    2284
+  ],
+  "short_id": "581e0f5",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDUzMzdjMTU4NTczYzA0ZjI0YmY0NWVkMTg0YjUzMDc5MzVhMjg1ODk",
+    "parents": [
+      {
+        "sha": "865b827aac3eca4031609cbfbeddac55cfed85b5"
+      }
+    ],
+    "tree": {
+      "sha": "2dfc9224b9272b328b8cecc26069ecd516227275"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdj+oQACgkQttBTXV2m\nYIKpeBAAgRC7u9kR7EdQUzbfv9+fsNk6Mr/jWyroU865KbpSzwndGryEmdbQg2sg\nhEGAVuLOedaHWxHpa7vq2xQa5E/ueyBtyTl3FxuU/tzg563yKlr4SrzVZ7G4a4ZO\nhHKXZ5uxeUESgpZEO7sG5iejfI/X48Svz5XjJzb3rxKCcqcoQV6UKHTjfGBxCdE7\nnIskt/dzJQ0hWHTfxTEDmZy6CHQ1Ygwhd+YuKSrsw/bNIpVbFraXITAfVElcXm+e\np8zLWsh6ggry2HSfurjGyodmh2Q1fhoBSMkhbKV+PoGQYh+WzRWY6icnlRCeToRM\n1wfJBDgsfiPzSbhda9T0/+NnX5IAVxmab06eSy19DjVp1Pe0qj97GFbyynFW3lnL\nF5OfMBtB4zQqutaUPayvyacMofhoCrNey0gofw1j6UPUZmNCN75qHGe1yR92RcX4\nr2ap5aQr/uQ0eO9s5zoVj7DhjPYCJYqJBtaIy3wy4ut8ArbuUvpeOLj8t68IWewu\nSvYR2ifNOe2I7qWlRPDCEpgP1ZK9PPh51kQfjBkAAYvYX++aWoWNC33Zid73VIMh\nj/pAqboPwFSTQTsP7iUO/soEp8fochCjY44+gMLLek6PzOa+iLiKzrXCTjHBuHX9\nDbhhFCzpPKAOLnDUF2CcTr4h5CGLehy+tSMOFO4qAO1ORPXCYWc=\n=H567\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-19T10:51:27Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T10:50:44Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 0,
+    "total": 1
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T10:50:44Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "docker/SteampipeServiceDockerfile",
+      "sha": "4fdbb51acdbd335c8148c60a1494f0f75258ada4",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/5337c158573c04f24bf45ed184b5307935a28589",
+  "id": "5337c158573c04f24bf45ed184b5307935a28589",
+  "is_verified": true,
+  "message": "fix: add logs",
+  "pull_requests": null,
+  "short_id": "5337c15",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDg2NWI4MjdhYWMzZWNhNDAzMTYwOWNiZmJlZGRhYzU1Y2ZlZDg1YjU",
+    "parents": [
+      {
+        "sha": "5c2410e89270ea38e8dd7505e7e57cc781c9b19c"
+      },
+      {
+        "sha": "8012df39451fa315525056d4ba0f6c7e759f5e4e"
+      }
+    ],
+    "tree": {
+      "sha": "850091aeb6ac1fc48acdbaf0263fcf84e2ae0ecd"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnY3n3CRC1aQ7uu5UhlAAAufMQAKZLGcW4jm31qRUwfRJ8ePOX\nTTtXDIbeMSoGtVYGj/AnXThKjrY6ZOk2eMZyXHSpZyq35liRuPqtRDfPGrzd3wFx\nfOfoGd3/nNaisyPluvuWvaxdTU8N9S4u8aXRkhQVUR8ISScUg5nME7psQHFruNu2\ncLiIL2S5WA5uWxmiIEkPZL+d6+mdUMseZBA4NSrzuO3Y0LvR1pG7vODuQiivzssp\nDqgIr1bI1ZTShorgcEl52TcqTLCeEzVl9sYSu8nGQ15ZR5hlid+d9dM0dBHxLFQY\ntLoQxBrk2X35w6tfHfOWVY38Uj4YuoBTBomdCbX0WjPGZo79xH4J64byDvJKbYK9\nnR65jvQ3/Gj7iapKbCxPh2KsIFUh7WdVpRcNb8VJhI3n5dIz7bFnIJLtZIvXHrr5\nAps8TbR/STImZVMJi8eUWdyJL9ymUA/ocVVqYsoCOgv32qrS+l3p8HW5yIYKkeZp\nGPUW1DW8whVeIaPfrBzoQCcgGMHaT82lpJWx/jcrokfDrM6FVbHFrFtXAlW+ENMQ\nTY+tI8s4rhSs0eDUhWAVhFmQas5xz44HGjD5B+rXLBFKGY5yXptvNXVywguKWpvD\n0d1zUK60C+AHT8oA/75T+BLHTeZ9e5DvdlKziWpyIHlReu3xDj389+o188zigBHM\nXOQm3DNn1eo4qnOkd9mr\n=LsqU\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T01:42:45Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T01:42:15Z",
+  "changes": {
+    "additions": 14,
+    "deletions": 14,
+    "total": 28
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T01:42:15Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "41b3860dc3c9dab4fa1b1a51845649f756862c6c",
+      "status": "modified"
+    },
+    {
+      "additions": 13,
+      "changes": 26,
+      "deletions": 13,
+      "filename": "services/integration/integration-type/github-account/configs/resource_types_list.go",
+      "sha": "b769eb36819eb7659649bae1a743db402f7ded93",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/865b827aac3eca4031609cbfbeddac55cfed85b5",
+  "id": "865b827aac3eca4031609cbfbeddac55cfed85b5",
+  "is_verified": true,
+  "message": "Merge pull request #2283 from opengovern/fix-tasks\n\nfix: update github account describer image",
+  "pull_requests": [
+    2283
+  ],
+  "short_id": "865b827",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDgwMTJkZjM5NDUxZmEzMTU1MjUwNTZkNGJhMGY2YzdlNzU5ZjVlNGU",
+    "parents": [
+      {
+        "sha": "a9171eda2cef4d7d3d8369601ba42dc09ddefc52"
+      },
+      {
+        "sha": "5c2410e89270ea38e8dd7505e7e57cc781c9b19c"
+      }
+    ],
+    "tree": {
+      "sha": "850091aeb6ac1fc48acdbaf0263fcf84e2ae0ecd"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnY3nuCRC1aQ7uu5UhlAAA6ogQAHXTYo8g0DbgOOZrpRSdyR+m\nA3tRQeKujIfXNZUInSwSR6VAVtsauqYxEt9o7gKWaRLbDCqvQKrT1sjWHyCBE5wH\nYFqz1dLD3H07FYSc+m9HWHFq2mv1LTNjVMlSz1Wc2ebHaDhUNc/+41D8X9rOlsd8\n775SNMe2XNF0gdFMVENJRl6GSgtec/NZ1uNyOEcFmyOZ47qABtO2uTGUV5JNpmxY\njcGb5uNK/moI5JLdccbepwcQbkuHRnRBJv+enIa5mc8BD5weHOJppfo6zM8ov3Vt\neDb5xvR57nicLvZDdR0+Nr2OJH7vrObaZNcaQCttiwsryctwFP8BEk02nZ63Ln/s\nDJ/9a2ui1bzZf2jYRBDnTxIDmFeDc2ge9Qig8VCmOkQG6aDdCtF0s92Ll0BKBlop\nvDvqFDmSfCMsOqQxk+eKjUk8l6vXj3Oix/tYJU8NhoG2CjtPp0wYgCUQoaeRF37m\nChAfQbGYRQVvUxPHevp/fZSCW5Zl5VHpCr5FiopVyiQ6QpNiNgw4sG/ZrO1Ah3YC\nl4Okf4/q1n/hHEf8Q3SmK1KA8VcO1T67dA+TuglYPsg9R/GzyuPau7zeUAbOk8W0\nj6pGjSdK3Bq2STyQRDrSs0NuTwhHNo1GDELiNoB5wjyOpxd2/bG2QxbQrFAjliQh\n9wCdxG1/4DfreYx1Ry9m\n=A4p7\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-19T01:42:11Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T01:42:06Z",
+  "changes": {
+    "additions": 8,
+    "deletions": 0,
+    "total": 8
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T01:42:06Z",
+  "files": [
+    {
+      "additions": 8,
+      "changes": 8,
+      "deletions": 0,
+      "filename": "services/describe/db/describe.go",
+      "sha": "03eb41e059e19ce240b7f8770f11ca7c96845ba4",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/8012df39451fa315525056d4ba0f6c7e759f5e4e",
+  "id": "8012df39451fa315525056d4ba0f6c7e759f5e4e",
+  "is_verified": true,
+  "message": "Merge branch 'main' into fix-tasks",
+  "pull_requests": [
+    2283
+  ],
+  "short_id": "8012df3",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGE5MTcxZWRhMmNlZjRkN2QzZDgzNjk2MDFiYTQyZGMwOWRkZWZjNTI",
+    "parents": [
+      {
+        "sha": "4b2da1706c03dfd300654d4095d665795db8b915"
+      }
+    ],
+    "tree": {
+      "sha": "c69cbca552f8dd9c47d8e748a33e9a3e037a05ca"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T01:41:20Z",
+  "changes": {
+    "additions": 14,
+    "deletions": 14,
+    "total": 28
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T01:41:20Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "41b3860dc3c9dab4fa1b1a51845649f756862c6c",
+      "status": "modified"
+    },
+    {
+      "additions": 13,
+      "changes": 26,
+      "deletions": 13,
+      "filename": "services/integration/integration-type/github-account/configs/resource_types_list.go",
+      "sha": "b769eb36819eb7659649bae1a743db402f7ded93",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/a9171eda2cef4d7d3d8369601ba42dc09ddefc52",
+  "id": "a9171eda2cef4d7d3d8369601ba42dc09ddefc52",
+  "is_verified": false,
+  "message": "fix: update github account describer image",
+  "pull_requests": [
+    2283
+  ],
+  "short_id": "a9171ed",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDVjMjQxMGU4OTI3MGVhMzhlOGRkNzUwNWU3ZTU3Y2M3ODFjOWIxOWM",
+    "parents": [
+      {
+        "sha": "c5f9ff8f63c8ee36e96b79da3e877bb628557379"
+      }
+    ],
+    "tree": {
+      "sha": "d386132ad2b8bc013a1130347df5a89f6e580e48"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "mohamadkhoee@aut.ac.ir",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T01:24:46Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 1,
+    "total": 2
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T01:24:46Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "c4032e836cb20f4bc6f95d2c79da333b20d38dea",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/5c2410e89270ea38e8dd7505e7e57cc781c9b19c",
+  "id": "5c2410e89270ea38e8dd7505e7e57cc781c9b19c",
+  "is_verified": false,
+  "message": "feat: update github",
+  "pull_requests": null,
+  "short_id": "5c2410e",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGM1ZjlmZjhmNjNjOGVlMzZlOTZiNzlkYTNlODc3YmI2Mjg1NTczNzk",
+    "parents": [
+      {
+        "sha": "ebddb3a3748ca38d3d0ddf10e5db7d447a318190"
+      }
+    ],
+    "tree": {
+      "sha": "642d1c7692457fb3ff337f4c5fbc07c1379f4258"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "mohamadkhoee@aut.ac.ir",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T00:17:30Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 1,
+    "total": 2
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T00:17:30Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "cd6d65215f58c9982956ba0f5ea2d647f729ce96",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/c5f9ff8f63c8ee36e96b79da3e877bb628557379",
+  "id": "c5f9ff8f63c8ee36e96b79da3e877bb628557379",
+  "is_verified": false,
+  "message": "feat: change github version",
+  "pull_requests": null,
+  "short_id": "c5f9ff8",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGViZGRiM2EzNzQ4Y2EzOGQzZDBkZGYxMGU1ZGI3ZDQ0N2EzMTgxOTA",
+    "parents": [
+      {
+        "sha": "4b2da1706c03dfd300654d4095d665795db8b915"
+      }
+    ],
+    "tree": {
+      "sha": "700c565bc7756b1fef1989408226bf94584ca0d8"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "mohamadkhoee@aut.ac.ir",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-19T00:13:18Z",
+  "changes": {
+    "additions": 8,
+    "deletions": 0,
+    "total": 8
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-19T00:13:18Z",
+  "files": [
+    {
+      "additions": 8,
+      "changes": 8,
+      "deletions": 0,
+      "filename": "services/describe/db/describe.go",
+      "sha": "03eb41e059e19ce240b7f8770f11ca7c96845ba4",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/ebddb3a3748ca38d3d0ddf10e5db7d447a318190",
+  "id": "ebddb3a3748ca38d3d0ddf10e5db7d447a318190",
+  "is_verified": false,
+  "message": "fix: jobs api interval",
+  "pull_requests": null,
+  "short_id": "ebddb3a",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDRiMmRhMTcwNmMwM2RmZDMwMDY1NGQ0MDk1ZDY2NTc5NWRiOGI5MTU",
+    "parents": [
+      {
+        "sha": "65093a251b7b2426e9c24c4d4a19f99161abd8f9"
+      },
+      {
+        "sha": "9ce3d56221014d962c089a5551cc212b24306a89"
+      }
+    ],
+    "tree": {
+      "sha": "5c342b4cefaaec9f81def40b6d664e110dd32ddc"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYz1NCRC1aQ7uu5UhlAAAa34QAFhEAW6DdO5jwMzcBW2PKUCU\nRnn7ZhuCBRjKQkZkpki0uO3mmP5eH2dNWdA1U2z7mPDtCNK6itbkn4McLhgsOFeh\nxycdPnr6g/8ZR14Cw0TdV+o96LaFwJz2QAyOmCxfmKQXTuUhEa4xd7SveYyT+rC8\nMMBHRTPQ0cqwlpov6tVjK/7D0S6sfVDXqQUmSZf858MgquYjhRZ0JMTpsxItJt9q\nSA0Re0ziLveQCgtcv755kWahECI/tLU+evgIiltHMjg6j+9ucv/FTZlkwIGcHiTO\nf5hcxx8IQ9/1ouOV3SjGgpsD9NL1U1O8GioNdqqzcpki8jKwvTS1p5+5DXZmEwCz\n/jPtErJRogtKBqzsA7n5vUTfMUJ6kJIcMVcVAQ/yEm+/8urH436ao6KzWqkfR3AN\nqoz1oOsEz1b0SX9bU8d3WoPH7qAigcytMsKyShVbfH/GRGX9S+DtYz0v6v621tn3\nQOZqUlNIwXE+CA7ejOr97D670nGtAwXZIQht75q3FrravOzqglsm5v6t97pJzvIq\no/Orvg09nHKQIPe5K2XjOlsdJk0ItLpt3ajkSbfWCrT8sWSjc/SjuUUufdbiduT0\n/v13rqRianK02gV7t/z2ty9GWzpkVA2O0Di2MTWHcGvWRLUYwKIW3JZYnW4hj4aG\nelmSbyjQYsxL+o+Ul+uB\n=fCrT\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T21:23:47Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T21:23:25Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 6,
+    "total": 19
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T21:23:25Z",
+  "files": [
+    {
+      "additions": 5,
+      "changes": 9,
+      "deletions": 4,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "53168ea97ca6bfcd940f964d5e1fe9cb1f87cbc3",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/cmd.go",
+      "sha": "76814d1e154680edcc93a3c99a3314eb7162d51e",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/db/models/task.go",
+      "sha": "50fa865f13d7f82bf6cecc336b8b77759e9851fd",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/tasks/scheduler/publisher.go",
+      "sha": "d3911aa214c56ce241f134e8663d917e5e8a682b",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/service.go",
+      "sha": "06da8ab75b406ef9b854324a335f51f87ebc82a5",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 4,
+      "deletions": 1,
+      "filename": "services/tasks/scheduler/task_schedule.go",
+      "sha": "b7e16be4681ef8b9977db183e73119dc9eaa136f",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/worker/model.go",
+      "sha": "ba2c88e02a268626f55a41ae18440da963c1c41f",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/4b2da1706c03dfd300654d4095d665795db8b915",
+  "id": "4b2da1706c03dfd300654d4095d665795db8b915",
+  "is_verified": true,
+  "message": "Merge pull request #2282 from opengovern/fix-tasks\n\nfix: add artifact_digest to container-vulnerability-scanner",
+  "pull_requests": [
+    2282
+  ],
+  "short_id": "4b2da17",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDljZTNkNTYyMjEwMTRkOTYyYzA4OWE1NTUxY2MyMTJiMjQzMDZhODk",
+    "parents": [
+      {
+        "sha": "7e21fa21e6b0b7918a7f490c4e15afff07b7ab09"
+      }
+    ],
+    "tree": {
+      "sha": "020586147a259b17a5d04d51824dbe71dcccb639"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T21:22:08Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 6,
+    "total": 19
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T21:22:08Z",
+  "files": [
+    {
+      "additions": 5,
+      "changes": 9,
+      "deletions": 4,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "53168ea97ca6bfcd940f964d5e1fe9cb1f87cbc3",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/cmd.go",
+      "sha": "76814d1e154680edcc93a3c99a3314eb7162d51e",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/db/models/task.go",
+      "sha": "50fa865f13d7f82bf6cecc336b8b77759e9851fd",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "services/tasks/scheduler/publisher.go",
+      "sha": "d3911aa214c56ce241f134e8663d917e5e8a682b",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/service.go",
+      "sha": "06da8ab75b406ef9b854324a335f51f87ebc82a5",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 4,
+      "deletions": 1,
+      "filename": "services/tasks/scheduler/task_schedule.go",
+      "sha": "b7e16be4681ef8b9977db183e73119dc9eaa136f",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 1,
+      "deletions": 0,
+      "filename": "services/tasks/worker/model.go",
+      "sha": "ba2c88e02a268626f55a41ae18440da963c1c41f",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/9ce3d56221014d962c089a5551cc212b24306a89",
+  "id": "9ce3d56221014d962c089a5551cc212b24306a89",
+  "is_verified": false,
+  "message": "fix: add artifact_digest to container-vulnerability-scanner",
+  "pull_requests": [
+    2282
+  ],
+  "short_id": "9ce3d56",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDY1MDkzYTI1MWI3YjI0MjZlOWMyNGM0ZDRhMTlmOTkxNjFhYmQ4Zjk",
+    "parents": [
+      {
+        "sha": "9b59fd5b76be02bfdf5c1a10e83977bde911dce4"
+      },
+      {
+        "sha": "7e21fa21e6b0b7918a7f490c4e15afff07b7ab09"
+      }
+    ],
+    "tree": {
+      "sha": "99152711c7c083ae4a3ec066a5864aa80167bd75"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYy1aCRC1aQ7uu5UhlAAA9kMQAJaUNAMmhdbOo/qnsZB+tt/2\nkZgKXDqfDbYE/jKDb/swqcR757K1Gqf30puAtlxwoEhq06AnFbnNAs/LKEZyHXp2\ncolrTREfvadfCS0cdiy0OpvwOHVk5z5aKhWjBdI3nZELNk+5rqwkx/VQHnBVxw9E\n5Ed4qhCkUKwjykzv/qhAiQavQvvSVPFuLBhfc36WCca/6foq0RlUPcQslHPG1Ovj\nWursbUafXIAKeihZAnC8kg2ZxvHThMLjNNin7MigoVrbUU+Jfo7hdja80u9S9p4Z\n3Tx1i5wp7vNkVC5vDWYf/2fnMXSbB9+hOXUejoQzt3xvp6FC7nPvSUKIgwZukiev\n5mSagbDMpGjb49eZYBhDDTkY3mOuLRDffVyUMJUAYscRn2KU2cHdrUfREZWrlSZc\ncHzeKuOxI/LAVPyG096k7Br4lNnpdftFlhXQOTjL93U2nmqKZiyIzJODmB7L2Uy+\nhupDOqq7Xy80KjDxe+G3Yr5s+HcbXV4y594PyB8ZlRg42rGNGozleZtZpz5bgkaP\nx/vegWHIbM7suT++7ACc91NAVxE+EM0JsRbW1FXM0ULBc/jk4YV/2X+dt7ksgHpJ\nxD7LnNl+aH8/J8i7foC2XopRWyb9fWsUTy0RXZVn0JtnAdHfwdmbFmkwK0EmRBDl\nxF0Tes2/pzOcsvgHCWyp\n=ZX/P\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T20:15:50Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T20:15:22Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 6,
+    "total": 19
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T20:15:22Z",
+  "files": [
+    {
+      "additions": 13,
+      "changes": 19,
+      "deletions": 6,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "8695824155a24bb53c1ac703dc7ae595a05806e8",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/65093a251b7b2426e9c24c4d4a19f99161abd8f9",
+  "id": "65093a251b7b2426e9c24c4d4a19f99161abd8f9",
+  "is_verified": true,
+  "message": "Merge pull request #2281 from opengovern/fix-tasks\n\nfix: update envs",
+  "pull_requests": [
+    2281
+  ],
+  "short_id": "65093a2",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDdlMjFmYTIxZTZiMGI3OTE4YTdmNDkwYzRlMTVhZmZmMDdiN2FiMDk",
+    "parents": [
+      {
+        "sha": "834179c378df9c09f9b1651f7e93f35bea615dd2"
+      }
+    ],
+    "tree": {
+      "sha": "ff3e04f21cde9081786fa0924ad8ad5df4366d33"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T20:13:09Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 6,
+    "total": 19
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T20:13:09Z",
+  "files": [
+    {
+      "additions": 13,
+      "changes": 19,
+      "deletions": 6,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "8695824155a24bb53c1ac703dc7ae595a05806e8",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/7e21fa21e6b0b7918a7f490c4e15afff07b7ab09",
+  "id": "7e21fa21e6b0b7918a7f490c4e15afff07b7ab09",
+  "is_verified": false,
+  "message": "fix: update envs",
+  "pull_requests": [
+    2281
+  ],
+  "short_id": "7e21fa2",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDliNTlmZDViNzZiZTAyYmZkZjVjMWExMGU4Mzk3N2JkZTkxMWRjZTQ",
+    "parents": [
+      {
+        "sha": "a48845ed4782e346346bab732077af6112606070"
+      },
+      {
+        "sha": "834179c378df9c09f9b1651f7e93f35bea615dd2"
+      }
+    ],
+    "tree": {
+      "sha": "eaa74e1bbd8092cc80da580cef04ae8a1202170f"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYyhrCRC1aQ7uu5UhlAAAEMgQAH6zOrHufVfhge572PPo2r6s\nOcazeS3x4+JOwC8JHyitboJNTDskqGW9WiaOovh7P6KFDQLZvcTh6DQJaS8IeGdy\nb7c9cMRNmbaCnJVUlv+OoEDpXD77cCjEcoRahn1A/OYgqgU6yrlIV5Jj+GXTLFGT\n0Lv4huON711OKrXBTPy+6KuHq1v1OdFojZfZQBZ5MASaSB1YltyWu5r5pEID/fav\njguaUaroK6z7YzDJ2/iHrd/1urZ4vxlJB6+ZuGerjvV2VdFDdxeiUquJehLkAUg0\n3Z7dHh+5oYSZI1VZuZ5qpI7cCUzaKR8X9qnkY+SYbABAMg/SyrxCK8Ux44pMmaO5\nDFJeF1jj+twsBnZxd7tWfRJtUxTUvck2Exi4hX1l/Xa674yONHtilL6NeSOOOqSm\nv4p3ZTRsi5KjLrSvmtm/hCLSHTO2uERKa/Ph9nfjwv+vcfM2cSzWsAp9qrJ4hjsc\n1cGqHgf0xbGW2ftFYnoE+tjnNzZ8hqlh1gyCVaovskK9RxvE2eN4cFUK/VxwgQ4a\nln1oUmZx6t3c4pRM7K2rtqzVDrBMLY1Q53ypT63O83fYMuRezpJkm6YQnmwJ6nVi\nydyvORZj/M3Em6TwxZChKLh4W1uLTuJ49qxtOvkp/BqP7WzIe4z5TvlueczD5tU7\nIZ73BGB/L6EI+T61G7tW\n=DUIN\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T19:54:47Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:54:19Z",
+  "changes": {
+    "additions": 3,
+    "deletions": 3,
+    "total": 6
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:54:19Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "19ae2722a2b2b2af1a478202137075a5cf344bdb",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/tasks/http.go",
+      "sha": "776c744a6c1aa7b23e7407922f7c945bc5c4800b",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/9b59fd5b76be02bfdf5c1a10e83977bde911dce4",
+  "id": "9b59fd5b76be02bfdf5c1a10e83977bde911dce4",
+  "is_verified": true,
+  "message": "Merge pull request #2280 from opengovern/fix-tasks\n\nfix: update grype task",
+  "pull_requests": [
+    2280
+  ],
+  "short_id": "9b59fd5",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDgzNDE3OWMzNzhkZjljMDlmOWIxNjUxZjdlOTNmMzViZWE2MTVkZDI",
+    "parents": [
+      {
+        "sha": "8c3d0b0bcf669f8b3f450ee3351287143786571d"
+      }
+    ],
+    "tree": {
+      "sha": "52d8b95d1e39c3abd28e8efc8f53e549f6ba7964"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:53:35Z",
+  "changes": {
+    "additions": 3,
+    "deletions": 3,
+    "total": 6
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:53:35Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "19ae2722a2b2b2af1a478202137075a5cf344bdb",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/tasks/http.go",
+      "sha": "776c744a6c1aa7b23e7407922f7c945bc5c4800b",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/834179c378df9c09f9b1651f7e93f35bea615dd2",
+  "id": "834179c378df9c09f9b1651f7e93f35bea615dd2",
+  "is_verified": false,
+  "message": "fix: update grype task",
+  "pull_requests": [
+    2280
+  ],
+  "short_id": "834179c",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGE0ODg0NWVkNDc4MmUzNDYzNDZiYWI3MzIwNzdhZjYxMTI2MDYwNzA",
+    "parents": [
+      {
+        "sha": "f5fcbb2598a6616b9c58075b15d90c12a41589f0"
+      },
+      {
+        "sha": "8c3d0b0bcf669f8b3f450ee3351287143786571d"
+      }
+    ],
+    "tree": {
+      "sha": "4ada0ffcab3f2ac9c122902f6d1167429d14c55f"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYyMZCRC1aQ7uu5UhlAAA5moQAIqnPvVLbNEMJ6XYqoi8i0VQ\nChxPgNsc+OkHVkuX9UbQDthELUVZEdmgbeYX913kjXEr+7n6F+O9U0c8Z+ADxyZ6\nOUreWdNPmuBDUZ2ZPGkSH/Rjv1CS4qniUQN+FrWk7EkrFOrsbP2iL+iRm37mVYYA\nQrmX7HHB2otrkrhVGp7wzBYaqJMz6itwcLja60owSkfCLWjN3dC0v5e66UCjz0cs\nnolSVyvEUiJDDYJNsx6bD+3yO2H2cs6zLHSL9VRG296FPzVBDZ7rSaY0qFwDopgk\ntDOjiO0oiryC5e0pQrN5xel5kxkLzbWLQK2ZH5vxdkaL6hxszrDD+7hbrRSO7/bA\nMy48sOZZmhDToO5VSAgQ5XjmOQ9q87TalN9Z2pgt2BVWj2xxcwUBNJxwwKFWxnRV\nTOyM5moj8bBWtPrcb59R0IL4cL9kDffEMrtZPs2SQ60yJuYs+3uJa1TKrCnFCI5M\nQIxWly7GBQYUbonVNAPcyUpKK+LwWfTy7LxhiyaZIDhryRIUfpwBj03VlYoyz3YR\n+OyYf9GecSVvR5ATtcRNp/tzCoEJi9OriW+SjfL2HGP3rXF8UhjTy684PDiZ/MiX\nUTdyr4uWt0R8JO9hsx7SAbcyOcl6dj13ipPBJ9LyQZh70VNRMOfpJEZ5MD9CqQeg\nFxs1EMAoJ7VPtf1ZHUlV\n=UUF6\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T19:31:50Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:31:36Z",
+  "changes": {
+    "additions": 66,
+    "deletions": 22,
+    "total": 88
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:31:36Z",
+  "files": [
+    {
+      "additions": 11,
+      "changes": 11,
+      "deletions": 0,
+      "filename": "services/tasks/worker/consts/es.go",
+      "sha": "5ae69ac18143ec1bb1e38019e16c30ef8fecb9e2",
+      "status": "added"
+    },
+    {
+      "additions": 55,
+      "changes": 77,
+      "deletions": 22,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "18f7bca8450014dcdfc8fc1e52a0c782245942bf",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/a48845ed4782e346346bab732077af6112606070",
+  "id": "a48845ed4782e346346bab732077af6112606070",
+  "is_verified": true,
+  "message": "Merge pull request #2279 from opengovern/fix-tasks\n\nfix: put data directly into es",
+  "pull_requests": [
+    2279
+  ],
+  "short_id": "a48845e",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDhjM2QwYjBiY2Y2NjlmOGIzZjQ1MGVlMzM1MTI4NzE0Mzc4NjU3MWQ",
+    "parents": [
+      {
+        "sha": "41de9cb3cdf64024c905bacff2babbfeedbc256d"
+      }
+    ],
+    "tree": {
+      "sha": "7077c277f30f736bb1cd83b336ae7b6f93cf2179"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:30:45Z",
+  "changes": {
+    "additions": 66,
+    "deletions": 22,
+    "total": 88
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:30:45Z",
+  "files": [
+    {
+      "additions": 11,
+      "changes": 11,
+      "deletions": 0,
+      "filename": "services/tasks/worker/consts/es.go",
+      "sha": "5ae69ac18143ec1bb1e38019e16c30ef8fecb9e2",
+      "status": "added"
+    },
+    {
+      "additions": 55,
+      "changes": 77,
+      "deletions": 22,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "18f7bca8450014dcdfc8fc1e52a0c782245942bf",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/8c3d0b0bcf669f8b3f450ee3351287143786571d",
+  "id": "8c3d0b0bcf669f8b3f450ee3351287143786571d",
+  "is_verified": false,
+  "message": "fix: put data directly into es",
+  "pull_requests": [
+    2279
+  ],
+  "short_id": "8c3d0b0",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGY1ZmNiYjI1OThhNjYxNmI5YzU4MDc1YjE1ZDkwYzEyYTQxNTg5ZjA",
+    "parents": [
+      {
+        "sha": "a86c9b12549bae0932e82e27aa9bcf35603ca7d6"
+      },
+      {
+        "sha": "813e14be127a40b58496cdfa0b3d5ee9d22c23fa"
+      }
+    ],
+    "tree": {
+      "sha": "4b266f6a1d95cbd1a0ad4adf9ef611f69781f0f0"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYxv2CRC1aQ7uu5UhlAAAZogQACZSB42WTRVZnpvOyMBx0JJ0\n6/Ati69tjLkxJWff399EyVDxGPuAvDVWFMZ7SxOpyGzHaLCviKJOJb952qxoCYny\nn1gxgntkk5xInexiC7+/Qwlz+r9iM18ee9uV9hBaLgC4eFbOaoF3UazXkdDsFlhh\nkj1SsixR/4vHxnEtoC2p+HnJYzpD8jWvmT8f6iZS+gHindXko/lrQcVf+0GNpyvq\n7MVNSgFXdP07eCo523IuUquxundJpvQv84jEJitm4EFHXAXDp2x8Ua4l6AgMz03D\nJhTOHdDt65QUEkz4V4MqlJ5n20TtZajlpbNhEg4/toskMWb1JalWyNEOfy2UxiPx\nmWpQRKcI0LrJeXowAq6qvkDL28oX3BipIab0kMAJvzT/VCsEcNb8QXUSWjpiRdOK\nzGVWX9N8exJBvfPCNTfWkNkZyXTHli3z2BxyjjwiO38Ls1hFRldY9wccV7KRh38/\nswiUWK6hIsliobIXXvFW8ZZcT7Ngm8aJyql43ZDYEJmxZNdXdhVSQgzp3eTz0SlB\nbtKbj4jOPKtJgbjqRhJmCe2a5Zsly1PCxewwGTC6DisnW9qplrzbg/Ta0h+cz/us\nr0oBjT6KHffos3IExuTCO9OHbjYYzgqkaNaMu6U8iNtJwk2OGckhJVkN8pxo55z8\n50jFHXnlntOC1HT66aPH\n=r+/N\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T19:01:35Z"
+    }
+  },
+  "author": {
+    "email": "99959413+ArshiaBP@users.noreply.github.com",
+    "html_url": "https://github.com/ArshiaBP",
+    "id": 99959413,
+    "login": "ArshiaBP",
+    "name": "Arshia Baharpasandi",
+    "node_id": "U_kgDOBfVCdQ",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:01:10Z",
+  "changes": {
+    "additions": 2,
+    "deletions": 2,
+    "total": 4
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:01:10Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "81e091f9f53c6c53ed13e5db8243f5c66843c267",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/f5fcbb2598a6616b9c58075b15d90c12a41589f0",
+  "id": "f5fcbb2598a6616b9c58075b15d90c12a41589f0",
+  "is_verified": true,
+  "message": "Merge pull request #2278 from opengovern/feat_update_tags\n\nfeat: updated package tag for github and render",
+  "pull_requests": [
+    2278
+  ],
+  "short_id": "f5fcbb2",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDgxM2UxNGJlMTI3YTQwYjU4NDk2Y2RmYTBiM2Q1ZWU5ZDIyYzIzZmE",
+    "parents": [
+      {
+        "sha": "a86c9b12549bae0932e82e27aa9bcf35603ca7d6"
+      }
+    ],
+    "tree": {
+      "sha": "4b266f6a1d95cbd1a0ad4adf9ef611f69781f0f0"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arshia.bahar@aut.ac.ir",
+    "html_url": "https://github.com/ArshiaBP",
+    "id": 99959413,
+    "login": "ArshiaBP",
+    "name": "unknown",
+    "node_id": "U_kgDOBfVCdQ",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T19:00:08Z",
+  "changes": {
+    "additions": 2,
+    "deletions": 2,
+    "total": 4
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T19:00:08Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "81e091f9f53c6c53ed13e5db8243f5c66843c267",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/813e14be127a40b58496cdfa0b3d5ee9d22c23fa",
+  "id": "813e14be127a40b58496cdfa0b3d5ee9d22c23fa",
+  "is_verified": false,
+  "message": "feat: updated package tag for github and render",
+  "pull_requests": [
+    2278
+  ],
+  "short_id": "813e14b",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGE4NmM5YjEyNTQ5YmFlMDkzMmU4MmUyN2FhOWJjZjM1NjAzY2E3ZDY",
+    "parents": [
+      {
+        "sha": "22acaf9e9529b3cee5900424708163c76118f3ae"
+      }
+    ],
+    "tree": {
+      "sha": "f5d2de86bcc26be895d98eeda576dc6c5b5191aa"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdjAL4ACgkQttBTXV2m\nYII4Ow/6AqObCk27h9XUorKvDfUQYpnQkwWfbZn1hpcCT+7V+SzgbBDymzd0cppz\nvoNZoNPwvDUxWx4dJ78qNb/xicyk+VBALe67JZmu1qHdhPPIXB1WHjkbDEAdU8Ks\n2IHT1Oyrm60gDyFeoUuVnytP5o0CrWMlZknCpCXq1757gu4ZzHsR4O/ieiCPzUWF\nAeRerh+DFYlyFT5jmA6yROFaQ+41lds/XgchxjNe7A4mrR4uHh7E65mYmO1vX4Sy\nVqMgrfsQNdzNTZhvLx5NG/yz8tAvdkVbr/QoMfVTK2WtGXd1biAjfBSin4a3WLfh\nD6R7FinCWiWFiCs75NOzeBaN97JZvaoHfKJLMP6UL9Lcf3cbDOXOOn0o9Tgk55fH\nDWlCrWDemkrd79RKFu1a0P5R+l+sW+TbakPWNqbTLMfyqpiuX0FrehbrPby6az2E\nn0ptRrFKx3pRqarE1KhNpBvl9v1+kxuZp9z4S5bOG+hdEy+nRmZuydYaq7fQgSm8\nqBRovwx/W+MdclF3W0RFlY9RfV/iMM2POU7XQ1Nrb2HfTmS6spT+oGE9mTh646ZR\n/hm2ZNORhJCI4rPfy+fXdL6BXmaFUTNbtJ1F9WzNNPFLhpBNwTARkX7R2lrUjRVf\n3s+PL/tZoFvu0pjzB+sBsopvmh0Aq7IoCmR9YuXe798RgEHAmeQ=\n=RpJ7\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T17:05:36Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T17:05:02Z",
+  "changes": {
+    "additions": 4,
+    "deletions": 2,
+    "total": 6
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T17:05:02Z",
+  "files": [
+    {
+      "additions": 4,
+      "changes": 6,
+      "deletions": 2,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "ed253f2bbefe7a46eb60b36197c7820f4f1e67b9",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/a86c9b12549bae0932e82e27aa9bcf35603ca7d6",
+  "id": "a86c9b12549bae0932e82e27aa9bcf35603ca7d6",
+  "is_verified": true,
+  "message": "fix: add logs",
+  "pull_requests": null,
+  "short_id": "a86c9b1",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDIyYWNhZjllOTUyOWIzY2VlNTkwMDQyNDcwODE2M2M3NjExOGYzYWU",
+    "parents": [
+      {
+        "sha": "8eb1ae3bac9c0569d29ead0e069594d53a702401"
+      }
+    ],
+    "tree": {
+      "sha": "0f9b593501f01c700f3056a860e44ec87f6fda00"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi+vAACgkQttBTXV2m\nYIIbvA//bzVM0FKTo+7sUMet16gRTKG6MEYs01jp7Qy/BZGrFu+1x3uciJ7mH9Aw\nEGkgzb41yYeaZaj66rl9YBJYKCIU8lNVdUG9WyMIZHJFOcrGVqKPVqgJVdITITei\nKYTKuW0sTRd68TVdxzVkvnKLJ7RbFylxhj3wJ2ThfOSKMRSwBiMA7pTwh7TIfdIU\nO3o9oa32R/0O78VKKsJYQlu6B03CC6NOdyrhWIyPDT2rsDP4artvjAff8675FfVd\nKRZCtU/YnASw2FnD19XRXeEKyXBCMWRVej/c9eYdJcALx638hiYX8ggZNzYu2zfI\n4XHCi8ViJ2ZaWtjzTYCkUR41Eehk3r2ILHQcHhHxMxp2ZBBL52pUuqUvJ0m9BHxr\nAIzYxkpiOPXfls8/6QXMVbpz7sOhkmyt2q5hLA9fqHLrVE4ZTMFXrlt2rfa9bG3B\nwNKinhG12aKPKPDuRZ71qh2K9LluvZHj2FYjZUsa75NOnOyebTDjisHNRjYSnOOF\nYvMXQDjepC1zYA61+skg2oupvXpiqys+njn1d2Hg0tWknZyzzrPdG/9bvTinLgsP\nWwTxl2fTBiTUA9qRg3itEYCA7EcQm792j/MPWqWjrZcocETsBOgx/fNpw3lbbZ7/\nhlY32J2KIXT3G8irahLcehmmzMHMSnW97TAqqCnTNLlifTD5ag4=\n=V3nz\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T16:40:53Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T16:40:16Z",
+  "changes": {
+    "additions": 5,
+    "deletions": 0,
+    "total": 5
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T16:40:16Z",
+  "files": [
+    {
+      "additions": 5,
+      "changes": 5,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/rego/http.go",
+      "sha": "8daa78a6d413f57d9f59da616b08fb40456327f4",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/22acaf9e9529b3cee5900424708163c76118f3ae",
+  "id": "22acaf9e9529b3cee5900424708163c76118f3ae",
+  "is_verified": true,
+  "message": "fix: add logs",
+  "pull_requests": null,
+  "short_id": "22acaf9",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDhlYjFhZTNiYWM5YzA1NjlkMjllYWQwZTA2OTU5NGQ1M2E3MDI0MDE",
+    "parents": [
+      {
+        "sha": "84a88c830bb989c1652b8bb31593be3d6d41d91a"
+      }
+    ],
+    "tree": {
+      "sha": "8a8581bd02df2ab82376473eba1bd6f9760b9ed0"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi+RcACgkQttBTXV2m\nYIKB1BAAmB8rQznPRNuPiutmsFP5Jf0AbGLKmJLo9nBJfeR1NzVUnVFc6hTMm8eO\nBMc2apKrIUQh8HmDyME3Kgmek+oMazKOQNRxqOPCm79YhUNcF9FVAx7VZX4IY8Uc\nprqPXy3hqFClLwpvoefI6CGh8ceoGg4ZeVvWxMDWObAU4xM0/rPgmUkeVhIJM5HE\nWboXr+O/CiuDi7TC0ufzSRIB7K9VbMU9eJF+jSp/LiTb/QY/SMv6LNWfKRxwNUpl\n1rBrBAg3D/dESuVnKbIV1gDRM6wm6D1YgyA0nPh+yXxUf7tQzrZeeE5o4M5vXwE1\nrwll8fZrSpseEp2coGAjaGJydW3qC2JXNQkFB1H64VJFukCeCehjj/Nm2HgQjUD/\n2pNBlQynwCJHbqkY0vq8c87vGhWSGIiF5S75wM2Ke5Xhpmw7Cyn+Apt0Mf8owQw4\ny26F765+tvr/I+9k848tCTsNUb28XuAy+2yiqqoCsIYIV91/TKUzuCQF69Zk67zQ\nyxH4x2w0HVpfNaOS6LPm1RYYZwU3MZ3vi7iCgabu4U1b0ta0u6xyVecqsQZuyQGd\n7ns+UBvc0hJhhkDtYunY9jZeyW0sWDlGssmrKsEdAQqUxeZPN1CNA/gvBzS9kKPp\n6OibORaO/IeaNJ7ESu8N/2dCTUwl18FHQHqHOY2bCe5dC1gyT30=\n=pzD0\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T16:33:13Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T16:32:23Z",
+  "changes": {
+    "additions": 7,
+    "deletions": 0,
+    "total": 7
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T16:32:23Z",
+  "files": [
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "8d273f135bd5c961669cbd6cdbecced20e0fc376",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/8eb1ae3bac9c0569d29ead0e069594d53a702401",
+  "id": "8eb1ae3bac9c0569d29ead0e069594d53a702401",
+  "is_verified": true,
+  "message": "fix: add logs",
+  "pull_requests": null,
+  "short_id": "8eb1ae3",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDg0YTg4YzgzMGJiOTg5YzE2NTJiOGJiMzE1OTNiZTNkNmQ0MWQ5MWE",
+    "parents": [
+      {
+        "sha": "6a12c959163c3365455d2f0a2312ba60596db758"
+      }
+    ],
+    "tree": {
+      "sha": "be67408c8cf7ed591d3b5d453d1f30026fb8a1dd"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi9zwACgkQttBTXV2m\nYIL+1w//d/DzcrAjZhnqIR5lQBK5wC/9O6C8ydX7WUhsU82KOE2isTvADNjfVZdz\nLmqW6XNeOoBifxM5+ymuhCEToHHzAuw6BF32QiT1TjrumpWJtzoUgyNhYgicx7Zg\nskYaYUoz8KSdG/Wb6S8wG+/HfGKKLqiN1/cJ1auRxfFa1id1pxULbyhhbFlfOo2k\nG+ZHUqTNAxRgbo5/E91KbS8z3T6HMZPiiW05WFgs+5bETyZjLCzHjtuLFqDC2lyz\nPGJ74ZwsImfs1sRvSNElHQR/W2QiqPdbYVG+OEHUHYcvIfPFO3YuP5EfcblUkZNi\n54H9V0ll9bCJn6pN9hfVg4TmYSEou1IitqVyN5aNOzMiic1/dqvxjzPOBJDkhwwO\n+sZPOaavup2+rCJ65WKmI/wb63qrlvMnY67UYC/H1hFZIy2nYR0AooNvLGme+9sM\ngbWkFy4gOW5pOIhcH6EnILfCN55CMPNPm/UOUfujHKZahYAFgz3AZ4SMqdTewuZi\nteJ4Fz35ps2QCHf2XDJHKJp0myGTnBHb+Z94QzOZQWaeSTd5olP/ozZtQDRZydL0\nUktarFtowE8YwFYoqJlXP1MmYZ0ouJl8cOXyGWQH0mDYlzXPOI77/Zf932Ln3gTo\nvzM7bE9Ru6z4wOf1XXtPagluN5Fqo057/tk9GbJcvAHTgxrtvIk=\n=mVCa\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T16:25:09Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T16:24:28Z",
+  "changes": {
+    "additions": 13,
+    "deletions": 0,
+    "total": 13
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T16:24:28Z",
+  "files": [
+    {
+      "additions": 13,
+      "changes": 13,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "93924791407b9f6e42b63ea770b5cecc454ade37",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/84a88c830bb989c1652b8bb31593be3d6d41d91a",
+  "id": "84a88c830bb989c1652b8bb31593be3d6d41d91a",
+  "is_verified": true,
+  "message": "fix: add logs",
+  "pull_requests": null,
+  "short_id": "84a88c8",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDZhMTJjOTU5MTYzYzMzNjU0NTVkMmYwYTIzMTJiYTYwNTk2ZGI3NTg",
+    "parents": [
+      {
+        "sha": "c59437a10c4fb876fa26840939cf8445bb6feed9"
+      }
+    ],
+    "tree": {
+      "sha": "0a5f7fe3475bd18f752f283d811d86f884886b62"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi9B4ACgkQttBTXV2m\nYILAGw//Y3/FJH4EKk7gUuaVJrdhd5xvunNnQyCTCnXGhOqKkalyLojIeEojeRl2\nAeu8XGS+DRH7Uu3FB7D4jjaJlOc/FGP2ujTSXbRVYrQQLJ0LUIU/1ncs0Hzob+7n\nP46xVAFl/q5tz0qxV6mgT1uHQuqEhk0Q8cauY+MmK4eTP94i3HryAygyQ3G5Okck\nIpSxCD28HVa58nM8eYCXuodI85tPoi1Zu2vAfQbn1RIYK+pIoJXN41AYSOp2bWgh\nhd+XblzIFLEBPFbVm/ix6EleVm14hycqg+i3egcSeBbPO8tMMEa6ilQNL8KDyvBg\nhtRDxOBDAI5PoaDp+fCcJZDYfTTPrnDdYL2hgTWph0PcOTSjPexuQlg1jIpjxjcj\nOA9IEBAxlO69LZM3UTYWo//ANTsyFeb8MLJPSeCgo8J2Uw8kLVu+jYsHvHGSVu5/\nt0BYRwtw9nBKLeKKsHtl0qd8b4HfWIpfM/eU28TwSiTBeh5wWLIpJ6JH5aZtO2XS\nhZhdjRMCmwS0vBzsTcWba0PnKLeyWnvPw/2+PrbUMSwnRSG+7acE8DZ9x489DcK3\nssRTEMcrq7VWOilJL581/UNDBQ5h+h7cIjDydwj6sEO7hs8HUJlT2S5b7Il3tRg5\n2QDqexEYAEMsJG2/4OX8ydG17PUos7fTtUvD9W6u8hinjUsdQko=\n=cOSF\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T16:11:39Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T16:11:10Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 1,
+    "total": 2
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T16:11:10Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "0931fc4ee6925054899dcb6e2ef5d35313c3e765",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/6a12c959163c3365455d2f0a2312ba60596db758",
+  "id": "6a12c959163c3365455d2f0a2312ba60596db758",
+  "is_verified": true,
+  "message": "fix: schema query",
+  "pull_requests": null,
+  "short_id": "6a12c95",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGM1OTQzN2ExMGM0ZmI4NzZmYTI2ODQwOTM5Y2Y4NDQ1YmI2ZmVlZDk",
+    "parents": [
+      {
+        "sha": "c107e462f05e39fc485db3a91589633e31e489eb"
+      }
+    ],
+    "tree": {
+      "sha": "49fab71bb9ad7203de867e4dcb88375856eeca72"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi8vMACgkQttBTXV2m\nYIKnMw/9EvePj2kRyLaQk+4Qiu/PF5fVysXFPkeRBPvMMFyYzq9NExoEtWkkty3c\n0eDs5eLAHuczDR3QBZAs7giJtPsUaXx/rmX2rASFWwEHfR4er0189jK0TBHKLTZ9\nqeeelf9Dn2wn18LITTyFZsKpmuBy/1VUhg0vZhTnZ25tOTN3eDU5dBFJALfAd2n+\nSR0B6Z3qvryYgxIAprc116IrKsffvqNGa781JzDRjEZ4+hW0Ez+N5lr1x3/T6deu\nb8MBfol23tPFaXDVCjr9Im6H+2fAb7HHagUVKNFoBY9GjjC02sqyWk2g40OCDBxw\nRNo5e8z5f0+YUgDLU9ZX+MOcAs5l570y7My9GgYpfPtmyrSuoZrNXHgpezss3yCG\nyWBv/1MUbrVnTqaJpSXCGhOLpIwCRzlELostKZtRbUcwCrBv9Aohcdupty+RgRTn\n762r7MQIAOS13WLjNFy5TO4FgZ9otPfARHlY2vlL5futTy1n/a6PKgmj0yE1gGAp\nvtlmf34jpTiaQX6Xk1dEJ9rhhrj0QQw4oR1d7kqTQarTa3oIat09ajIwKjAoABXH\nafQASF63SC7F6Pw/lRaPqz39sOuYoD1p8HKvI3N0W/WJyZTInJxiwzt0WXQvRTz0\njkIItQlvFmpl1i5E2pDXqg2n1BzoQpKTkHC4tLL+D7/tV5U9H5Q=\n=5/ax\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T16:06:54Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T16:06:11Z",
+  "changes": {
+    "additions": 2,
+    "deletions": 1,
+    "total": 3
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T16:06:11Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 3,
+      "deletions": 1,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "c95780a1059a4fed571b7a3900efd31034cdb225",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/c59437a10c4fb876fa26840939cf8445bb6feed9",
+  "id": "c59437a10c4fb876fa26840939cf8445bb6feed9",
+  "is_verified": true,
+  "message": "fix: schema query",
+  "pull_requests": null,
+  "short_id": "c59437a",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGMxMDdlNDYyZjA1ZTM5ZmM0ODVkYjNhOTE1ODk2MzNlMzFlNDg5ZWI",
+    "parents": [
+      {
+        "sha": "01fbbb7831a2cdfe78d2bdfdd606cb0895b41326"
+      }
+    ],
+    "tree": {
+      "sha": "c94a9230b07df5a1e13489fe136c61ee53579a71"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE+c/ocVT0E0rwhbh0ttBTXV2mYIIFAmdi8FwACgkQttBTXV2m\nYIJDqQ/+J3iRLT78lXIqJ4E+ShD4XOOwOKEs/Uxh9SyyoV/ISyoHn7BrCy2AxgUa\niWEi+XEXCnR0EXeueYQswIq1QpU9BaOEl4dyiXx7Mm/CKEwR40oU0Xwl5vSH5sKz\nEG/bK8CDZDR99GKLYEdHb78svEwZUjxR62/cyh/HR/mFxt4TotXb5fcTzftIU73x\npzEzCewxc6Vnz4mIU/x5QL/ZBB+eAXP//1LvWb8UdcuPWXak1q1NyKhVkorotafz\nuZcfbZU5pBNztNyhZbKJBR4Xeh2l/MyLvSxjIaYOCYK0ENLQTitbzabf4W2t4RM7\nu62UpznMterfh9ZjLUgbrtez+qCW3b4txPt+fJ4WwP4HHezHnxrN+1jiBVkuJDSX\n6fJGz2UWTdBOw4SWx78DgOain2qW39LOxh19EcRD3su0uftl05uLr9a0Ve8Dy9LZ\nk9H5Yz6NyqcPRqBtUpuAcwJmIBqoaFoWM22ds/baJTsTHC6vs7RPxO9nIcx5LAZP\nBNLjRcmXp0LBB8aL+cwKWTB1Nm2bKKkNn9PJzWSHqriK7+oj926adLGkj0E2d0Sj\nGPHJfNEXy3XqVqNptvTyTfdf+m4TOU37GxxZtfy6bXpbiYPMiFQoLG2TEbsH+ewU\n5IY7HYs90/AU6D4fFcwEQuYMdJ+AxYLIgbE6nmTS1lv5LD1nem8=\n=esOO\n-----END PGP SIGNATURE-----",
+      "verified_at": "2024-12-18T15:55:47Z"
+    }
+  },
+  "author": {
+    "email": "mahanmmi@gmail.com",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T15:54:52Z",
+  "changes": {
+    "additions": 6,
+    "deletions": 2,
+    "total": 8
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T15:55:08Z",
+  "files": [
+    {
+      "additions": 6,
+      "changes": 8,
+      "deletions": 2,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "6b04316118441eae2d6630b233cb550a01850525",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/c107e462f05e39fc485db3a91589633e31e489eb",
+  "id": "c107e462f05e39fc485db3a91589633e31e489eb",
+  "is_verified": true,
+  "message": "fix: schema query",
+  "pull_requests": null,
+  "short_id": "c107e46",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDAxZmJiYjc4MzFhMmNkZmU3OGQyYmRmZGQ2MDZjYjA4OTViNDEzMjY",
+    "parents": [
+      {
+        "sha": "87d597bf1bd91b9a5192764ef1271530e555d23a"
+      },
+      {
+        "sha": "41de9cb3cdf64024c905bacff2babbfeedbc256d"
+      }
+    ],
+    "tree": {
+      "sha": "5bdc88173d46723c411a3cdfeabe791a17c12fd1"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYuymCRC1aQ7uu5UhlAAAqmYQAGFmv8or0kW0iqzOkloH2S34\nUADQDv3dleoHeIx/zoZ6bVYLfmgIFnUKtMrY9wEm8ntfgrkqw9fcJAVSiRpaDPZZ\nay5UBfIM4m0OwXGEDpOB1fPM2eaD3W+eV2O8C28NqmVcPeqh8nlLgtHmQrh3Zcvm\n8SRnXvzvTfYx2Pjk3Wkw2o2I8qV/f608+X2FFwYT33ChxEtPvQIx1W9tfflH6oaH\nzUSXEUyjcg8yr5OCVyW9b3hewEr/NCj0MuXLIN1Xy823XFOjL65udX3OzUGgiGwf\nNT3F/sEVZy49aJs7XcbSeoNudVfqDUyBDrlTIaF3V8QzsAtnf1U5OHJJn9yCtdv9\nFN5NXGtwGBvx365UlzcawsGUujj9OM5e/Msr9/IrBNX0TWtoyptNx/URCR3rw41U\nOLPtnuK/qZxoOMKyUvL5GfY0AKgnUBu+j1oJ7w6a5I9mTuSBfu5+vItZKuml+0Wc\n7uTUfsSiK7pj+YGTqWaAgF08f+WaszpjCKyLcxD1zSzixp1rmhb51CxUu3/3yo5t\nuVqjlQm0qyTiplg/gzOCEp8sgc9wc7RImK7jp20o+n/wDsGiOLVjmc5X3C4SfVW8\nzpDQumcz8il37Ibspel+Z+ZD4brS4oXn8Naz4MFjZqEw0JHrdR7vlXcuyOmtaPz2\nPhhb2TFWz3um4+CchXtR\n=VgZq\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T15:39:49Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T15:39:18Z",
+  "changes": {
+    "additions": 36,
+    "deletions": 145,
+    "total": 181
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T15:39:18Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "6d01fd3fc62ed897f3b93e90eaa771ec3bc02423",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "go.mod",
+      "sha": "81851d0a6f14397829e64bd9c68284a46612900f",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 2,
+      "deletions": 0,
+      "filename": "go.sum",
+      "sha": "c6b4eb2662039c16e0a0936b21f3a1a6ca6ca325",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 19,
+      "deletions": 19,
+      "filename": "services/describe/job.go",
+      "sha": "98f2a3f97b2d4b09c52bcfde22928d6079f6a8fd",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 2,
+      "deletions": 0,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "3b328a66141cd161b5f0bccf721e6ec7e7d7646e",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 11,
+      "deletions": 4,
+      "filename": "services/tasks/config/model.go",
+      "sha": "6c7f9df11720b40f188047ae1d64bcb94fdc4443",
+      "status": "modified"
+    },
+    {
+      "additions": 12,
+      "changes": 20,
+      "deletions": 8,
+      "filename": "services/tasks/scheduler/publisher.go",
+      "sha": "036adf0993dd8c663b928b84a4a54e0a9a72ada2",
+      "status": "modified"
+    },
+    {
+      "additions": 4,
+      "changes": 4,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/service.go",
+      "sha": "9fc74059404c0bddfd2b0cb5a4cec63591f97739",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/task_schedule.go",
+      "sha": "0c046261274800a6afaf2e33c165c96633b235fe",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 1,
+      "deletions": 1,
+      "filename": "services/tasks/worker/model.go",
+      "sha": "34acbcd78256d32e9a1d6d31ef52f1dd39cad6be",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 111,
+      "deletions": 111,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "b10da02415d1868839f127ee994d2a4a2a9c5282",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/01fbbb7831a2cdfe78d2bdfdd606cb0895b41326",
+  "id": "01fbbb7831a2cdfe78d2bdfdd606cb0895b41326",
+  "is_verified": true,
+  "message": "Merge pull request #2277 from opengovern/fix-tasks\n\nfix: change task request struct",
+  "pull_requests": [
+    2277
+  ],
+  "short_id": "01fbbb7",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDQxZGU5Y2IzY2RmNjQwMjRjOTA1YmFjZmYyYmFiYmZlZWRiYzI1NmQ",
+    "parents": [
+      {
+        "sha": "4430e8da3042eec15a91dbc65318356392a252c1"
+      }
+    ],
+    "tree": {
+      "sha": "191229b184dd46ca7306417e7af8d95a907b1d0d"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T15:36:51Z",
+  "changes": {
+    "additions": 36,
+    "deletions": 145,
+    "total": 181
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T15:36:51Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/tasks/container_grype_check.yaml",
+      "sha": "6d01fd3fc62ed897f3b93e90eaa771ec3bc02423",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "go.mod",
+      "sha": "bc6bd55b6ca3f708e1e881bd40e0cd88c6e9105c",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 2,
+      "deletions": 0,
+      "filename": "go.sum",
+      "sha": "c6b4eb2662039c16e0a0936b21f3a1a6ca6ca325",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 19,
+      "deletions": 19,
+      "filename": "services/describe/job.go",
+      "sha": "98f2a3f97b2d4b09c52bcfde22928d6079f6a8fd",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 2,
+      "deletions": 0,
+      "filename": "services/describe/scheduler_describe.go",
+      "sha": "3b328a66141cd161b5f0bccf721e6ec7e7d7646e",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 11,
+      "deletions": 4,
+      "filename": "services/tasks/config/model.go",
+      "sha": "6c7f9df11720b40f188047ae1d64bcb94fdc4443",
+      "status": "modified"
+    },
+    {
+      "additions": 12,
+      "changes": 20,
+      "deletions": 8,
+      "filename": "services/tasks/scheduler/publisher.go",
+      "sha": "036adf0993dd8c663b928b84a4a54e0a9a72ada2",
+      "status": "modified"
+    },
+    {
+      "additions": 4,
+      "changes": 4,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/service.go",
+      "sha": "9fc74059404c0bddfd2b0cb5a4cec63591f97739",
+      "status": "modified"
+    },
+    {
+      "additions": 7,
+      "changes": 7,
+      "deletions": 0,
+      "filename": "services/tasks/scheduler/task_schedule.go",
+      "sha": "0c046261274800a6afaf2e33c165c96633b235fe",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 1,
+      "deletions": 1,
+      "filename": "services/tasks/worker/model.go",
+      "sha": "34acbcd78256d32e9a1d6d31ef52f1dd39cad6be",
+      "status": "modified"
+    },
+    {
+      "additions": 0,
+      "changes": 111,
+      "deletions": 111,
+      "filename": "services/tasks/worker/worker.go",
+      "sha": "b10da02415d1868839f127ee994d2a4a2a9c5282",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/41de9cb3cdf64024c905bacff2babbfeedbc256d",
+  "id": "41de9cb3cdf64024c905bacff2babbfeedbc256d",
+  "is_verified": false,
+  "message": "fix: change task request struct",
+  "pull_requests": [
+    2277
+  ],
+  "short_id": "41de9cb",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDg3ZDU5N2JmMWJkOTFiOWE1MTkyNzY0ZWYxMjcxNTMwZTU1NWQyM2E",
+    "parents": [
+      {
+        "sha": "3ebd6193c353fa799a922de87495498d9293ae55"
+      }
+    ],
+    "tree": {
+      "sha": "5f802778a8c3ff965c0fdc7b34c6b04068c9c35d"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYulBCRC1aQ7uu5UhlAAAxyQQAKlXuKJvS74xaDn/E5otVuvs\nc73TmX7en+XgT61andTPhQgapBx4KMZuNxRgWFEFRuaWdtMME/De4X3MJvHOf4iP\nFDVmPlVsCy2lPSNxMfkYLXBs9tbrQhnOhemMXma3mc0wF4xF+iVWA9p5UgkZqiUZ\nWxRuk+C7jx1KvRGWQdsSVVqHAwz+qp2UJ9kAeeSQ97mMOaKXeh4k0WTkdJ5wQrk6\nTU3bveqn7yGtqGdX4GU/+IC1SVbC/ulM220H6mivbTVpXZdeZpeEWQ0WzlwAoaTo\nVNwws0kmSabFvU//bQWRULOy1t7LByn1mQx6ySbje8bPSNhlx3yR8HLcCmB132Zz\npvfzfifm5cj7UAiKuRH0bJ/Nmg0U47NfJ+AqXy6P4mtmbkpM1Vd+RltpP3Nch2p5\nha8JskUgeEmmEJ/WMbQW31OxdXyD/2cxlVSYu0iPxyNp193xOaoQiWN8OJLX8ZG6\npOR1NpzpP/Ti/lQWPYdx9ERyhE9rEZ5wJidUW68fP/xv2aT5/NhZJ5Sx2dxYW6Qu\nmAjpDrJocOPoCr2rAOkm6zl3WOCGJzpiVGrARqjsaKHn/tBPbQcdz8L3I3+j51ei\n1VRWe1/5BcurWRSzeXbR1xdecMlIdJzAQE7D514Nm9Ws52V7FlwtZrWKIJO3WmyT\ntQglnHnVfozfvn9kbawS\n=aTgR\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T15:25:21Z"
+    }
+  },
+  "author": {
+    "email": "mahanz@kaytu.io",
+    "html_url": "https://github.com/Mahanmmi",
+    "id": 43912482,
+    "login": "Mahanmmi",
+    "name": "Mahan Zendedel DH",
+    "node_id": "MDQ6VXNlcjQzOTEyNDgy",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T15:24:49Z",
+  "changes": {
+    "additions": 214,
+    "deletions": 16,
+    "total": 230
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T15:24:49Z",
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "go.mod",
+      "sha": "4d6cca2640efd41d0ed6a8ce1572f8d378a0db53",
+      "status": "modified"
+    },
+    {
+      "additions": 38,
+      "changes": 38,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/rego/http.go",
+      "sha": "a064e17b3ca05d0f3a818c814d87707a66956105",
+      "status": "added"
+    },
+    {
+      "additions": 148,
+      "changes": 148,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/rego/rego.go",
+      "sha": "3dbd858b23f553813db14fbe31c6345a39b18f85",
+      "status": "added"
+    },
+    {
+      "additions": 11,
+      "changes": 11,
+      "deletions": 0,
+      "filename": "pkg/cloudql/sdk/extra/utils/logger.go",
+      "sha": "1fdf5ceb226c63a73a4a537ee96cc01fbc5d6d51",
+      "status": "added"
+    },
+    {
+      "additions": 3,
+      "changes": 15,
+      "deletions": 12,
+      "filename": "pkg/cloudql/sdk/extra/view-sync/view_sync.go",
+      "sha": "81f8e2b99457f6984f520924fb9c0e10e42fcd44",
+      "status": "renamed"
+    },
+    {
+      "additions": 12,
+      "changes": 14,
+      "deletions": 2,
+      "filename": "pkg/cloudql/tables/plugin.go",
+      "sha": "8c21e4a02022e26320e2fddd0c620a0ffa14e9d9",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/87d597bf1bd91b9a5192764ef1271530e555d23a",
+  "id": "87d597bf1bd91b9a5192764ef1271530e555d23a",
+  "is_verified": true,
+  "message": "feat: add rego (#2276)",
+  "pull_requests": [
+    2276
+  ],
+  "short_id": "87d597b",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDNlYmQ2MTkzYzM1M2ZhNzk5YTkyMmRlODc0OTU0OThkOTI5M2FlNTU",
+    "parents": [
+      {
+        "sha": "65a8f1b419985d13c95035deabb904f5c6bf7ff6"
+      },
+      {
+        "sha": "4430e8da3042eec15a91dbc65318356392a252c1"
+      }
+    ],
+    "tree": {
+      "sha": "8257d78e35d607b2b38a012999480eaefe8b8955"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYsRnCRC1aQ7uu5UhlAAAhyAQAGAsIpvdgYcyZhqgBK9hxr6p\n2DSI+VJgpq4vGods/Gs3kCTyX9WnIevWE2gHoYv6znX+rwRbYHZamH7/tiuqnP+m\nKfIuIzh72mBsRjaGjN7JdRgLHxeyJTy7Xx2UCbYqDMUJyH1iATK7uNCk0NTRHuJN\n7IeQZw4DcEqqQa5pvBkU7bYEFigRXNIxX2Qfm9LVHKnhUwagMQMqIHxAzZx7Kdrj\n30cL/kA93B3ZYLDuuk4fApKnjcwuInvDkUjPTc0M2xtCD9YZwiqaAJjvd0+nP+9X\nzp6au4q7ipo/5TQqiRiWq5FpEO6Eu6uHGqrzVxGVlaP0l2ehj5FmOCfYPj+b8r8J\nSamfKFNll2mht52Ol95Q13pZ6tYxUn0NviY/XVl04JhgwBaDGJa19ywVXgf8Y5uc\nHbmfh4QkQ3fpVLJ/FxrqEesuOfQdM7gSUgkOXPNPeKN4mXcbE+A68PGdklBujhMv\n8R7SJy5A5Zgp62Zea0iBpYwmmqwrvz22UkyKtoBv5444/q16Jii3osacXlzVqeki\nQRezJOOOw6AZF9cTPu2SnGte+RKRZKi6mer0wtRKWGDMMuYN4acGpDFdWN1o2K2k\nyx1iUJhiIYtPfyy5c2+DfR5ud1A92LhhAvWF0Zux1YngQQuyzsPYsHMKbvXGGfqR\nO3mkNmScNOozECyPfvLX\n=cRbK\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-18T12:48:15Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T12:47:35Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 1,
+    "total": 2
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T12:47:35Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "9703d6063d3ed65150dd9a8be48edd0623bc18a9",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/3ebd6193c353fa799a922de87495498d9293ae55",
+  "id": "3ebd6193c353fa799a922de87495498d9293ae55",
+  "is_verified": true,
+  "message": "Merge pull request #2275 from opengovern/fix-tasks\n\nfix: update github account describer image",
+  "pull_requests": [
+    2275
+  ],
+  "short_id": "3ebd619",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDQ0MzBlOGRhMzA0MmVlYzE1YTkxZGJjNjUzMTgzNTYzOTJhMjUyYzE",
+    "parents": [
+      {
+        "sha": "65a8f1b419985d13c95035deabb904f5c6bf7ff6"
+      }
+    ],
+    "tree": {
+      "sha": "8257d78e35d607b2b38a012999480eaefe8b8955"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-18T12:46:56Z",
+  "changes": {
+    "additions": 1,
+    "deletions": 1,
+    "total": 2
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-18T12:46:56Z",
+  "files": [
+    {
+      "additions": 1,
+      "changes": 2,
+      "deletions": 1,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "9703d6063d3ed65150dd9a8be48edd0623bc18a9",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/4430e8da3042eec15a91dbc65318356392a252c1",
+  "id": "4430e8da3042eec15a91dbc65318356392a252c1",
+  "is_verified": false,
+  "message": "fix: update github account describer image",
+  "pull_requests": [
+    2275
+  ],
+  "short_id": "4430e8d",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDY1YThmMWI0MTk5ODVkMTNjOTUwMzVkZWFiYjkwNGY1YzZiZjdmZjY",
+    "parents": [
+      {
+        "sha": "cbfe93fe1227867524b1c4681a67e4ae6bdff605"
+      },
+      {
+        "sha": "7d1e2257954bd9f7f732c1209afa793fe091535f"
+      }
+    ],
+    "tree": {
+      "sha": "82289ff9731c2bf31ea9def73863c900cc5d6385"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYg3LCRC1aQ7uu5UhlAAAyOkQAB0nm1J5/dU1/5kPdGlthjC3\nQ6w/wGZzhftSh4Bs9OVi+xD2x+idyE0UytQZNoYRP/fJ2HCRu6N2SfMbsAE73o/V\nhZHpU9lviWSr2kHxQ3G2acNS0lyOxb83vOBFVEw8tJFIK3mrJ70tmbTVJa+E2GP4\nKOeeE+nNIbO6HQdZPqtrAZfxhqIK02tByGlfly0qMN/oYWvq5JKR4v3/EQCheTs8\ngFDaOknECLqBmrE6L7oFtfqUGAMPwwJJKYEtV1TBmaTPAPVqWvxykyTnDJ/DC7kS\ncH8HWgrurQIMWvBCprXNCueNYg9jOVkovEQk0Q9NrGPIxaFGe33WtJC/6LLiKcpG\nwpWvwh3Ymk0ELiDO/MER4sPJOwYqbKzmmRaGfxwLQdHGIc3vNs9q8JeKJzlj1e2J\niL/35L52kMmLz5q30o2r2abrBXIz4JbK72UApMwrRIvg96dcR5BwmVxt6Vdm+aj7\n61INiYowuK4txp1SRd1wmlUE5b58F8/zqQFRfDykScT9U5XNlsBxt6on4Ah3ijU4\nbY2zp7mRvf4BIFCwQ9DIbXW7tKYB8GhfCtVJJ5glPk4QEtLsIk9shISuGILWQJ5D\nqJ36VmTg+STpOOpyfZXR47u6a7HGY6QqkqC9GBNEewyhtXpMORmlfLNyMiCMdHjp\nx66MkFOsvSlQ+CLkRw2K\n=Xhpu\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-17T23:48:58Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T23:48:27Z",
+  "changes": {
+    "additions": 6,
+    "deletions": 6,
+    "total": 12
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T23:48:27Z",
+  "files": [
+    {
+      "additions": 6,
+      "changes": 12,
+      "deletions": 6,
+      "filename": "jobs/compliance-summarizer-job/job.go",
+      "sha": "42f63fb53ece51cd31f29a3d7bd367afb5579fc7",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/65a8f1b419985d13c95035deabb904f5c6bf7ff6",
+  "id": "65a8f1b419985d13c95035deabb904f5c6bf7ff6",
+  "is_verified": true,
+  "message": "Merge pull request #2274 from opengovern/fix-control-summary\n\nfix: filter integrations in job summary",
+  "pull_requests": [
+    2274
+  ],
+  "short_id": "65a8f1b",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDdkMWUyMjU3OTU0YmQ5ZjdmNzMyYzEyMDlhZmE3OTNmZTA5MTUzNWY",
+    "parents": [
+      {
+        "sha": "7efe4430d86b84af8722243a257d310bd4ead393"
+      }
+    ],
+    "tree": {
+      "sha": "87af9a6ad62118f903777e20aa59f949f11b5159"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T23:47:26Z",
+  "changes": {
+    "additions": 6,
+    "deletions": 6,
+    "total": 12
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T23:47:26Z",
+  "files": [
+    {
+      "additions": 6,
+      "changes": 12,
+      "deletions": 6,
+      "filename": "jobs/compliance-summarizer-job/job.go",
+      "sha": "42f63fb53ece51cd31f29a3d7bd367afb5579fc7",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/7d1e2257954bd9f7f732c1209afa793fe091535f",
+  "id": "7d1e2257954bd9f7f732c1209afa793fe091535f",
+  "is_verified": false,
+  "message": "fix: filter integrations in job summary",
+  "pull_requests": [
+    2274
+  ],
+  "short_id": "7d1e225",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGNiZmU5M2ZlMTIyNzg2NzUyNGIxYzQ2ODFhNjdlNGFlNmJkZmY2MDU",
+    "parents": [
+      {
+        "sha": "6c3866fa5816ba1b721bc3a4ae37b2954fc973b9"
+      },
+      {
+        "sha": "7efe4430d86b84af8722243a257d310bd4ead393"
+      }
+    ],
+    "tree": {
+      "sha": "ead740e891eb7017850955e907aa36490bbb3cb3"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYgEZCRC1aQ7uu5UhlAAAOyEQAK47skBaiEA8sgAfTHmQeODS\nJv1pQ5h9Y2yEz6C7wjOaKpJ6C8+MpcbgziHAlG/8cyDoNlJs9qscwYmuB8qZ3R03\nJ7kbBS7cw81V4mdjk0j7J4ercH0lZOj4pYoQKjObHJ/4bXd9gmGemJFjP83zfPik\nvCj+Hdh9R85wjpltDCmrqFn6U5+oxUkzWyQRsiAdOsySK5EXU/n3T9UfyHpU8ek7\n4DnobTJgQ2Rz8ptf2PQ0SxAZSi8X9DfKD9Bh64z0ARK7qI3nMmN5wSrACfg0tjO5\no2DiJQcZPKDwNN/JjOmSdtt8QpwhrtR1U3WJHqnbnjjnevj0aEq9gObR6qJ2y1rk\nH94UZ76PqcM9dB2Lczvoqlr2Jr3gwiC9b4+Y+mcsFtwH6jpshqwZWY9TzxOQvL8J\no0aGdVZcNU9KYjN8JImnXsI+48lAqiflgxoAAxbcHv9/uYquDA/ZFd9zyLhC3Dbt\ncJm87Mv2sDWBFavUK7YFjWlG/pBJnHahtA09Bu5YeVxeQ5f7IJo4XPkuP4iiwqR6\ncItJ9ivczehXAx/vXcqIXG8Obnv2yM8O6chhtAjvjsw/q636n20Ch3E4PIKAvolc\nKa2ECvdgzpKr61t5Hkg249LfL5V03Dj5CkuHbND2vDPbqNG6XaUMWJ3hot4Rxcw2\nCyhQ36wulsCvK8NY6XvV\n=gb9t\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-17T22:54:40Z"
+    }
+  },
+  "author": {
+    "email": "52131111+artaasadi@users.noreply.github.com",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "arta asadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T22:54:17Z",
+  "changes": {
+    "additions": 10,
+    "deletions": 20,
+    "total": 30
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T22:54:17Z",
+  "files": [
+    {
+      "additions": 6,
+      "changes": 12,
+      "deletions": 6,
+      "filename": "jobs/compliance-summarizer-job/job.go",
+      "sha": "8b1d2f7ce768b22fb5ec2d46f56c89896fbf6329",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 6,
+      "deletions": 5,
+      "filename": "jobs/compliance-summarizer-job/types/job_docs.go",
+      "sha": "b41a5aefaa2ac22352c2f8eb95c62880fb65ce62",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 12,
+      "deletions": 9,
+      "filename": "services/compliance/http_routes.go",
+      "sha": "77917c0986adaba03400bdb5e1279be7dfc44359",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/cbfe93fe1227867524b1c4681a67e4ae6bdff605",
+  "id": "cbfe93fe1227867524b1c4681a67e4ae6bdff605",
+  "is_verified": true,
+  "message": "Merge pull request #2273 from opengovern/fix-control-summary\n\nfix: filter integrations in job summary",
+  "pull_requests": [
+    2273
+  ],
+  "short_id": "cbfe93f",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDdlZmU0NDMwZDg2Yjg0YWY4NzIyMjQzYTI1N2QzMTBiZDRlYWQzOTM",
+    "parents": [
+      {
+        "sha": "5b82fee00062495049467441b0be06b27faa3898"
+      }
+    ],
+    "tree": {
+      "sha": "b4b501541b561b6d42ce13bc24ad364b4525c741"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "arta-c@kaytu.io",
+    "html_url": "https://github.com/artaasadi",
+    "id": 52131111,
+    "login": "artaasadi",
+    "name": "artaasadi",
+    "node_id": "MDQ6VXNlcjUyMTMxMTEx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T22:53:51Z",
+  "changes": {
+    "additions": 10,
+    "deletions": 20,
+    "total": 30
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T22:53:51Z",
+  "files": [
+    {
+      "additions": 6,
+      "changes": 12,
+      "deletions": 6,
+      "filename": "jobs/compliance-summarizer-job/job.go",
+      "sha": "8b1d2f7ce768b22fb5ec2d46f56c89896fbf6329",
+      "status": "modified"
+    },
+    {
+      "additions": 1,
+      "changes": 6,
+      "deletions": 5,
+      "filename": "jobs/compliance-summarizer-job/types/job_docs.go",
+      "sha": "b41a5aefaa2ac22352c2f8eb95c62880fb65ce62",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 12,
+      "deletions": 9,
+      "filename": "services/compliance/http_routes.go",
+      "sha": "77917c0986adaba03400bdb5e1279be7dfc44359",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/7efe4430d86b84af8722243a257d310bd4ead393",
+  "id": "7efe4430d86b84af8722243a257d310bd4ead393",
+  "is_verified": false,
+  "message": "fix: filter integrations in job summary",
+  "pull_requests": [
+    2273
+  ],
+  "short_id": "7efe443",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDZjMzg2NmZhNTgxNmJhMWI3MjFiYzNhNGFlMzdiMjk1NGZjOTczYjk",
+    "parents": [
+      {
+        "sha": "f797bbd830662ff018937530560876a891b35e6c"
+      }
+    ],
+    "tree": {
+      "sha": "b53927c2d34b871d6fe5827044c248661c2ba9ad"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "mohamadkhoee@aut.ac.ir",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T22:50:23Z",
+  "changes": {
+    "additions": 214,
+    "deletions": 13,
+    "total": 227
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T22:50:23Z",
+  "files": [
+    {
+      "additions": 8,
+      "changes": 14,
+      "deletions": 6,
+      "filename": "assets/integrations/integrations.json",
+      "sha": "94609ba6af9e61767814449c6dfbe816b3f6fc9a",
+      "status": "modified"
+    },
+    {
+      "additions": 3,
+      "changes": 3,
+      "deletions": 0,
+      "filename": "docker/AuditJobDockerfile",
+      "sha": "e25b4c99fbc6da01f9a565b4fffe10f6c08c0828",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 3,
+      "deletions": 1,
+      "filename": "docker/ComplianceReportJobDockerfile",
+      "sha": "8101f9d32225d238a4858366513b56fdf2cfe4b5",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "docker/QueryRunnerJobDockerfile",
+      "sha": "15ffd130b7fffe5bd1daded4ce49b304c3d606cf",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "docker/QueryValidatorJobDockerfile",
+      "sha": "8d8bb8d1312c4cf2fb9373c88629c7cf6c5437af",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "docker/SteampipeServiceDockerfile",
+      "sha": "5e642143f9c50d6e375e1f97614d16551d0f580e",
+      "status": "modified"
+    },
+    {
+      "additions": 195,
+      "changes": 195,
+      "deletions": 0,
+      "filename": "services/integration/integration-type/ui-specs/doppler-account.json",
+      "sha": "9b51ae4675b47e98aa3ccd5e984a9e3330805b8d",
+      "status": "added"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/6c3866fa5816ba1b721bc3a4ae37b2954fc973b9",
+  "id": "6c3866fa5816ba1b721bc3a4ae37b2954fc973b9",
+  "is_verified": false,
+  "message": "faet: add doppler",
+  "pull_requests": null,
+  "short_id": "6c3866f",
+  "target": {
+    "branch": "dependabot/npm_and_yarn/services/web-ui/multi-6bc014718a",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKGY3OTdiYmQ4MzA2NjJmZjAxODkzNzUzMDU2MDg3NmE4OTFiMzVlNmM",
+    "parents": [
+      {
+        "sha": "e9238d331a992a042793c2cf6c9e9b78ce31aed7"
+      },
+      {
+        "sha": "637014633e767907f8af857b413fdb325fbac9b6"
+      }
+    ],
+    "tree": {
+      "sha": "c97c973d21b04a6aafd85be1db75d3bad1db3379"
+    },
+    "verification_details": {
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnYfqwCRC1aQ7uu5UhlAAAR40QAFjZ43yNOCv5N45U5797PTN1\ndtS8Z51Es4bkRup2zzGKFnPLyFmNH/9kdWmNBXShmpLyDkhhiLAzVXxd6PNX820W\nwnh8Y1A0TJReH/QUhXnqv/dyjr/ewu4FwItKapph40b0M6mFdFaQBspFvLHt0QDk\nO9F//DfUUMxcxXmAw2PFjEeW3Suy1pYxb54+pOmczSfh4Dhmo6I4ksvyXtgsg98F\nl6nAJhPgEaO9MySmu6FDrVyJDTfZ48WEnKjoAvnMtR8PcYXbS5RsQLEr0gQEmeZk\nEcuKBaRV0odZkrFEX0/xljBUQAZuN32AT+0VuND/3j08ri2/asSxk9LdzQ7c0XJM\nzlBXbRFwB5IHx4z37IMZIBdIO1srRsehNxxkpzA9yT7NgjhJopRxXP0oGHy9Xmb3\nuTFMCyJ4aonsfeWx/bRpu4Yl1ID9lFNV+8XaDTen1pyWVC3LaLa7zQDGjfqP9Gp9\nMHlzQnB5pKBsvHM/vDkpvu1p8QYxv9koAmt5yrRQmFtW5ifx6hRBXr5W0ILvaHrH\nEMacWWORsE8s+Ua0WEFsq6xipOfFghKedMWBBllWu9mUisJpIe1yj1nyvYJ4O27k\nR2dshOOJOjxuzZp7L+tWmaZeefgWG2auAjcABAxkXnNZopIE8f3Pqv6g5EyQe6oW\nrt7Waof2hSGSDw9JXYsq\n=KQP4\n-----END PGP SIGNATURE-----\n",
+      "verified_at": "2024-12-17T22:27:15Z"
+    }
+  },
+  "author": {
+    "email": "58650941+mohamadch91@users.noreply.github.com",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T22:26:56Z",
+  "changes": {
+    "additions": 365,
+    "deletions": 24,
+    "total": 389
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T22:26:56Z",
+  "files": [
+    {
+      "additions": 4,
+      "changes": 8,
+      "deletions": 4,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/Evaluate/index.tsx",
+      "sha": "9dcb418216749359054bcb6b7c6f7c699f5b1a05",
+      "status": "modified"
+    },
+    {
+      "additions": 337,
+      "changes": 337,
+      "deletions": 0,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/SeverityBar/index.tsx",
+      "sha": "71367e6bf4a88f51d0a14e347057b73ec710ad53",
+      "status": "added"
+    },
+    {
+      "additions": 20,
+      "changes": 35,
+      "deletions": 15,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/inde.tsx",
+      "sha": "cb075f4a114651ff908213699e26157759424c28",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/index.tsx",
+      "sha": "a70b87ce278860c3d668c4c2f859d22c34bc9318",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 5,
+      "deletions": 3,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/index.tsx",
+      "sha": "571be4947fc55b698c0ce96ac5154edd44b1b96c",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/f797bbd830662ff018937530560876a891b35e6c",
+  "id": "f797bbd830662ff018937530560876a891b35e6c",
+  "is_verified": true,
+  "message": "Merge pull request #2272 from opengovern/ui-changes\n\nfeat: change job report API's",
+  "pull_requests": [
+    2272
+  ],
+  "short_id": "f797bbd",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
+{
+  "additional_details": {
+    "node_id": "C_kwDOJzIhw9oAKDYzNzAxNDYzM2U3Njc5MDdmOGFmODU3YjQxM2ZkYjMyNWZiYWM5YjY",
+    "parents": [
+      {
+        "sha": "4f00fbd6500883d2f6d27dd1081c8f6ccfd4a8a9"
+      }
+    ],
+    "tree": {
+      "sha": "d5eb0b43f75b949edcd082d3d74ddfbe9577c535"
+    },
+    "verification_details": {
+      "reason": "unsigned",
+      "signature": null,
+      "verified_at": null
+    }
+  },
+  "author": {
+    "email": "mohamadkhoee@aut.ac.ir",
+    "html_url": "https://github.com/mohamadch91",
+    "id": 58650941,
+    "login": "mohamadch91",
+    "name": "Mohamad Choupan",
+    "node_id": "MDQ6VXNlcjU4NjUwOTQx",
+    "type": "User"
+  },
+  "authored_date": "2024-12-17T22:25:08Z",
+  "changes": {
+    "additions": 365,
+    "deletions": 24,
+    "total": 389
+  },
+  "comment_count": 0,
+  "committed_date": "2024-12-17T22:25:08Z",
+  "files": [
+    {
+      "additions": 4,
+      "changes": 8,
+      "deletions": 4,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/Evaluate/index.tsx",
+      "sha": "9dcb418216749359054bcb6b7c6f7c699f5b1a05",
+      "status": "modified"
+    },
+    {
+      "additions": 337,
+      "changes": 337,
+      "deletions": 0,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/SeverityBar/index.tsx",
+      "sha": "71367e6bf4a88f51d0a14e347057b73ec710ad53",
+      "status": "added"
+    },
+    {
+      "additions": 20,
+      "changes": 35,
+      "deletions": 15,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/inde.tsx",
+      "sha": "cb075f4a114651ff908213699e26157759424c28",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/index.tsx",
+      "sha": "a70b87ce278860c3d668c4c2f859d22c34bc9318",
+      "status": "modified"
+    },
+    {
+      "additions": 2,
+      "changes": 5,
+      "deletions": 3,
+      "filename": "services/web-ui/src/pages/Governance/Compliance/NewBenchmarkSummary/index.tsx",
+      "sha": "571be4947fc55b698c0ce96ac5154edd44b1b96c",
+      "status": "modified"
+    }
+  ],
+  "html_url": "https://github.com/opengovern/opencomply/commit/637014633e767907f8af857b413fdb325fbac9b6",
+  "id": "637014633e767907f8af857b413fdb325fbac9b6",
+  "is_verified": false,
+  "message": "feat: change job report API's",
+  "pull_requests": [
+    2272
+  ],
+  "short_id": "6370146",
+  "target": {
+    "branch": "main",
+    "organization": "opengovern",
+    "repository": "opencomply"
+  }
+}
