@@ -14,7 +14,7 @@ import (
 
 func main() {
 	repoFlag := flag.String("repo", "", "Repository in the format https://github.com/<owner>/<repo>")
-	maxCommitsFlag := flag.Int("maxcommits", 5, "Maximum number of commits to fetch (default 50)")
+	maxCommitsFlag := flag.Int("maxcommits", 50, "Maximum number of commits to fetch (default 50)")
 	flag.Parse()
 
 	if *repoFlag == "" {
@@ -24,6 +24,11 @@ func main() {
 	owner, repo, err := parseRepoURL(*repoFlag)
 	if err != nil {
 		log.Fatalf("Error parsing repo URL: %v", err)
+	}
+
+	// Check if the repository is active (not archived/disabled)
+	if err := checkRepositoryActive(owner, repo); err != nil {
+		log.Fatalf("Repository check failed: %v", err)
 	}
 
 	maxCommits := *maxCommitsFlag
@@ -67,6 +72,45 @@ func parseRepoURL(repoURL string) (string, string, error) {
 
 type commitRef struct {
 	SHA string `json:"sha"`
+}
+
+func checkRepositoryActive(owner, repo string) error {
+	u := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return fmt.Errorf("error creating request to check repo: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error checking repository: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		return fmt.Errorf("repository not found (404)")
+	} else if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var repoInfo struct {
+		Archived bool `json:"archived"`
+		Disabled bool `json:"disabled"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&repoInfo); err != nil {
+		return fmt.Errorf("error decoding repository info: %w", err)
+	}
+
+	if repoInfo.Archived {
+		return fmt.Errorf("the repository is archived and cannot be accessed for commits")
+	}
+	if repoInfo.Disabled {
+		return fmt.Errorf("the repository is disabled and cannot be accessed for commits")
+	}
+	return nil
 }
 
 // fetchCommitList returns up to maxCommits commit references from the repo’s default branch (usually main).
@@ -118,7 +162,6 @@ func fetchCommitList(owner, repo string, maxCommits int) ([]commitRef, error) {
 		page++
 	}
 
-	// In case we got more than we needed (unlikely since we controlled perPage, but just a safety check)
 	if len(allCommits) > maxCommits {
 		allCommits = allCommits[:maxCommits]
 	}
