@@ -197,53 +197,86 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 		return nil, fmt.Errorf("error unmarshaling commit details: %w", err)
 	}
 
-	// Extract top-level fields
-	commitSha, _ := commitData["sha"].(string)
-	htmlURL, _ := commitData["html_url"].(string)
+	// Extract fields with fallback to null
+	getString := func(m map[string]interface{}, key string) *string {
+		if val, ok := m[key].(string); ok {
+			return &val
+		}
+		return nil
+	}
+	getFloat := func(m map[string]interface{}, key string) *int {
+		if val, ok := m[key].(float64); ok {
+			v := int(val)
+			return &v
+		}
+		return nil
+	}
+	getBool := func(m map[string]interface{}, key string) *bool {
+		if val, ok := m[key].(bool); ok {
+			return &val
+		}
+		return nil
+	}
+
+	commitSha := getString(commitData, "sha")
+	htmlURL := getString(commitData, "html_url")
+	nodeID := getString(commitData, "node_id")
 
 	commitSection, _ := commitData["commit"].(map[string]interface{})
-	message, _ := commitSection["message"].(string)
+	message := getString(commitSection, "message")
 
-	// date from commit.author.date
-	var date string
-	if commitAuthor, ok := commitSection["author"].(map[string]interface{}); ok {
-		date, _ = commitAuthor["date"].(string)
+	var date *string
+	var commitAuthor map[string]interface{}
+	if commitSection != nil {
+		if ca, ok := commitSection["author"].(map[string]interface{}); ok {
+			commitAuthor = ca
+			date = getString(ca, "date")
+		}
 	}
 
 	// stats
-	stats, _ := commitData["stats"].(map[string]interface{})
-	additions, _ := stats["additions"].(float64)
-	deletions, _ := stats["deletions"].(float64)
-	total, _ := stats["total"].(float64)
+	var stats map[string]interface{}
+	if s, ok := commitData["stats"].(map[string]interface{}); ok {
+		stats = s
+	}
+	additions := getFloat(stats, "additions")
+	deletions := getFloat(stats, "deletions")
+	total := getFloat(stats, "total")
 
-	// author info
-	authorObj := make(map[string]interface{})
-	// From commit.author
-	if commitAuthor, ok := commitSection["author"].(map[string]interface{}); ok {
-		if email, ok := commitAuthor["email"].(string); ok {
-			authorObj["email"] = email
+	// author
+	authorObj := map[string]interface{}{
+		"email":    nil,
+		"html_url": nil,
+		"id":       nil,
+		"login":    nil,
+		"name":     nil,
+		"node_id":  nil,
+		"type":     nil,
+	}
+	if commitAuthor != nil {
+		if email := getString(commitAuthor, "email"); email != nil {
+			authorObj["email"] = *email
 		}
-		if name, ok := commitAuthor["name"].(string); ok {
-			authorObj["name"] = name
+		if name := getString(commitAuthor, "name"); name != nil {
+			authorObj["name"] = *name
 		}
 	}
 
-	// From top-level author
 	if topAuthor, ok := commitData["author"].(map[string]interface{}); ok {
-		if login, ok := topAuthor["login"].(string); ok {
-			authorObj["login"] = login
+		if login := getString(topAuthor, "login"); login != nil {
+			authorObj["login"] = *login
 		}
-		if id, ok := topAuthor["id"].(float64); ok {
-			authorObj["id"] = int(id)
+		if idVal, ok := topAuthor["id"].(float64); ok {
+			authorObj["id"] = int(idVal)
 		}
-		if node, ok := topAuthor["node_id"].(string); ok {
-			authorObj["node_id"] = node
+		if n := getString(topAuthor, "node_id"); n != nil {
+			authorObj["node_id"] = *n
 		}
-		if html, ok := topAuthor["html_url"].(string); ok {
-			authorObj["html_url"] = html
+		if h := getString(topAuthor, "html_url"); h != nil {
+			authorObj["html_url"] = *h
 		}
-		if t, ok := topAuthor["type"].(string); ok {
-			authorObj["type"] = t
+		if t := getString(topAuthor, "type"); t != nil {
+			authorObj["type"] = *t
 		}
 	}
 
@@ -252,24 +285,31 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	if files, ok := commitData["files"].([]interface{}); ok {
 		for _, f := range files {
 			if fm, ok := f.(map[string]interface{}); ok {
-				newFile := map[string]interface{}{}
-				if additionsVal, ok := fm["additions"].(float64); ok {
-					newFile["additions"] = int(additionsVal)
+				newFile := map[string]interface{}{
+					"additions": nil,
+					"changes":   nil,
+					"deletions": nil,
+					"filename":  nil,
+					"sha":       nil,
+					"status":    nil,
 				}
-				if changesVal, ok := fm["changes"].(float64); ok {
-					newFile["changes"] = int(changesVal)
+				if a := getFloat(fm, "additions"); a != nil {
+					newFile["additions"] = *a
 				}
-				if deletionsVal, ok := fm["deletions"].(float64); ok {
-					newFile["deletions"] = int(deletionsVal)
+				if c := getFloat(fm, "changes"); c != nil {
+					newFile["changes"] = *c
 				}
-				if filename, ok := fm["filename"].(string); ok {
-					newFile["filename"] = filename
+				if d := getFloat(fm, "deletions"); d != nil {
+					newFile["deletions"] = *d
 				}
-				if shaVal, ok := fm["sha"].(string); ok {
-					newFile["sha"] = shaVal
+				if fn := getString(fm, "filename"); fn != nil {
+					newFile["filename"] = *fn
 				}
-				if status, ok := fm["status"].(string); ok {
-					newFile["status"] = status
+				if sh := getString(fm, "sha"); sh != nil {
+					newFile["sha"] = *sh
+				}
+				if st := getString(fm, "status"); st != nil {
+					newFile["status"] = *st
 				}
 				filesArray = append(filesArray, newFile)
 			}
@@ -281,9 +321,11 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	if parents, ok := commitData["parents"].([]interface{}); ok {
 		for _, p := range parents {
 			if pm, ok := p.(map[string]interface{}); ok {
-				newParent := map[string]interface{}{}
-				if shaVal, ok := pm["sha"].(string); ok {
-					newParent["sha"] = shaVal
+				newParent := map[string]interface{}{
+					"sha": nil,
+				}
+				if ps := getString(pm, "sha"); ps != nil {
+					newParent["sha"] = *ps
 				}
 				parentsArray = append(parentsArray, newParent)
 			}
@@ -291,82 +333,166 @@ func fetchCommitDetails(sdk *resilientbridge.ResilientBridge, owner, repo, sha s
 	}
 
 	// Branch name
-	branchName, berr := findBranchByCommit(sdk, owner, repo, commitSha)
+	branchName, berr := findBranchByCommit(sdk, owner, repo, sha)
 	if berr != nil {
 		branchName = ""
 	}
 
 	// comment_count
-	commentCount := 0
-	if cc, ok := commitSection["comment_count"].(float64); ok {
-		commentCount = int(cc)
+	var commentCount *int
+	if commitSection != nil {
+		commentCount = getFloat(commitSection, "comment_count")
 	}
 
 	// tree (only sha)
 	var treeObj map[string]interface{}
-	if tree, ok := commitSection["tree"].(map[string]interface{}); ok {
-		if tsha, ok := tree["sha"].(string); ok {
+	if commitSection != nil {
+		if tree, ok := commitSection["tree"].(map[string]interface{}); ok {
 			treeObj = map[string]interface{}{
-				"sha": tsha,
+				"sha": nil,
+			}
+			if tsha := getString(tree, "sha"); tsha != nil {
+				treeObj["sha"] = *tsha
 			}
 		}
 	}
 
 	// verification details
-	var isVerified bool
+	var isVerified *bool
 	var verificationDetails map[string]interface{}
-	if verification, ok := commitSection["verification"].(map[string]interface{}); ok {
-		if verified, ok := verification["verified"].(bool); ok {
-			isVerified = verified
-		}
-		reason, _ := verification["reason"].(string)
-		signature, _ := verification["signature"].(string)
-		verifiedAt, _ := verification["verified_at"].(string)
-		verificationDetails = map[string]interface{}{
-			"reason":      reason,
-			"signature":   signature,
-			"verified_at": verifiedAt,
+	if commitSection != nil {
+		if verification, ok := commitSection["verification"].(map[string]interface{}); ok {
+			isVerified = getBool(verification, "verified")
+			reason := getString(verification, "reason")
+			signature := getString(verification, "signature")
+			verifiedAt := getString(verification, "verified_at")
+
+			verificationDetails = map[string]interface{}{
+				"reason":      nil,
+				"signature":   nil,
+				"verified_at": nil,
+			}
+			if reason != nil {
+				verificationDetails["reason"] = *reason
+			}
+			if signature != nil {
+				verificationDetails["signature"] = *signature
+			}
+			if verifiedAt != nil {
+				verificationDetails["verified_at"] = *verifiedAt
+			}
 		}
 	}
 
 	// metadata
-	nodeID, _ := commitData["node_id"].(string)
 	metadataObj := map[string]interface{}{
-		"node_id":              nodeID,
+		"node_id":              nil,
 		"parents":              parentsArray,
-		"tree":                 treeObj,
-		"verification_details": verificationDetails,
+		"tree":                 nil,
+		"verification_details": nil,
+	}
+	if nodeID != nil {
+		metadataObj["node_id"] = *nodeID
+	}
+	if treeObj != nil {
+		metadataObj["tree"] = treeObj
+	}
+	if verificationDetails != nil {
+		metadataObj["verification_details"] = verificationDetails
 	}
 
 	// target
 	targetObj := map[string]interface{}{
-		"branch":       branchName,
-		"organization": owner,
-		"repository":   repo,
+		"branch":       nil,
+		"organization": nil,
+		"repository":   nil,
 	}
+	if branchName != "" {
+		targetObj["branch"] = branchName
+	}
+	// owner and repo are from the input URL, always known
+	targetObj["organization"] = owner
+	targetObj["repository"] = repo
 
 	// Fetch associated pull requests
-	prs, err := fetchPullRequestsForCommit(sdk, owner, repo, commitSha)
+	prs, err := fetchPullRequestsForCommit(sdk, owner, repo, sha)
 	if err != nil {
-		// If there's an error, we just have an empty array
+		// If there's an error, we return empty array
 		prs = []int{}
 	}
 
-	// Construct final output with exact order of fields:
+	// If any are null pointers, set them to nil explicitly
+	finalID := func() interface{} {
+		if commitSha == nil {
+			return nil
+		}
+		return *commitSha
+	}()
+	finalDate := func() interface{} {
+		if date == nil {
+			return nil
+		}
+		return *date
+	}()
+	finalMessage := func() interface{} {
+		if message == nil {
+			return nil
+		}
+		return *message
+	}()
+	finalHtmlURL := func() interface{} {
+		if htmlURL == nil {
+			return nil
+		}
+		return *htmlURL
+	}()
+	finalIsVerified := func() interface{} {
+		if isVerified == nil {
+			return nil
+		}
+		return *isVerified
+	}()
+
+	finalCommentCount := func() interface{} {
+		if commentCount == nil {
+			return nil
+		}
+		return *commentCount
+	}()
+
+	finalAdditions := func() interface{} {
+		if additions == nil {
+			return nil
+		}
+		return *additions
+	}()
+	finalDeletions := func() interface{} {
+		if deletions == nil {
+			return nil
+		}
+		return *deletions
+	}()
+	finalTotal := func() interface{} {
+		if total == nil {
+			return nil
+		}
+		return *total
+	}()
+
 	output := map[string]interface{}{
-		"id":          commitSha,
-		"date":        date,
-		"message":     message,
-		"html_url":    htmlURL,
+		"id":          finalID,
+		"date":        finalDate,
+		"message":     finalMessage,
+		"html_url":    finalHtmlURL,
 		"target":      targetObj,
-		"is_verified": isVerified,
+		"is_verified": finalIsVerified,
 		"author":      authorObj,
 		"changes": map[string]interface{}{
-			"additions": int(additions),
-			"deletions": int(deletions),
-			"total":     int(total),
+			"additions": finalAdditions,
+			"deletions": finalDeletions,
+			"total":     finalTotal,
 		},
-		"comment_count": commentCount,
+		"comment_count": finalCommentCount,
 		"metadata":      metadataObj,
 		"files":         filesArray,
 		"pull_requests": prs,
@@ -392,7 +518,6 @@ func fetchPullRequestsForCommit(sdk *resilientbridge.ResilientBridge, owner, rep
 		return nil, fmt.Errorf("error fetching pull requests for commit: %w", err)
 	}
 
-	// If not found or conflict, return empty array
 	if resp.StatusCode == 409 || resp.StatusCode == 404 {
 		return []int{}, nil
 	}
