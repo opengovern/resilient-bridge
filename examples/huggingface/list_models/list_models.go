@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"os"
 	"time"
 
+	resilientbridge "github.com/opengovern/resilient-bridge"
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
@@ -12,20 +13,17 @@ func intPtr(i int) *int { return &i }
 
 func main() {
 	sdk := resilientbridge.NewResilientBridge()
-	apiToken := os.Getenv("HF_API_TOKEN")
-	if apiToken == "" {
-		log.Println("HF_API_TOKEN not set; you may only be able to access public repos")
-	}
-	sdk.RegisterProvider("huggingface", adapters.NewHuggingFaceAdapter(apiToken), &resilientbridge.ProviderConfig{
-		UseProviderLimits:   false, // Change to true if future HuggingFace rate limits are known
+	// Register the HuggingFace provider (assuming adapter is already created)
+	sdk.RegisterProvider("huggingface", adapters.NewHuggingFaceAdapter("YOUR_HF_API_TOKEN"), &resilientbridge.ProviderConfig{
+		UseProviderLimits:   false,
 		MaxRetries:          3,
 		BaseBackoff:         time.Second,
-		MaxRequestsOverride: intPtr(100),
+		MaxRequestsOverride: intPtr(50),
 	})
 
 	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
-		Endpoint: "/api/models", // Example: list models
+		Endpoint: "/api/models",
 		Headers: map[string]string{
 			"accept": "application/json",
 		},
@@ -40,5 +38,5 @@ func main() {
 		log.Fatalf("HTTP Error %d: %s", resp.StatusCode, string(resp.Data))
 	}
 
-	log.Println("HuggingFace response:", string(resp.Data))
+	fmt.Println("Data:", string(resp.Data))
 }
