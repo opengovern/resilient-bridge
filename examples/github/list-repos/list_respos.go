@@ -13,6 +13,11 @@ import (
 	"github.com/opengovern/resilient-bridge/adapters"
 )
 
+// MAX_REPO limits how many repositories we retrieve in "list" mode.
+const MAX_REPO = 100
+
+// ---- STRUCT DEFINITIONS ----------------------------------------------------
+
 type License struct {
 	Key    string `json:"key"`
 	Name   string `json:"name"`
@@ -210,35 +215,19 @@ type FinalRepoDetail struct {
 	Metrics                 Metrics            `json:"metrics"`
 }
 
-type MinimalRepoInfo struct {
-	Name  string `json:"name"`
-	Owner struct {
-		Login string `json:"login"`
-	} `json:"owner"`
-}
+// ---------------------------------------------------------------------------
+// 1. GetRepoList: Lists repositories for an organization up to MAX_REPO,
+//                 returning them as a slice of FinalRepoDetail (partial info).
+// ---------------------------------------------------------------------------
 
-func main() {
-	repoFlag := flag.String("repo", "", "Repository or organization in format https://github.com/<org> or https://github.com/<org>/<repo>")
-	maxResultsFlag := flag.Int("max-results", 100, "Maximum number of repositories to fetch (default 100) for org listing")
-	flag.Parse()
-
-	if *repoFlag == "" {
-		log.Fatal("You must provide a -repo parameter")
+func GetRepoList(orgName string) ([]FinalRepoDetail, error) {
+	if orgName == "" {
+		return nil, fmt.Errorf("orgName must be provided")
 	}
 
 	apiToken := os.Getenv("GITHUB_API_TOKEN")
 	if apiToken == "" {
 		log.Println("GITHUB_API_TOKEN not set; you may only be able to access public repos")
-	}
-
-	owner, repoName, err := parseScopeURL(*repoFlag)
-	if err != nil {
-		log.Fatalf("Error parsing scope URL: %v", err)
-	}
-
-	maxResults := *maxResultsFlag
-	if maxResults <= 0 {
-		maxResults = 100
 	}
 
 	sdk := resilientbridge.NewResilientBridge()
@@ -248,84 +237,160 @@ func main() {
 		BaseBackoff:       0,
 	})
 
+	var allRepos []FinalRepoDetail
+	page := 1
+	for len(allRepos) < MAX_REPO {
+		remaining := MAX_REPO - len(allRepos)
+		perPage := 100
+		if remaining < perPage {
+			perPage = remaining
+		}
+
+		endpoint := fmt.Sprintf("/orgs/%s/repos?per_page=%d&page=%d", orgName, perPage, page)
+		req := &resilientbridge.NormalizedRequest{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+		}
+
+		resp, err := sdk.Request("github", req)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching org repos: %w", err)
+		}
+		if resp.StatusCode >= 400 {
+			return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+		}
+
+		var partialList []RepoDetail
+		if err := json.Unmarshal(resp.Data, &partialList); err != nil {
+			return nil, fmt.Errorf("error decoding repos list: %w", err)
+		}
+		if len(partialList) == 0 {
+			break
+		}
+
+		// Transform each partial RepoDetail to FinalRepoDetail (most fields empty).
+		for _, repo := range partialList {
+			finalRepo := util_transformToFinalRepoDetail(&repo)
+			allRepos = append(allRepos, *finalRepo)
+		}
+
+		if len(allRepos) >= MAX_REPO {
+			break
+		}
+		page++
+	}
+
+	return allRepos, nil
+}
+
+// ---------------------------------------------------------------------------
+// 2. GetRepository: Fetches full detail for a single repo, enriches it,
+//                   and returns JSON string.
+// ---------------------------------------------------------------------------
+
+func GetRepository(orgName, repoName string) (string, error) {
+	if orgName == "" || repoName == "" {
+		return "", fmt.Errorf("both orgName and repoName must be provided")
+	}
+
+	apiToken := os.Getenv("GITHUB_API_TOKEN")
+	if apiToken == "" {
+		log.Println("GITHUB_API_TOKEN not set; you may only be able to access public repos")
+	}
+
+	sdk := resilientbridge.NewResilientBridge()
+	sdk.RegisterProvider("github", adapters.NewGitHubAdapter(apiToken), &resilientbridge.ProviderConfig{
+		UseProviderLimits: true,
+		MaxRetries:        3,
+		BaseBackoff:       0,
+	})
+
+	repoDetail, err := util_fetchRepoDetails(sdk, orgName, repoName)
+	if err != nil {
+		return "", fmt.Errorf("error fetching repository details: %w", err)
+	}
+
+	finalDetail := util_transformToFinalRepoDetail(repoDetail)
+
+	// Fetch languages
+	langs, err := util_fetchLanguages(sdk, orgName, repoName)
+	if err == nil && len(langs) > 0 {
+		finalDetail.Language = langs
+	} else {
+		finalDetail.Language = nil
+	}
+
+	// Enrich metrics
+	if err := util_enrichRepoMetrics(sdk, orgName, repoName, finalDetail); err != nil {
+		log.Printf("Error enriching repo metrics for %s/%s: %v", orgName, repoName, err)
+	}
+
+	data, err := json.MarshalIndent(finalDetail, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("error marshalling repo detail: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// ---------------------------------------------------------------------------
+// 3. main(): If only an organization is provided, fetch full list via
+//            GetRepoList(), then call GetRepository() for each to print JSON.
+//            If org/repo is provided, just call GetRepository() and print JSON.
+// ---------------------------------------------------------------------------
+
+func main() {
+	repoFlag := flag.String("repo", "", "Repository or organization in format https://github.com/<org> or https://github.com/<org>/<repo>")
+	flag.Parse()
+
+	if *repoFlag == "" {
+		log.Fatal("You must provide a -repo parameter (https://github.com/<org> or https://github.com/<org>/<repo>)")
+	}
+
+	owner, repoName, err := util_parseScopeURL(*repoFlag)
+	if err != nil {
+		log.Fatalf("Error parsing scope URL: %v", err)
+	}
+
+	// If only organization is provided, fetch the list, then get each one.
 	if repoName == "" {
-		allRepos, err := fetchOrgRepos(sdk, owner, maxResults)
+		allRepos, err := GetRepoList(owner)
 		if err != nil {
 			log.Fatalf("Error fetching organization repositories: %v", err)
 		}
 
-		for _, r := range allRepos {
-			repoDetail, err := fetchRepoDetails(sdk, r.Owner.Login, r.Name)
+		for _, repo := range allRepos {
+			// The "Name" field in FinalRepoDetail is the actual repo name
+			jsonData, err := GetRepository(owner, repo.Name)
 			if err != nil {
-				log.Printf("Error fetching details for %s/%s: %v", r.Owner.Login, r.Name, err)
+				log.Printf("Error fetching details for %s/%s: %v", owner, repo.Name, err)
 				continue
 			}
-
-			finalDetail := transformToFinalRepoDetail(repoDetail)
-			langs, err := fetchLanguages(sdk, r.Owner.Login, r.Name)
-			if err == nil {
-				// If no languages, result would be empty map. That's fine.
-				if len(langs) == 0 {
-					finalDetail.Language = nil
-				} else {
-					finalDetail.Language = langs
-				}
-			} else {
-				finalDetail.Language = nil
-			}
-
-			err = enrichRepoMetrics(sdk, r.Owner.Login, r.Name, finalDetail)
-			if err != nil {
-				log.Printf("Error enriching repo metrics for %s/%s: %v", r.Owner.Login, r.Name, err)
-			}
-
-			data, err := json.MarshalIndent(finalDetail, "", "  ")
-			if err != nil {
-				log.Fatalf("Error marshalling repo detail: %v", err)
-			}
-			fmt.Println(string(data))
+			fmt.Println(jsonData)
 		}
 	} else {
-		repoDetail, err := fetchRepoDetails(sdk, owner, repoName)
+		// If owner + repo is provided, just fetch that single repo.
+		jsonData, err := GetRepository(owner, repoName)
 		if err != nil {
 			log.Fatalf("Error fetching repository details: %v", err)
 		}
-
-		finalDetail := transformToFinalRepoDetail(repoDetail)
-
-		langs, err := fetchLanguages(sdk, owner, repoName)
-		if err == nil {
-			if len(langs) == 0 {
-				finalDetail.Language = nil
-			} else {
-				finalDetail.Language = langs
-			}
-		} else {
-			finalDetail.Language = nil
-		}
-
-		err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
-		if err != nil {
-			log.Printf("Error enriching repo metrics for %s/%s: %v", owner, repoName, err)
-		}
-
-		data, err := json.MarshalIndent(finalDetail, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshalling repo detail: %v", err)
-		}
-		fmt.Println(string(data))
+		fmt.Println(jsonData)
 	}
 }
 
-func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
-	// Handle parent and source
+// ---- HELPER FUNCTIONS (all now prefixed with util_) -----------------------
+
+// Creates a consistent FinalRepoDetail from a RepoDetail, ensuring missing
+// fields become nil or an empty fallback (like an empty slice for `topics`).
+func util_transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 	var parent *FinalRepoDetail
 	if detail.Parent != nil {
-		parent = transformToFinalRepoDetail(detail.Parent)
+		parent = util_transformToFinalRepoDetail(detail.Parent)
 	}
 	var source *FinalRepoDetail
 	if detail.Source != nil {
-		source = transformToFinalRepoDetail(detail.Source)
+		source = util_transformToFinalRepoDetail(detail.Source)
 	}
 
 	// LicenseInfo
@@ -337,20 +402,17 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		licenseJSON = nil
 	}
 
-	// Topics: ensure it is at least an empty array
 	topics := detail.Topics
 	if topics == nil {
 		topics = []string{}
 	}
 
-	// Default branch ref
 	dbObj := map[string]string{"name": detail.DefaultBranch}
 	dbBytes, _ := json.Marshal(dbObj)
 
 	isActive := !(detail.Archived || detail.Disabled)
 	isEmpty := (detail.Size == 0)
 
-	// Ensure custom_properties is not nil, use empty map if nil
 	var customProps map[string]interface{}
 	if detail.CustomProperties == nil {
 		customProps = map[string]interface{}{}
@@ -362,7 +424,7 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		GitHubRepoID:            detail.ID,
 		NodeID:                  detail.NodeID,
 		Name:                    detail.Name,
-		NameWithOwner:           detail.FullName, // renamed field to match user request
+		NameWithOwner:           detail.FullName,
 		Description:             detail.Description,
 		CreatedAt:               detail.CreatedAt,
 		UpdatedAt:               detail.UpdatedAt,
@@ -381,7 +443,7 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 		Organization:            detail.Organization,
 		Parent:                  parent,
 		Source:                  source,
-		Language:                nil, // set later
+		Language:                nil, // filled later
 		RepositorySettings: RepositorySettings{
 			HasDiscussionsEnabled:     detail.HasDiscussions,
 			HasIssuesEnabled:          detail.HasIssues,
@@ -430,186 +492,13 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 			Subscribers: detail.SubscribersCount,
 			Size:        detail.Size,
 			OpenIssues:  detail.OpenIssuesCount,
-			// Tags, Commits, Issues, Branches, PullRequests, Releases are set later
 		},
 	}
 
 	return finalDetail
 }
 
-func enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName string, finalDetail *FinalRepoDetail) error {
-	var dbObj map[string]string
-	if finalDetail.DefaultBranchRef != nil {
-		if err := json.Unmarshal(finalDetail.DefaultBranchRef, &dbObj); err != nil {
-			return err
-		}
-	}
-	defaultBranch := dbObj["name"]
-	if defaultBranch == "" {
-		defaultBranch = "main"
-	}
-
-	commitsCount, err := countCommits(sdk, owner, repoName, defaultBranch)
-	if err != nil {
-		return fmt.Errorf("counting commits: %w", err)
-	}
-	finalDetail.Metrics.Commits = commitsCount
-
-	issuesCount, err := countIssues(sdk, owner, repoName)
-	if err != nil {
-		return fmt.Errorf("counting issues: %w", err)
-	}
-	finalDetail.Metrics.Issues = issuesCount
-
-	branchesCount, err := countBranches(sdk, owner, repoName)
-	if err != nil {
-		return fmt.Errorf("counting branches: %w", err)
-	}
-	finalDetail.Metrics.Branches = branchesCount
-
-	prCount, err := countPullRequests(sdk, owner, repoName)
-	if err != nil {
-		return fmt.Errorf("counting PRs: %w", err)
-	}
-	finalDetail.Metrics.PullRequests = prCount
-
-	releasesCount, err := countReleases(sdk, owner, repoName)
-	if err != nil {
-		return fmt.Errorf("counting releases: %w", err)
-	}
-	finalDetail.Metrics.Releases = releasesCount
-
-	tagsCount, err := countTags(sdk, owner, repoName)
-	if err != nil {
-		return fmt.Errorf("counting tags: %w", err)
-	}
-	finalDetail.Metrics.Tags = tagsCount
-
-	return nil
-}
-
-func countTags(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
-	endpoint := fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repoName)
-	return countItemsFromEndpoint(sdk, endpoint)
-}
-
-func fetchLanguages(sdk *resilientbridge.ResilientBridge, owner, repo string) (map[string]int, error) {
-	req := &resilientbridge.NormalizedRequest{
-		Method:   "GET",
-		Endpoint: fmt.Sprintf("/repos/%s/%s/languages", owner, repo),
-		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
-	}
-
-	resp, err := sdk.Request("github", req)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching languages: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
-	}
-
-	var langs map[string]int
-	if err := json.Unmarshal(resp.Data, &langs); err != nil {
-		return nil, fmt.Errorf("error decoding languages: %w", err)
-	}
-	return langs, nil
-}
-
-func parseScopeURL(repoURL string) (owner, repo string, err error) {
-	if !strings.HasPrefix(repoURL, "https://github.com/") {
-		return "", "", fmt.Errorf("URL must start with https://github.com/")
-	}
-	parts := strings.Split(strings.TrimPrefix(repoURL, "https://github.com/"), "/")
-	if len(parts) == 0 || parts[0] == "" {
-		return "", "", fmt.Errorf("invalid URL format")
-	}
-	owner = parts[0]
-	if len(parts) > 1 {
-		repo = parts[1]
-	}
-	return owner, repo, nil
-}
-
-func fetchPrivateVulnerabilityReporting(sdk *resilientbridge.ResilientBridge, owner, repoName string) (bool, error) {
-	req := &resilientbridge.NormalizedRequest{
-		Method:   "GET",
-		Endpoint: fmt.Sprintf("/repos/%s/%s/private-vulnerability-reporting", owner, repoName),
-		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
-	}
-
-	resp, err := sdk.Request("github", req)
-	if err != nil {
-		return false, fmt.Errorf("error fetching private vulnerability reporting: %w", err)
-	}
-
-	if resp.StatusCode == 404 {
-		return false, nil
-	}
-
-	if resp.StatusCode >= 400 {
-		return false, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
-	}
-
-	var result struct {
-		Enabled bool `json:"enabled"`
-	}
-	if err := json.Unmarshal(resp.Data, &result); err != nil {
-		return false, fmt.Errorf("error decoding private vulnerability reporting status: %w", err)
-	}
-
-	return result.Enabled, nil
-}
-
-func fetchOrgRepos(sdk *resilientbridge.ResilientBridge, org string, maxResults int) ([]MinimalRepoInfo, error) {
-	var allRepos []MinimalRepoInfo
-	perPage := 100
-	page := 1
-
-	for len(allRepos) < maxResults {
-		remaining := maxResults - len(allRepos)
-		if remaining < perPage {
-			perPage = remaining
-		}
-
-		endpoint := fmt.Sprintf("/orgs/%s/repos?per_page=%d&page=%d", org, perPage, page)
-		listReq := &resilientbridge.NormalizedRequest{
-			Method:   "GET",
-			Endpoint: endpoint,
-			Headers:  map[string]string{"Accept": "application/vnd.github+json"},
-		}
-
-		listResp, err := sdk.Request("github", listReq)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching repos: %w", err)
-		}
-
-		if listResp.StatusCode >= 400 {
-			return nil, fmt.Errorf("HTTP error %d: %s", listResp.StatusCode, string(listResp.Data))
-		}
-
-		var repos []MinimalRepoInfo
-		if err := json.Unmarshal(listResp.Data, &repos); err != nil {
-			return nil, fmt.Errorf("error decoding repos list: %w", err)
-		}
-
-		if len(repos) == 0 {
-			break
-		}
-
-		allRepos = append(allRepos, repos...)
-		if len(allRepos) >= maxResults {
-			break
-		}
-		page++
-	}
-	if len(allRepos) > maxResults {
-		allRepos = allRepos[:maxResults]
-	}
-	return allRepos, nil
-}
-
-func fetchRepoDetails(sdk *resilientbridge.ResilientBridge, owner, repo string) (*RepoDetail, error) {
+func util_fetchRepoDetails(sdk *resilientbridge.ResilientBridge, owner, repo string) (*RepoDetail, error) {
 	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: fmt.Sprintf("/repos/%s/%s", owner, repo),
@@ -630,47 +519,124 @@ func fetchRepoDetails(sdk *resilientbridge.ResilientBridge, owner, repo string) 
 	return &detail, nil
 }
 
-func countCommits(sdk *resilientbridge.ResilientBridge, owner, repoName, defaultBranch string) (int, error) {
+func util_fetchLanguages(sdk *resilientbridge.ResilientBridge, owner, repo string) (map[string]int, error) {
+	req := &resilientbridge.NormalizedRequest{
+		Method:   "GET",
+		Endpoint: fmt.Sprintf("/repos/%s/%s/languages", owner, repo),
+		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
+	}
+	resp, err := sdk.Request("github", req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching languages: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
+	}
+
+	var langs map[string]int
+	if err := json.Unmarshal(resp.Data, &langs); err != nil {
+		return nil, fmt.Errorf("error decoding languages: %w", err)
+	}
+	return langs, nil
+}
+
+func util_enrichRepoMetrics(sdk *resilientbridge.ResilientBridge, owner, repoName string, finalDetail *FinalRepoDetail) error {
+	var dbObj map[string]string
+	if finalDetail.DefaultBranchRef != nil {
+		if err := json.Unmarshal(finalDetail.DefaultBranchRef, &dbObj); err != nil {
+			return err
+		}
+	}
+	defaultBranch := dbObj["name"]
+	if defaultBranch == "" {
+		defaultBranch = "main"
+	}
+
+	commitsCount, err := util_countCommits(sdk, owner, repoName, defaultBranch)
+	if err != nil {
+		return fmt.Errorf("counting commits: %w", err)
+	}
+	finalDetail.Metrics.Commits = commitsCount
+
+	issuesCount, err := util_countIssues(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting issues: %w", err)
+	}
+	finalDetail.Metrics.Issues = issuesCount
+
+	branchesCount, err := util_countBranches(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting branches: %w", err)
+	}
+	finalDetail.Metrics.Branches = branchesCount
+
+	prCount, err := util_countPullRequests(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting PRs: %w", err)
+	}
+	finalDetail.Metrics.PullRequests = prCount
+
+	releasesCount, err := util_countReleases(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting releases: %w", err)
+	}
+	finalDetail.Metrics.Releases = releasesCount
+
+	tagsCount, err := util_countTags(sdk, owner, repoName)
+	if err != nil {
+		return fmt.Errorf("counting tags: %w", err)
+	}
+	finalDetail.Metrics.Tags = tagsCount
+
+	return nil
+}
+
+func util_countTags(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+	endpoint := fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repoName)
+	return util_countItemsFromEndpoint(sdk, endpoint)
+}
+
+func util_countCommits(sdk *resilientbridge.ResilientBridge, owner, repoName, defaultBranch string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/commits?sha=%s&per_page=1", owner, repoName, defaultBranch)
-	return countItemsFromEndpoint(sdk, endpoint)
+	return util_countItemsFromEndpoint(sdk, endpoint)
 }
 
-func countIssues(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+func util_countIssues(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/issues?state=all&per_page=1", owner, repoName)
-	return countItemsFromEndpoint(sdk, endpoint)
+	return util_countItemsFromEndpoint(sdk, endpoint)
 }
 
-func countBranches(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+func util_countBranches(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/branches?per_page=1", owner, repoName)
-	return countItemsFromEndpoint(sdk, endpoint)
+	return util_countItemsFromEndpoint(sdk, endpoint)
 }
 
-func countPullRequests(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+func util_countPullRequests(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/pulls?state=all&per_page=1", owner, repoName)
-	return countItemsFromEndpoint(sdk, endpoint)
+	return util_countItemsFromEndpoint(sdk, endpoint)
 }
 
-func countReleases(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
+func util_countReleases(sdk *resilientbridge.ResilientBridge, owner, repoName string) (int, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/releases?per_page=1", owner, repoName)
-	return countItemsFromEndpoint(sdk, endpoint)
+	return util_countItemsFromEndpoint(sdk, endpoint)
 }
 
-func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint string) (int, error) {
+func util_countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint string) (int, error) {
 	req := &resilientbridge.NormalizedRequest{
 		Method:   "GET",
 		Endpoint: endpoint,
 		Headers:  map[string]string{"Accept": "application/vnd.github+json"},
 	}
-
 	resp, err := sdk.Request("github", req)
 	if err != nil {
 		return 0, fmt.Errorf("error fetching data: %w", err)
 	}
 
+	// Some repos return 409 for certain endpoints (empty or not applicable).
 	if resp.StatusCode == 409 {
 		return 0, nil
 	}
-
 	if resp.StatusCode >= 400 {
 		return 0, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(resp.Data))
 	}
@@ -683,10 +649,12 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		}
 	}
 
+	// If there's no Link header, the count is the length of the JSON array (or 0 if empty).
 	if linkHeader == "" {
 		if len(resp.Data) > 2 {
 			var items []interface{}
 			if err := json.Unmarshal(resp.Data, &items); err != nil {
+				// If we can't unmarshal, assume there's at least one item.
 				return 1, nil
 			}
 			return len(items), nil
@@ -694,15 +662,14 @@ func countItemsFromEndpoint(sdk *resilientbridge.ResilientBridge, endpoint strin
 		return 0, nil
 	}
 
-	lastPage, err := parseLastPage(linkHeader)
+	lastPage, err := util_parseLastPage(linkHeader)
 	if err != nil {
 		return 0, fmt.Errorf("could not parse last page: %w", err)
 	}
-
 	return lastPage, nil
 }
 
-func parseLastPage(linkHeader string) (int, error) {
+func util_parseLastPage(linkHeader string) (int, error) {
 	re := regexp.MustCompile(`page=(\d+)>; rel="last"`)
 	matches := re.FindStringSubmatch(linkHeader)
 	if len(matches) < 2 {
@@ -714,4 +681,19 @@ func parseLastPage(linkHeader string) (int, error) {
 		return 0, err
 	}
 	return lastPage, nil
+}
+
+func util_parseScopeURL(repoURL string) (owner, repo string, err error) {
+	if !strings.HasPrefix(repoURL, "https://github.com/") {
+		return "", "", fmt.Errorf("URL must start with https://github.com/")
+	}
+	parts := strings.Split(strings.TrimPrefix(repoURL, "https://github.com/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		return "", "", fmt.Errorf("invalid URL format")
+	}
+	owner = parts[0]
+	if len(parts) > 1 {
+		repo = parts[1]
+	}
+	return owner, repo, nil
 }
