@@ -15,18 +15,20 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile) // include file & line in logs
 	repoFlag := flag.String("repo", "", "Repository in the format https://github.com/<owner>/<repo>")
 	maxCommitsFlag := flag.Int("maxcommits", 250, "Maximum number of commits to fetch (default 250)")
 	flag.Parse()
+
+	log.Println("Starting execution...")
 
 	if *repoFlag == "" {
 		log.Fatal("You must provide a -repo parameter, e.g. -repo=https://github.com/apache/cloudstack")
 	}
 
-	// Set up the resilient SDK
-	apiToken := os.Getenv("GITHUB_API_TOKEN")
+	apiToken := os.Getenv("CR_PAT")
 	if apiToken == "" {
-		log.Println("GITHUB_API_TOKEN not set; you may only be able to access public repos")
+		log.Println("CR_PAT not set; access to private repos may be limited.")
 	}
 	sdk := resilientbridge.NewResilientBridge()
 	sdk.RegisterProvider("github", adapters.NewGitHubAdapter(apiToken), &resilientbridge.ProviderConfig{
@@ -35,18 +37,21 @@ func main() {
 		BaseBackoff:       0,
 	})
 
+	log.Println("Parsing repository URL:", *repoFlag)
 	owner, repo, err := parseRepoURL(*repoFlag)
 	if err != nil {
 		log.Fatalf("Error parsing repo URL: %v", err)
 	}
+	log.Printf("Owner: %s, Repo: %s", owner, repo)
 
+	log.Println("Checking repository active status...")
 	active, err := checkRepositoryActive(sdk, owner, repo)
 	if err != nil {
 		log.Fatalf("Error checking repository: %v", err)
 	}
 
 	if !active {
-		// Repository is archived or disabled, return 0 commits
+		log.Println("Repository is archived or disabled, no commits will be returned.")
 		return
 	}
 
@@ -55,20 +60,25 @@ func main() {
 		maxCommits = 100
 	}
 
+	log.Printf("Fetching up to %d commits...", maxCommits)
 	commits, err := fetchCommitList(sdk, owner, repo, maxCommits)
 	if err != nil {
 		log.Fatalf("Error fetching commits list: %v", err)
 	}
+	log.Printf("Fetched %d commits", len(commits))
 
-	for _, c := range commits {
+	for i, c := range commits {
+		log.Printf("Processing commit %d/%d: %s", i+1, len(commits), c.SHA)
 		commitJSON, err := fetchCommitDetails(sdk, owner, repo, c.SHA)
 		if err != nil {
 			log.Printf("Error fetching commit %s details: %v", c.SHA, err)
 			continue
 		}
+		log.Printf("Successfully fetched commit details for %s", c.SHA)
 		os.Stdout.Write(commitJSON)
 		os.Stdout.Write([]byte("\n"))
 	}
+	log.Println("Finished processing all commits.")
 }
 
 func parseRepoURL(repoURL string) (string, string, error) {
