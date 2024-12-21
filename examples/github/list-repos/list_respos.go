@@ -138,7 +138,6 @@ type SecuritySettings struct {
 	DependabotSecurityUpdatesEnabled         bool `json:"dependabot_security_updates_enabled"`
 	SecretScanningNonProviderPatternsEnabled bool `json:"secret_scanning_non_provider_patterns_enabled"`
 	SecretScanningValidityChecksEnabled      bool `json:"secret_scanning_validity_checks_enabled"`
-	PrivateVulnerabilityReportingEnabled     bool `json:"private_vulnerability_reporting_enabled"`
 }
 
 type RepoURLs struct {
@@ -280,13 +279,6 @@ func main() {
 				log.Printf("Error enriching repo metrics for %s/%s: %v", r.Owner.Login, r.Name, err)
 			}
 
-			pvrEnabled, err := fetchPrivateVulnerabilityReporting(sdk, r.Owner.Login, r.Name)
-			if err != nil {
-				log.Printf("Error fetching private vulnerability reporting status for %s/%s: %v", r.Owner.Login, r.Name, err)
-			} else {
-				finalDetail.SecuritySettings.PrivateVulnerabilityReportingEnabled = pvrEnabled
-			}
-
 			data, err := json.MarshalIndent(finalDetail, "", "  ")
 			if err != nil {
 				log.Fatalf("Error marshalling repo detail: %v", err)
@@ -315,13 +307,6 @@ func main() {
 		err = enrichRepoMetrics(sdk, owner, repoName, finalDetail)
 		if err != nil {
 			log.Printf("Error enriching repo metrics for %s/%s: %v", owner, repoName, err)
-		}
-
-		pvrEnabled, err := fetchPrivateVulnerabilityReporting(sdk, owner, repoName)
-		if err != nil {
-			log.Printf("Error fetching private vulnerability reporting status for %s/%s: %v", owner, repoName, err)
-		} else {
-			finalDetail.SecuritySettings.PrivateVulnerabilityReportingEnabled = pvrEnabled
 		}
 
 		data, err := json.MarshalIndent(finalDetail, "", "  ")
@@ -431,7 +416,6 @@ func transformToFinalRepoDetail(detail *RepoDetail) *FinalRepoDetail {
 			DependabotSecurityUpdatesEnabled:         false,
 			SecretScanningNonProviderPatternsEnabled: false,
 			SecretScanningValidityChecksEnabled:      false,
-			PrivateVulnerabilityReportingEnabled:     false,
 		},
 		RepoURLs: RepoURLs{
 			GitURL:   detail.GitURL,
