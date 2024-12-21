@@ -14,7 +14,7 @@ import (
 )
 
 // MAX_REPO limits how many repositories we retrieve in "list" mode.
-const MAX_REPO = 100
+const MAX_REPO = 250
 
 // ---- STRUCT DEFINITIONS ----------------------------------------------------
 
