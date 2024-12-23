@@ -109,9 +109,9 @@ func main() {
 		endTime = &t
 	}
 
-	apiToken := os.Getenv("GITHUB_API_TOKEN")
+	apiToken := os.Getenv("GITHUB_PAT")
 	if apiToken == "" {
-		log.Fatal("GITHUB_API_TOKEN environment variable not set or missing read:packages scope")
+		log.Fatal("GITHUB_PAT environment variable not set or missing read:packages scope")
 	}
 
 	sdk := resilientbridge.NewResilientBridge()
