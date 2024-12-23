@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	// This import path references your actual module's path + "/utils".
-	// Example: if your module name is "github.com/opengovern/resilient-bridge"
-	// then the path below is correct. Adjust as needed for your environment.
+
+	// Import the 'utils' package from your repository
+	utils "github.com/opengovern/resilient-bridge/utils"
 )
 
 func main() {
@@ -17,25 +17,22 @@ func main() {
 	flag.Parse()
 
 	if filePath == "" {
-		log.Fatal("Usage: go run main.go --file=./Dockerfile")
+		log.Fatal("Usage: go run list-base-images.go --file=./Dockerfile")
 	}
 
-	// 1) Read the Dockerfile from disk
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("Failed to read Dockerfile: %v", err)
+		log.Fatalf("Failed to read Dockerfile at %s: %v", filePath, err)
 	}
 
-	// 2) Encode content in base64
 	encoded := base64.StdEncoding.EncodeToString(content)
 
-	// 3) Call the function from the 'utils' package to parse the base64 Dockerfile and collect base images
+	// Call the function from the utils package
 	images, err := utils.ExtractExternalBaseImagesFromBase64(encoded)
 	if err != nil {
 		log.Fatalf("Error extracting base images: %v", err)
 	}
 
-	// 4) Print the result
 	fmt.Println("External base images found:")
 	for i, img := range images {
 		fmt.Printf("%d) %s\n", i+1, img)
