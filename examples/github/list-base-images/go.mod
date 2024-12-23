@@ -4,7 +4,7 @@ go 1.22.5
 
 require (
 	github.com/moby/buildkit v0.18.2 // indirect
-	github.com/opengovern/resilient-bridge v0.0.0-20241223162955-10fecf0e8cec
+	github.com/opengovern/resilient-bridge v0.0.0-20241223164127-85ad8f42a67d
 )
 
 require (
