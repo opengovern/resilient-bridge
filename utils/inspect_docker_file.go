@@ -12,7 +12,8 @@ import (
 )
 
 // ExtractExternalBaseImagesFromBase64 parses a base64-encoded Dockerfile, expands ARG references,
-// and returns a slice of external (non-alias) base images in the Dockerfile.
+// and returns a deduplicated slice of external (non-alias) base images. If an ARG is used but never
+// defined, we treat it as an empty string (removing it from the final image name).
 func ExtractExternalBaseImagesFromBase64(encodedDockerfile string) ([]string, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encodedDockerfile)
 	if err != nil {
@@ -31,7 +32,7 @@ func ExtractExternalBaseImagesFromBase64(encodedDockerfile string) ([]string, er
 	// 1. Collect ARG key-value defaults:
 	argsMap := collectArgs(res.AST)
 
-	// 2. Gather FROM lines
+	// 2. Gather FROM lines (base image + optional alias)
 	var froms []fromInfo
 	stageAliases := make(map[string]bool)
 	for _, stmt := range res.AST.Children {
@@ -45,16 +46,17 @@ func ExtractExternalBaseImagesFromBase64(encodedDockerfile string) ([]string, er
 		}
 	}
 
-	// 3. Filter out references to internal aliases
-	var external []string
+	// 3. Filter out references to internal aliases (e.g. FROM builder)
+	var allBaseImages []string
 	for _, f := range froms {
 		if stageAliases[f.baseImage] {
-			// Means it's referencing a prior stage alias
 			continue
 		}
-		external = append(external, f.baseImage)
+		allBaseImages = append(allBaseImages, f.baseImage)
 	}
-	return external, nil
+
+	// 4. Deduplicate base images
+	return deduplicateStrings(allBaseImages), nil
 }
 
 // fromInfo holds (baseImage, alias) for one FROM line.
@@ -63,6 +65,21 @@ type fromInfo struct {
 	alias     string
 }
 
+// deduplicateStrings returns a slice of unique strings, preserving order.
+func deduplicateStrings(input []string) []string {
+	seen := make(map[string]bool, len(input))
+	var result []string
+	for _, v := range input {
+		if !seen[v] {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+// collectArgs scans all top-level `ARG` instructions to fill a map of known defaults.
+// e.g. `ARG PLUGIN_REGISTRY=opengovern` => argsMap["PLUGIN_REGISTRY"] = "opengovern".
 func collectArgs(ast *parser.Node) map[string]string {
 	argsMap := make(map[string]string)
 	for _, stmt := range ast.Children {
@@ -70,8 +87,8 @@ func collectArgs(ast *parser.Node) map[string]string {
 			tokens := collectStatementTokens(stmt)
 			for _, t := range tokens {
 				k, v := parseArgKeyValue(t)
-				if k != "" && v != "" {
-					argsMap[k] = v
+				if k != "" {
+					argsMap[k] = v // could be empty if ARG is declared but not assigned
 				}
 			}
 		}
@@ -79,7 +96,7 @@ func collectArgs(ast *parser.Node) map[string]string {
 	return argsMap
 }
 
-// parseArgKeyValue splits "KEY=VALUE".
+// parseArgKeyValue splits "KEY=VALUE". If no '=', we get (KEY, "").
 func parseArgKeyValue(s string) (string, string) {
 	parts := strings.SplitN(s, "=", 2)
 	if len(parts) == 1 {
@@ -88,7 +105,7 @@ func parseArgKeyValue(s string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// collectStatementTokens returns tokens for the statement, stopping on next instruction
+// collectStatementTokens returns tokens for the statement, stopping on the next instruction.
 func collectStatementTokens(stmt *parser.Node) []string {
 	var tokens []string
 	cur := stmt.Next
@@ -102,7 +119,8 @@ func collectStatementTokens(stmt *parser.Node) []string {
 	return tokens
 }
 
-// parseFromLine processes tokens from FROM statement, e.g. ["--platform=${PLATFORM}", "${GO_IMAGE}", "AS", "builder"]
+// parseFromLine processes tokens from a FROM statement, e.g. ["--platform=${PLATFORM}", "${GO_IMAGE}", "AS", "builder"].
+// We do a naive expansion: if an ARG is never defined, we remove the placeholder entirely.
 func parseFromLine(tokens []string, args map[string]string) (string, string) {
 	var base, alias string
 	for i := 0; i < len(tokens); i++ {
@@ -120,16 +138,23 @@ func parseFromLine(tokens []string, args map[string]string) (string, string) {
 	return base, alias
 }
 
-// expandArgs replaces any ${VAR} references with known arg defaults from the map
+// expandArgs replaces any ${VAR} references with known defaults from 'args'. If not defined in 'args',
+// we remove ${VAR} entirely (and any preceding slash). Example: "/${PLUGIN_REGISTRY}/stuff" => "stuff"
+// if PLUGIN_REGISTRY is not set.
 func expandArgs(val string, args map[string]string) string {
-	return os.Expand(val, func(k string) string {
+	expanded := os.Expand(val, func(k string) string {
 		if v, ok := args[k]; ok {
 			return v
 		}
-		return "${" + k + "}"
+		// If no default, empty out the var reference
+		return ""
 	})
+	// Strip leading slashes if we emptied out a variable
+	expanded = strings.TrimLeft(expanded, "/")
+	return expanded
 }
 
+// isInstructionKeyword checks if a token is recognized as a Dockerfile instruction.
 func isInstructionKeyword(s string) bool {
 	switch strings.ToUpper(s) {
 	case "ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV", "EXPOSE",

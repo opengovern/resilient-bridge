@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/opengovern/resilient-bridge/utils"
 	// Import the 'utils' package from your repository
-	utils "github.com/opengovern/resilient-bridge/utils"
 )
 
 func main() {
