@@ -13,7 +13,7 @@ import (
 
 // ExtractExternalBaseImagesFromBase64 parses a base64-encoded Dockerfile, expands ARG references,
 // and returns a deduplicated slice of external (non-alias) base images. If an ARG is used but never
-// defined, we treat it as an empty string (removing it from the final image name).
+// defined, we treat it as an unknown version (e.g. "fedora:*").
 func ExtractExternalBaseImagesFromBase64(encodedDockerfile string) ([]string, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encodedDockerfile)
 	if err != nil {
@@ -42,7 +42,7 @@ func ExtractExternalBaseImagesFromBase64(encodedDockerfile string) ([]string, er
 			if alias != "" {
 				stageAliases[alias] = true
 			}
-			froms = append(froms, fromInfo{base, alias})
+			froms = append(froms, fromInfo{baseImage: base, alias: alias})
 		}
 	}
 
@@ -120,38 +120,61 @@ func collectStatementTokens(stmt *parser.Node) []string {
 }
 
 // parseFromLine processes tokens from a FROM statement, e.g. ["--platform=${PLATFORM}", "${GO_IMAGE}", "AS", "builder"].
-// We do a naive expansion: if an ARG is never defined, we remove the placeholder entirely.
+//
+// We do a naive expansion: if an ARG is never defined, we fallback to "repo:*" for that base image.
+// Example: "FROM fedora:$FEDORA_VERSION" with no default => "fedora:*".
 func parseFromLine(tokens []string, args map[string]string) (string, string) {
 	var base, alias string
+	var encounteredUndefinedArg bool
+
 	for i := 0; i < len(tokens); i++ {
 		t := tokens[i]
+
+		// e.g. --platform=linux/amd64
 		if strings.HasPrefix(t, "--") {
-			// e.g. --platform=linux/amd64
 			continue
 		}
+
+		// If we see "AS builder", the next token is the alias
 		if strings.EqualFold(t, "AS") && i+1 < len(tokens) {
 			alias = tokens[i+1]
 			break
 		}
-		base = expandArgs(t, args)
+
+		// Expand references
+		expanded := os.Expand(t, func(k string) string {
+			if v, ok := args[k]; ok {
+				return v
+			}
+			// If ARG not defined, note it
+			encounteredUndefinedArg = true
+			return ""
+		})
+
+		// The first token that isn't a flag or AS is the base image
+		if base == "" {
+			base = expanded
+		}
 	}
+
+	// If any undefined ARG was encountered, fallback to "repo:*"
+	if encounteredUndefinedArg && base != "" {
+		base = fallbackRepoTag(base)
+	}
+
 	return base, alias
 }
 
-// expandArgs replaces any ${VAR} references with known defaults from 'args'. If not defined in 'args',
-// we remove ${VAR} entirely (and any preceding slash). Example: "/${PLUGIN_REGISTRY}/stuff" => "stuff"
-// if PLUGIN_REGISTRY is not set.
-func expandArgs(val string, args map[string]string) string {
-	expanded := os.Expand(val, func(k string) string {
-		if v, ok := args[k]; ok {
-			return v
-		}
-		// If no default, empty out the var reference
-		return ""
-	})
-	// Strip leading slashes if we emptied out a variable
-	expanded = strings.TrimLeft(expanded, "/")
-	return expanded
+// fallbackRepoTag replaces everything after the first colon with "*", or
+// if no colon is present, appends ":*". This ensures we produce something
+// like "fedora:*" or "ghcr.io/myorg/fedora:*" if the ARG-based tag was
+// unresolved.
+func fallbackRepoTag(imageRef string) string {
+	if !strings.Contains(imageRef, ":") {
+		return imageRef + ":*"
+	}
+	parts := strings.SplitN(imageRef, ":", 2)
+	return parts[0] + ":*"
 }
 
 // isInstructionKeyword checks if a token is recognized as a Dockerfile instruction.
