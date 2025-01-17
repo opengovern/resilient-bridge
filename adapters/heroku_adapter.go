@@ -71,7 +71,7 @@ func (h *HerokuAdapter) IdentifyRequestType(req *resilientbridge.NormalizedReque
 // After the response is received, it records the request timestamp for rate limiting calculations.
 func (h *HerokuAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*resilientbridge.NormalizedResponse, error) {
 	client := &http.Client{}
-	fullURL := "https://api.tailscale.com/api" + req.Endpoint
+	fullURL := "https://api.heroku.com" + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
 	if err != nil {
