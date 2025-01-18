@@ -3,6 +3,7 @@ package adapters
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -55,7 +56,7 @@ func (f *FlyIOAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*
 	}
 
 	client := &http.Client{}
-	baseURL := "https://api.machines.dev"
+	baseURL := "https://api.machines.dev/v1"
 	fullURL := baseURL + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
@@ -176,21 +177,23 @@ func (f *FlyIOAdapter) isRateLimited(action string, machineID string) bool {
 	}
 
 	if f.requestHistory == nil {
+		log.Println("request history map is null")
 		f.requestHistory = make(map[string][]int64)
 	}
 
 	limit := f.getRateLimitForAction(action)
 	now := time.Now().Unix()
 	windowStart := now - 1 // 1 second window for simplicity
-	timestamps := f.requestHistory[key]
+	timestamps, exist := f.requestHistory[key]
 	var newTimestamps []int64
-	for _, ts := range timestamps {
-		if ts >= windowStart {
-			newTimestamps = append(newTimestamps, ts)
+	if exist {
+		for _, ts := range timestamps {
+			if ts >= windowStart {
+				newTimestamps = append(newTimestamps, ts)
+			}
 		}
 	}
 	f.requestHistory[key] = newTimestamps
-
 	return len(newTimestamps) >= limit
 }
 
@@ -205,8 +208,15 @@ func (f *FlyIOAdapter) recordRequest(action, machineID string) {
 		key = action + ":global"
 	}
 
-	timestamps := f.requestHistory[key]
-	timestamps = append(timestamps, time.Now().Unix())
+	if f.requestHistory == nil {
+		log.Println("request history map is null")
+		f.requestHistory = make(map[string][]int64)
+	}
+
+	timestamps, exist := f.requestHistory[key]
+	if exist {
+		timestamps = append(timestamps, time.Now().Unix())
+	}
 	f.requestHistory[key] = timestamps
 }
 
