@@ -55,7 +55,7 @@ func (f *FlyIOAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (*
 	}
 
 	client := &http.Client{}
-	baseURL := "https://api.machines.dev/v1"
+	baseURL := "https://api.machines.dev"
 	fullURL := baseURL + req.Endpoint
 
 	httpReq, err := http.NewRequest(req.Method, fullURL, bytes.NewReader(req.Body))
@@ -175,8 +175,11 @@ func (f *FlyIOAdapter) isRateLimited(action string, machineID string) bool {
 		key = action + ":global"
 	}
 
-	limit := f.getRateLimitForAction(action)
+	if f.requestHistory == nil {
+		f.requestHistory = make(map[string][]int64)
+	}
 
+	limit := f.getRateLimitForAction(action)
 	now := time.Now().Unix()
 	windowStart := now - 1 // 1 second window for simplicity
 	timestamps := f.requestHistory[key]
