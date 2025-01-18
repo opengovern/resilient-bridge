@@ -82,7 +82,7 @@ func (h *HerokuAdapter) ExecuteRequest(req *resilientbridge.NormalizedRequest) (
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+h.APIToken)
 	if httpReq.Header.Get("Content-Type") == "" {
-		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Content-Type", "application/vnd.heroku+json; version=3")
 	}
 
 	resp, err := client.Do(httpReq)
