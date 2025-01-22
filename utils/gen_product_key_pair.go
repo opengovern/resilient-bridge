@@ -1,4 +1,4 @@
-package ecdsautil
+package utils
 
 import (
     "crypto/ecdsa"
