@@ -248,7 +248,6 @@ func IsBinaryFileForItem(sdk *resilientbridge.ResilientBridge, item Item, verbos
 		}
 	}
 	return isBin, nil
-}
 
 // ---------------------------------------------------------------------
 // Gather Directories (Keep ALL recognized extensions, including text-based)
@@ -259,15 +258,13 @@ func GatherDirectories(items []Item) []DirGroup {
 	// We'll separate "binary-likely" vs. "text-based" later, but we do not skip them now.
 	tmp := make(map[string][]Item)
 
-	for _, it := range items {
-		ext := strings.TrimPrefix(filepath.Ext(it.Path), ".")
-		// We are searching for everything in FileExtensions, so we assume
-		// if it's found, it's "some sort of model" => gather them all.
-		dir := filepath.Dir(it.Path)
-		key := it.Repository.FullName + "|" + dir
-
-		tmp[key] = append(tmp[key], it)
-	}
+	for _, item := range items {
+    ext := strings.TrimPrefix(filepath.Ext(item.Path), ".")
+    if verbose {
+        log.Printf("[verbose] Found file %s (ext=%s)", item.Path, ext)
+    }
+    finalKept = append(finalKept, item)
+}
 
 	var groups []DirGroup
 	for k, v := range tmp {
