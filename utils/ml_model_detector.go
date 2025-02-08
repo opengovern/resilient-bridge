@@ -42,8 +42,8 @@ type Item struct {
 // Repository holds basic repository information.
 type Repository struct {
 	ID       int64  `json:"id,omitempty"`
-	Name     string `json:"name,omitempty"`       // e.g. "my-repo"
-	FullName string `json:"full_name,omitempty"`  // e.g. "ownerName/my-repo"
+	Name     string `json:"name,omitempty"`      // e.g. "my-repo"
+	FullName string `json:"full_name,omitempty"` // e.g. "ownerName/my-repo"
 }
 
 // FileExtensions is the set of all extensions we want to find.
@@ -70,10 +70,10 @@ var FileExtensions = []string{
 	"prototxt", // text-based
 	"params",
 	"mlmodel",
-	"pmml",     // text-based
+	"pmml", // text-based
 }
 
-// ExpectedBinaryExt indicates which extensions we *expect* to be true binary formats
+// ExpectedBinaryExt indicates which extensions we *expect* to be binary formats
 var ExpectedBinaryExt = map[string]bool{
 	"h5":          true,
 	"hdf5":        true,
@@ -100,8 +100,8 @@ var ExpectedBinaryExt = map[string]bool{
 
 // DirGroup represents a collection of Items under (repo + directory).
 type DirGroup struct {
-	Key         string // e.g. "owner/repo|models/"
-	AllItems    []Item // includes both binary-likely + text-based
+	Key      string // e.g. "owner/repo|models/"
+	AllItems []Item // includes both binary-likely + text-based
 }
 
 // RepoOutput is used for the final JSON structure, per repository
@@ -248,23 +248,27 @@ func IsBinaryFileForItem(sdk *resilientbridge.ResilientBridge, item Item, verbos
 		}
 	}
 	return isBin, nil
+} // <--- closing brace for IsBinaryFileForItem
 
 // ---------------------------------------------------------------------
 // Gather Directories (Keep ALL recognized extensions, including text-based)
 // ---------------------------------------------------------------------
 
-func GatherDirectories(items []Item) []DirGroup {
-	// We gather all items that matched our search (including .prototxt, .pmml).
-	// We'll separate "binary-likely" vs. "text-based" later, but we do not skip them now.
+// GatherDirectories logs each file's extension if verbose, and organizes
+// them by (repo + directory). We do NOT skip text-based or "non-binary" files here.
+func GatherDirectories(items []Item, verbose bool) []DirGroup {
 	tmp := make(map[string][]Item)
 
 	for _, item := range items {
-    ext := strings.TrimPrefix(filepath.Ext(item.Path), ".")
-    if verbose {
-        log.Printf("[verbose] Found file %s (ext=%s)", item.Path, ext)
-    }
-    finalKept = append(finalKept, item)
-}
+		ext := strings.TrimPrefix(filepath.Ext(item.Path), ".")
+		if verbose {
+			log.Printf("[verbose] Found file %s (ext=%s)", item.Path, ext)
+		}
+		dir := filepath.Dir(item.Path)
+		key := item.Repository.FullName + "|" + dir
+
+		tmp[key] = append(tmp[key], item)
+	}
 
 	var groups []DirGroup
 	for k, v := range tmp {
@@ -293,14 +297,13 @@ func dynamicSampleDirectory(
 		if ExpectedBinaryExt[ext] {
 			binLikely = append(binLikely, it)
 		} else {
-			// This is a text-based extension (e.g. .prototxt, .pmml, etc.),
-			// or unknown. We'll keep it automatically in final output.
+			// This is a text-based extension (e.g. .prototxt, .pmml, etc.)
 			textBased = append(textBased, it)
 		}
 	}
 
-	// If no bin-likely files, there's nothing to sample. We'll still
-	// keep the text-based items. Return "confirmedBinaries" as empty.
+	// If no bin-likely files, we simply return empty "confirmedBinaries"
+	// but keep the text-based items
 	if len(binLikely) == 0 {
 		return nil, textBased
 	}
