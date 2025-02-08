@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
+
 	"math/rand"
 	"net/url"
 	"path/filepath"
@@ -165,6 +165,8 @@ func SearchGitHub(sdk *resilientbridge.ResilientBridge, query string, page int) 
 	// If rate-limited, check for reset and retry once.
 	if resp.StatusCode == 403 {
 		if resetStr, ok := resp.Headers["X-RateLimit-Reset"]; ok {
+			log.Printf("Rate limit resets at: %s", resetStr)
+
 			// ...
 		}
 	}
