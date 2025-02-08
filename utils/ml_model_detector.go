@@ -72,6 +72,7 @@ var FileExtensions = []string{
 	"caffemodel",
 	"prototxt",
 	"params",
+	"pdparams",
 	"mlmodel",
 	"pmml",
 }
@@ -99,6 +100,7 @@ var ExpectedBinaryExt = map[string]bool{
 	"caffemodel":  true,
 	"params":      true,
 	"mlmodel":     true,
+	"pdparams":    true,
 }
 
 // DirGroup represents a collection of Items under (repo + directory).
