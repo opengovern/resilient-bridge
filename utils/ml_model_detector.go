@@ -1,5 +1,4 @@
 // File: github.com/opengovern/resilient-bridge/utils/ml_model_detector.go
-
 package utils
 
 import (
@@ -7,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-
 	"math/rand"
 	"net/url"
 	"path/filepath"
@@ -24,7 +22,10 @@ import (
 const (
 	DEFAULT_CHUNK_SIZE  = 5
 	MAX_FILES_PER_REPO  = 500
-	INITIAL_SAMPLE_SIZE = 3 // number of files in the initial "quick sample"
+
+	// INITIAL_SAMPLE_SIZE: number of files to sample quickly in each directory.
+	// If any binary found, we'll check all remaining files to avoid missing others.
+	INITIAL_SAMPLE_SIZE = 3
 )
 
 // SearchResult models GitHub's /search/code JSON response.
@@ -34,7 +35,7 @@ type SearchResult struct {
 	Items             []Item `json:"items"`
 }
 
-// Item represents a single code search result.
+// Item represents a single code search result (part of the /search/code response).
 type Item struct {
 	Name       string     `json:"name"`
 	Path       string     `json:"path"`
@@ -44,10 +45,12 @@ type Item struct {
 
 // Repository holds basic repository information.
 type Repository struct {
-	FullName string `json:"full_name"`
+	ID       int64  `json:"id,omitempty"`        // May or may not be present in /search responses
+	Name     string `json:"name,omitempty"`      // e.g. "platform-configuration"
+	FullName string `json:"full_name,omitempty"` // e.g. "opengovern/platform-configuration"
 }
 
-// FileExtensions is a list of file extensions we want to search for.
+// FileExtensions is a list of file extensions we typically search for.
 var FileExtensions = []string{
 	"h5",
 	"hdf5",
@@ -73,7 +76,8 @@ var FileExtensions = []string{
 	"pmml",
 }
 
-// ExpectedBinaryExt defines which file extensions are expected to be binary.
+// ExpectedBinaryExt defines which file extensions are expected to be binary
+// ML model files. (We often skip "prototxt" or "pmml" since they're text-based.)
 var ExpectedBinaryExt = map[string]bool{
 	"h5":          true,
 	"hdf5":        true,
@@ -95,17 +99,24 @@ var ExpectedBinaryExt = map[string]bool{
 	"caffemodel":  true,
 	"params":      true,
 	"mlmodel":     true,
-	// "prototxt" and "pmml" typically are text-based, so not in the above set.
 }
 
 // DirGroup represents a collection of Items under (repo + directory).
 type DirGroup struct {
-	Key   string
+	Key   string // e.g. "opengovern/platform-configuration|models/"
 	Items []Item
 }
 
+// RepoOutput is used for generating final JSON output (per repository).
+type RepoOutput struct {
+	RepositoryID       int64             `json:"repository_id"`
+	RepositoryName     string            `json:"repository_name"`
+	RepositoryFullName string            `json:"repository_full_name"`
+	Extensions         map[string][]string `json:"extensions"`
+}
+
 // -----------------------------------------------------------------------------
-// Utility Functions
+// Helper & Utility Functions
 // -----------------------------------------------------------------------------
 
 // ChunkBySize splits a slice of strings into chunks, each with at most 'size' elements.
@@ -147,6 +158,7 @@ func IsBinaryData(data []byte) bool {
 // SearchGitHub uses resilient-bridge to execute the GitHub Code Search API call.
 func SearchGitHub(sdk *resilientbridge.ResilientBridge, query string, page int) (SearchResult, error) {
 	var result SearchResult
+
 	encodedQuery := url.QueryEscape(query)
 	endpoint := fmt.Sprintf("/search/code?q=%s&per_page=100&page=%d", encodedQuery, page)
 
@@ -162,15 +174,8 @@ func SearchGitHub(sdk *resilientbridge.ResilientBridge, query string, page int) 
 	if err != nil {
 		return result, err
 	}
-	// If rate-limited, check for reset and retry once.
-	if resp.StatusCode == 403 {
-		if resetStr, ok := resp.Headers["X-RateLimit-Reset"]; ok {
-			log.Printf("Rate limit resets at: %s", resetStr)
-
-			// ...
-		}
-	}
 	if resp.StatusCode != 200 {
+		// If rate-limited or some other issue, handle here if needed
 		return result, fmt.Errorf("non-OK HTTP status: %d", resp.StatusCode)
 	}
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
@@ -179,8 +184,8 @@ func SearchGitHub(sdk *resilientbridge.ResilientBridge, query string, page int) 
 	return result, nil
 }
 
-// IsBinaryFileForItem uses resilient-bridge to fetch only the first 10 KB of a file
-// and checks if it is binary.
+// IsBinaryFileForItem uses resilient-bridge to fetch only the first 10 KB
+// of a file and checks if it is binary.
 func IsBinaryFileForItem(sdk *resilientbridge.ResilientBridge, item Item, verbose bool) (bool, error) {
 	if verbose {
 		log.Printf("[verbose] Checking file content for %s (%s)", item.Path, item.Repository.FullName)
@@ -202,13 +207,11 @@ func IsBinaryFileForItem(sdk *resilientbridge.ResilientBridge, item Item, verbos
 	if resp.StatusCode != 200 {
 		return false, fmt.Errorf("non-OK HTTP status when fetching file content: %d", resp.StatusCode)
 	}
-
 	var contentResp struct {
 		Content     string `json:"content"`
 		Encoding    string `json:"encoding"`
 		DownloadURL string `json:"download_url"`
 	}
-
 	if err := json.Unmarshal(resp.Data, &contentResp); err != nil {
 		return false, err
 	}
@@ -259,8 +262,7 @@ func IsBinaryFileForItem(sdk *resilientbridge.ResilientBridge, item Item, verbos
 // Dynamic (Two-Phase) Sampling Logic
 // -----------------------------------------------------------------------------
 
-// GatherDirectories groups items by (repo + directory) but only
-// if their extension is in ExpectedBinaryExt.
+// GatherDirectories groups items by (repo + directory) if extension is in ExpectedBinaryExt.
 func GatherDirectories(items []Item) []DirGroup {
 	tmp := make(map[string][]Item)
 	for _, it := range items {
@@ -280,23 +282,26 @@ func GatherDirectories(items []Item) []DirGroup {
 }
 
 // dynamicSampleDirectory does a two-phase sampling approach:
-// 1) Sample up to INITIAL_SAMPLE_SIZE files. If none are binary, skip.
-// 2) If at least 1 is binary, check all remaining files to avoid missing any.
+//   1) Sample up to INITIAL_SAMPLE_SIZE files. If none are binary => skip directory.
+//   2) If at least 1 is binary => check all remaining files in directory.
 func dynamicSampleDirectory(
 	sdk *resilientbridge.ResilientBridge,
 	group DirGroup,
 	verbose bool,
-) (foundAny bool, binItems []Item) {
+) (bool, []Item) {
 	n := len(group.Items)
 	if n == 0 {
 		return false, nil
 	}
+
+	// Shuffle for random sampling
 	rand.Shuffle(n, func(i, j int) {
 		group.Items[i], group.Items[j] = group.Items[j], group.Items[i]
 	})
 
 	if n <= INITIAL_SAMPLE_SIZE {
-		// Just check them all if small
+		var binItems []Item
+		foundAny := false
 		for _, it := range group.Items {
 			ok, err := IsBinaryFileForItem(sdk, it, verbose)
 			if err == nil && ok {
@@ -309,16 +314,17 @@ func dynamicSampleDirectory(
 
 	// Phase 1: small initial sample
 	sample1 := group.Items[:INITIAL_SAMPLE_SIZE]
-	phase1Found := false
+	foundBinary := false
+	var binItems []Item
 	for _, it := range sample1 {
 		ok, err := IsBinaryFileForItem(sdk, it, verbose)
 		if err == nil && ok {
-			phase1Found = true
+			foundBinary = true
 			binItems = append(binItems, it)
 		}
 	}
-	if !phase1Found {
-		// skip directory
+	if !foundBinary {
+		// skip entire directory
 		return false, nil
 	}
 
@@ -333,8 +339,9 @@ func dynamicSampleDirectory(
 	return (len(binItems) > 0), binItems
 }
 
-// SampleAndFilterDirectories runs the dynamic sampling approach in parallel:
-// if the initial sample yields no binaries, skip; otherwise, check the entire directory.
+// SampleAndFilterDirectories runs dynamic sampling across directories in parallel.
+// If a directory's initial sample yields no binaries, we skip it entirely; if it yields
+// some, we check all remaining files to ensure we don't miss others.
 func SampleAndFilterDirectories(
 	sdk *resilientbridge.ResilientBridge,
 	groups []DirGroup,
@@ -351,11 +358,11 @@ func SampleAndFilterDirectories(
 	for _, g := range groups {
 		group := g
 		wg.Add(1)
-		sem <- struct{}{} // acquire
+		sem <- struct{}{} // acquire concurrency slot
 
 		go func() {
 			defer wg.Done()
-			defer func() { <-sem }() // release
+			defer func() { <-sem }() // release slot
 
 			found, binItems := dynamicSampleDirectory(sdk, group, verbose)
 			if found {
@@ -363,10 +370,11 @@ func SampleAndFilterDirectories(
 				kept = append(kept, binItems...)
 				mu.Unlock()
 				if verbose {
-					log.Printf("[verbose] Directory %s => found %d binary files", group.Key, len(binItems))
+					log.Printf("[verbose] Directory %s => found %d binary file(s).",
+						group.Key, len(binItems))
 				}
 			} else if verbose {
-				log.Printf("[verbose] Directory %s => no binaries, skipping", group.Key)
+				log.Printf("[verbose] Directory %s => no binaries, skipping.", group.Key)
 			}
 		}()
 	}
@@ -374,24 +382,60 @@ func SampleAndFilterDirectories(
 	return kept
 }
 
-// CreateRepoExtensionMap organizes items by repository -> extension -> file paths.
-func CreateRepoExtensionMap(items []Item) map[string]map[string][]string {
-	repoMap := make(map[string]map[string][]string)
-	repoCount := make(map[string]int)
+// -----------------------------------------------------------------------------
+// Final JSON-Building for Output
+// -----------------------------------------------------------------------------
+
+// CreateDetailedRepoExtensionMap organizes items per repository, including
+// repository_id, repository_name, repository_full_name, and an "extensions" map
+// of ext -> []file paths.
+//
+// Returns a map keyed by repoFullName => *RepoOutput.
+func CreateDetailedRepoExtensionMap(items []Item) map[string]*RepoOutput {
+	result := make(map[string]*RepoOutput)
+
 	for _, item := range items {
-		repo := item.Repository.FullName
-		if repoCount[repo] >= MAX_FILES_PER_REPO {
+		repo := item.Repository
+
+		// If we have "ownerName/repoName", let's parse the "repoName"
+		repoName := repo.Name
+		// If "Name" wasn't populated by GitHub, try to parse from FullName
+		if repoName == "" && repo.FullName != "" {
+			parts := strings.SplitN(repo.FullName, "/", 2)
+			if len(parts) == 2 {
+				repoName = parts[1] // e.g. "platform-configuration"
+			} else {
+				repoName = repo.FullName // fallback if no slash
+			}
+		}
+
+		if repo.FullName == "" {
+			// If we somehow don't have a full_name, skip or handle it
 			continue
 		}
+
+		if _, ok := result[repo.FullName]; !ok {
+			result[repo.FullName] = &RepoOutput{
+				RepositoryID:       repo.ID,
+				RepositoryName:     repoName,
+				RepositoryFullName: repo.FullName,
+				Extensions:         make(map[string][]string),
+			}
+		}
+
+		out := result[repo.FullName]
 		ext := strings.TrimPrefix(filepath.Ext(item.Path), ".")
 		if ext == "" {
 			ext = "unknown"
 		}
-		if _, exists := repoMap[repo]; !exists {
-			repoMap[repo] = make(map[string][]string)
+
+		// Optionally ensure we don't exceed MAX_FILES_PER_REPO
+		if len(out.Extensions[ext]) >= MAX_FILES_PER_REPO {
+			continue
 		}
-		repoMap[repo][ext] = append(repoMap[repo][ext], item.Path)
-		repoCount[repo]++
+
+		out.Extensions[ext] = append(out.Extensions[ext], item.Path)
 	}
-	return repoMap
+
+	return result
 }
