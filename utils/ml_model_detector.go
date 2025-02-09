@@ -46,6 +46,32 @@ type Repository struct {
 	FullName string `json:"full_name,omitempty"` // e.g. "ownerName/my-repo"
 }
 
+// PythonAIKeywords is our list of ML frameworks we want to find references to in .py files.
+
+var PythonAIKeywords = []string{
+    "tensorflow",
+    "torch",
+    "keras",
+    "sklearn",
+    "pytorch_lightning",
+    "lightgbm",
+    "catboost",
+    "mxnet",
+    "paddle",
+    "jax",
+    "xgboost",
+    "fastai",
+    "h2o",
+    "huggingface_hub",
+    "statsmodels",
+    "prophet",
+    "spacy",
+    "nltk",
+    "gensim",
+    "detectron2",
+}
+
+
 // FileExtensions is the set of all extensions we want to find.
 // This includes both "binary-likely" and "text-based" model files.
 var FileExtensions = []string{
@@ -444,4 +470,28 @@ func CreateDetailedRepoExtensionMap(items []Item) map[string]*RepoOutput {
 	}
 
 	return out
+}
+
+
+// BuildPythonAIQueries turns the pythonAIKeywords into a slice of chunked queries like:
+//   extension:py tensorflow OR extension:py torch ...
+// so we can search them in code.
+func BuildPythonAIQueries(qualifier string, keywords []string, chunkSize int) []string {
+    // chunk the keywords to avoid overly long queries
+    var finalQueries []string
+    chunked := ChunkBySize(keywords, chunkSize)
+
+    for _, chunk := range chunked {
+        // Build a single query: "extension:py <kw1> OR extension:py <kw2> ..."
+        var parts []string
+        for _, kw := range chunk {
+            if qualifier != "" {
+                parts = append(parts, qualifier+" extension:py "+kw)
+            } else {
+                parts = append(parts, "extension:py "+kw)
+            }
+        }
+        finalQueries = append(finalQueries, strings.Join(parts, " OR "))
+    }
+    return finalQueries
 }
